@@ -14,14 +14,40 @@ from tqdm import tqdm
 class OpenReviewCrawlerWithPDFs:
     def __init__(self):
         # Initialize the OpenReview client with authentication
-        self.client = openreview.api.OpenReviewClient(
-            baseurl='https://api2.openreview.net',
+        self.client = openreview.Client(
+            baseurl='https://api.openreview.net',
             username='weihezhai@gmail.com',
             password='aMmeWArff6a3Z2k'
         )
         self.paper_to_file_map = {}  # Maps paper_id to json filename
         self.chunk_size = 500  # Papers per JSON file
+        self.review_stats = {'api_v1_extracted': 0, 'fallback_extracted': 0, 'total_papers': 0}
         
+    def extract_reviews_from_directreplies(self, paper) -> List[Dict]:
+        """Extract reviews from directReplies (API V1 method)"""
+        reviews = []
+        try:
+            if hasattr(paper, 'details') and paper.details and 'directReplies' in paper.details:
+                direct_replies = paper.details['directReplies']
+                for reply in direct_replies:
+                    # Check if this reply is an official review
+                    invitation = reply.get('invitation', '')
+                    if invitation.endswith('Official_Review') or 'Review' in invitation:
+                        # Convert to Note object if it's not already
+                        if isinstance(reply, dict):
+                            review_note = openreview.Note.from_json(reply)
+                        else:
+                            review_note = reply
+                        reviews.append(review_note)
+                        
+                if reviews:
+                    self.review_stats['api_v1_extracted'] += len(reviews)
+                    return reviews
+        except Exception as e:
+            print(f"Error extracting reviews from directReplies for {getattr(paper, 'id', 'unknown')}: {e}")
+        
+        return []
+    
     def get_conference_papers(self, limit: int = None, venue_year: str = '2024', conference: str = 'neurips') -> List[Dict]:
         """Fetch all papers for specified conference and year"""
         conf_name = conference.upper()
@@ -46,7 +72,8 @@ class OpenReviewCrawlerWithPDFs:
                     'iclr.cc/2024/Conference/-/Submission',
                 ],
                 'other': [
-                    f'ICLR.cc/{venue_year}/Conference/-/Blind_Submission',
+                    f'ICLR.cc/{venue_year}/Conference/-/Blind_Submission',  # ICLR 2023 uses Blind_Submission
+                    f'ICLR.cc/{venue_year}/Conference/-/Submission',
                     f'iclr.cc/{venue_year}/Conference/-/Submission',
                 ]
             },
@@ -112,7 +139,10 @@ class OpenReviewCrawlerWithPDFs:
         if not papers and conference.lower() == 'neurips' and venue_year == '2024':
             print("NeurIPS 2024 not found, trying NeurIPS 2023...")
             try:
-                notes = list(self.client.get_all_notes(invitation='NeurIPS.cc/2023/Conference/-/Submission'))
+                notes = list(self.client.get_all_notes(
+                    invitation='NeurIPS.cc/2023/Conference/-/Submission',
+                    details='directReplies'
+                ))
                 
                 if limit and len(notes) > limit:
                     notes = notes[:limit]
@@ -124,8 +154,15 @@ class OpenReviewCrawlerWithPDFs:
     
         return papers
     
-    def get_paper_reviews(self, paper_id: str) -> List[Dict]:
-        """Fetch all reviews for a specific paper"""
+    def get_paper_reviews(self, paper_id: str, paper=None) -> List[Dict]:
+        """Fetch all reviews for a specific paper using API V1 method first, then fallback"""
+        # Try API V1 method first if we have the paper object with directReplies
+        if paper:
+            api_v1_reviews = self.extract_reviews_from_directreplies(paper)
+            if api_v1_reviews:
+                return api_v1_reviews
+        
+        # Fallback to original method
         try:
             # Get all notes in the forum (paper discussion)
             notes = list(self.client.get_notes(forum=paper_id))
@@ -134,8 +171,11 @@ class OpenReviewCrawlerWithPDFs:
             reviews = []
             for note in notes:
                 invitation = getattr(note, 'invitation', '') or getattr(note, 'invitations', [''])[0] if hasattr(note, 'invitations') else ''
-                if 'Review' in invitation and note.id != paper_id:
+                if ('Review' in invitation or invitation.endswith('Official_Review')) and note.id != paper_id:
                     reviews.append(note)
+            
+            if reviews:
+                self.review_stats['fallback_extracted'] += len(reviews)
             
             time.sleep(0.1)  # Small delay to be respectful
             return reviews
@@ -202,7 +242,7 @@ class OpenReviewCrawlerWithPDFs:
             
             # Download supplementary materials (any format, save as .zip)
             supplement_fields = ['supplementary_material', 'supplement', 'supplemental_material', 'code']
-            max_size_bytes = 20 * 1024 * 1024  # 10MB limit
+            max_size_bytes = 20 * 1024 * 1024  # 20MB limit
             
             for field_name in supplement_fields:
                 if field_name in paper_content:
@@ -219,7 +259,7 @@ class OpenReviewCrawlerWithPDFs:
                                 
                                 # Check file size
                                 if len(supplement_data) > max_size_bytes:
-                                    print(f"Skipping {field_name} for {paper_id}: size {len(supplement_data)/1024/1024:.1f}MB exceeds 10MB limit")
+                                    print(f"Skipping {field_name} for {paper_id}: size {len(supplement_data)/1024/1024:.1f}MB exceeds 20MB limit")
                                     continue
                                 
                                 # Save the supplementary material as .zip regardless of original format
@@ -332,6 +372,7 @@ class OpenReviewCrawlerWithPDFs:
         failed_pdf_downloads = 0
         successful_supplement_downloads = 0
         skipped_supplements = 0
+        self.review_stats['total_papers'] = len(papers)
         
         # Create progress bars
         main_pbar = tqdm(papers, desc="🚀 Processing papers", unit="paper")
@@ -340,8 +381,8 @@ class OpenReviewCrawlerWithPDFs:
             paper_id = paper.id
             main_pbar.set_description(f"🚀 Processing {paper_id}")
             
-            # Get reviews
-            reviews = self.get_paper_reviews(paper_id)
+            # Get reviews using API V1 method first
+            reviews = self.get_paper_reviews(paper_id, paper)
             
             # Download PDF and supplements
             download_results = self.download_pdf_and_supplements(paper, pdf_dir)
@@ -391,6 +432,8 @@ class OpenReviewCrawlerWithPDFs:
         print(f"❌ PDF download failures: {failed_pdf_downloads}")
         print(f"📈 PDF success rate: {successful_pdf_downloads/len(all_data)*100:.1f}%")
         print(f"📈 Supplement success rate: {successful_supplement_downloads/len(all_data)*100:.1f}%")
+        print(f"📊 Reviews extracted via API V1: {self.review_stats['api_v1_extracted']}")
+        print(f"📊 Reviews extracted via fallback: {self.review_stats['fallback_extracted']}")
         
         return all_data
     
@@ -417,6 +460,7 @@ class OpenReviewCrawlerWithPDFs:
             return []
         
         all_data = []
+        self.review_stats['total_papers'] = len(papers)
         
         # Create progress bar
         main_pbar = tqdm(papers, desc="🚀 Processing papers", unit="paper")
@@ -425,8 +469,8 @@ class OpenReviewCrawlerWithPDFs:
             paper_id = paper.id
             main_pbar.set_description(f"🚀 Processing {paper_id}")
             
-            # Get reviews only
-            reviews = self.get_paper_reviews(paper_id)
+            # Get reviews using API V1 method first
+            reviews = self.get_paper_reviews(paper_id, paper)
             
             paper_data = {
                 'paper': paper.to_json() if hasattr(paper, 'to_json') else paper.__dict__,
@@ -452,6 +496,8 @@ class OpenReviewCrawlerWithPDFs:
         
         print(f"\n✅ Crawl completed!")
         print(f"📊 Total papers processed: {len(all_data)}")
+        print(f"📊 Reviews extracted via API V1: {self.review_stats['api_v1_extracted']}")
+        print(f"📊 Reviews extracted via fallback: {self.review_stats['fallback_extracted']}")
         
         return all_data
     
@@ -672,21 +718,21 @@ if __name__ == "__main__":
     Usage Examples:
     
     # Crawl 1000 NeurIPS 2024 papers with PDFs to custom directory
-    python spider_with_pdfs.py --output-dir /path/to/output --limit 1000 --conference neurips
+    python spider_with_pdfs_api_v1.py --output-dir /path/to/output --limit 1000 --conference neurips
     
-    # Crawl ICLR 2024 papers without PDFs
-    python spider_with_pdfs.py --conference iclr --venue 2024 --no-pdfs --limit 500
+    # Crawl ICLR 2023 papers without PDFs (uses API V1 method)
+    python spider_with_pdfs_api_v1.py --conference iclr --venue 2023 --no-pdfs --limit 500
     
     # Crawl ICML 2023 papers with PDFs
-    python spider_with_pdfs.py --conference icml --venue 2023 --limit 200
+    python spider_with_pdfs_api_v1.py --conference icml --venue 2023 --limit 200
     
     # Crawl EMNLP 2024 papers
-    python spider_with_pdfs.py --conference emnlp --venue 2024
+    python spider_with_pdfs_api_v1.py --conference emnlp --venue 2024
     
     # Test connection only
-    python spider_with_pdfs.py --test-connection
+    python spider_with_pdfs_api_v1.py --test-connection
     
     # Crawl unlimited papers (all available)
-    python spider_with_pdfs.py --limit 0 --conference neurips
+    python spider_with_pdfs_api_v1.py --limit 0 --conference neurips
     """
     main()

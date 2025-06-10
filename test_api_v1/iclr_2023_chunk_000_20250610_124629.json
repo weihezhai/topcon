@@ -1,0 +1,732 @@
+[
+  {
+    "paper": {
+      "id": "zzqBoIFOQ1",
+      "original": "dC_9j4aLwcA",
+      "cdate": 1663850184200,
+      "pdate": 1675279800000,
+      "odate": 1664468100000,
+      "mdate": null,
+      "tcdate": 1663850184200,
+      "tmdate": 1749341459989,
+      "ddate": null,
+      "number": 3283,
+      "content": {
+        "title": "Guiding Safe Exploration with Weakest Preconditions",
+        "authorids": [
+          "~Greg_Anderson1",
+          "~Swarat_Chaudhuri1",
+          "~Isil_Dillig1"
+        ],
+        "authors": [
+          "Greg Anderson",
+          "Swarat Chaudhuri",
+          "Isil Dillig"
+        ],
+        "keywords": [
+          "reinforcement learning",
+          "safe learning",
+          "safe exploration"
+        ],
+        "TL;DR": "We use an online, weakest-precondition-based approach to ensure safety during exploration without interfering with performance.",
+        "abstract": "In reinforcement learning for safety-critical settings, it is often desirable for the agent to obey safety constraints at all points in time, including during training. We present a novel neurosymbolic approach called SPICE to solve this safe exploration problem. SPICE uses an online shielding layer based on symbolic weakest preconditions to achieve a more precise safety analysis than existing tools without unduly impacting the training process. We evaluate the approach on a suite of continuous control benchmarks and show that it can achieve comparable performance to existing safe learning techniques while incurring fewer safety violations. Additionally, we present theoretical results showing that SPICE converges to the optimal safe policy under reasonable assumptions.",
+        "anonymous_url": "I certify that there is no URL (e.g., github page) that could be used to find authors’ identity.",
+        "no_acknowledgement_section": "I certify that there is no acknowledgement section in this submission for double blind review.",
+        "code_of_ethics": "I acknowledge that I and all co-authors of this work have read and commit to adhering to the ICLR Code of Ethics",
+        "submission_guidelines": "Yes",
+        "resubmission": "",
+        "student_author": "",
+        "Please_choose_the_closest_area_that_your_submission_falls_into": "Reinforcement Learning (eg, decision and control, planning, hierarchical RL, robotics)",
+        "paperhash": "anderson|guiding_safe_exploration_with_weakest_preconditions",
+        "pdf": "/pdf/31fba2ce53b7314f1c3b3ec7719c818d82414a6d.pdf",
+        "supplementary_material": "/attachment/ec3f34f04957b594c28e243d8aa5403d15fd76b5.zip",
+        "_bibtex": "@inproceedings{\nanderson2023guiding,\ntitle={Guiding Safe Exploration with Weakest Preconditions},\nauthor={Greg Anderson and Swarat Chaudhuri and Isil Dillig},\nbooktitle={The Eleventh International Conference on Learning Representations },\nyear={2023},\nurl={https://openreview.net/forum?id=zzqBoIFOQ1}\n}",
+        "venue": "ICLR 2023 poster",
+        "venueid": "ICLR.cc/2023/Conference",
+        "community_implementations": "[![CatalyzeX](/images/catalyzex_icon.svg) 1 code implementation](https://www.catalyzex.com/paper/guiding-safe-exploration-with-weakest/code)"
+      },
+      "forum": "zzqBoIFOQ1",
+      "referent": null,
+      "invitation": "ICLR.cc/2023/Conference/-/Blind_Submission",
+      "replyto": null,
+      "readers": [
+        "everyone"
+      ],
+      "nonreaders": [],
+      "signatures": [
+        "ICLR.cc/2023/Conference"
+      ],
+      "writers": [
+        "ICLR.cc/2023/Conference"
+      ]
+    },
+    "reviews": [
+      {
+        "id": "MXV1TACjo_",
+        "original": null,
+        "cdate": 1666251648361,
+        "pdate": null,
+        "odate": null,
+        "mdate": null,
+        "tcdate": 1666251648361,
+        "tmdate": 1669196188530,
+        "ddate": null,
+        "number": 1,
+        "content": {
+          "confidence": "4: You are confident in your assessment, but not absolutely certain. It is unlikely, but not impossible, that you did not understand some parts of the submission or that you are unfamiliar with some pieces of related work.",
+          "summary_of_the_paper": "This paper deals with safe exploration in reinforcement learning in which an agent is required to ensure safety during training. The authors present a neuro-symbolic approach called SPICE. based on symbolic weakest preconditions. Empirically, they evaluate their approach on toy benchmarks, and show that it is able to achieve comparable performance to existing safe learning techniques while incurring fewer safety violations. ",
+          "strength_and_weaknesses": "### Strength\n- Interesting and importance problem formulation on safe exploration.\n- Unique approach for safe exploration. As far as I know, there is no existing method using weakest precondition.\n\n### Weakness\n- Though the number and quality of baselines looks sufficient to me, benchmark problem is very easy. I think the authors should have tested their method in MuJoCo or SafetyGym benchmarks. The proposed method depends on environment approximation; hence, it is particularly important to know whether it is applicable to non-linear complicated system (I think even negative results are ok, and it is significant to know the limitations).\n- Low applicability to real problems. As the authors discuss the experimental results in the first paragraph on page 8, the proposed method works better than baselines when the environment can be approximated with linear equations. I think this is a huge limitation of the proposed method. I personally recommend the authors to connect this work with Linear MDP (https://arxiv.org/pdf/1907.05388.pdf), which would provide much richer theoretical results and good empirical results under the assumption of feature mapping functions.\n\n### Questions\n- How did the author choose weakest preconditions for each experiments? Is it possible to decrease the constraints violation while tuning the parameter of the weakest preconditions?\n\n### Other comments\n- The equation in Section 2 should be rewritten\n    - (Section 2) $\\text{Safe}(\\pi)$ is not defined.\n    - Is $P_{x∼S{_{\\pi_i}}}(x \\in S_U ) < \\delta$ really what the authors want to represent? I think the probability of an agent's trajectory being safe is $(1-\\delta)^N$ when the length of episode is $N$. I guess the authors should have represented in other equations.",
+          "clarity,_quality,_novelty_and_reproducibility": "### Clarity\nThis paper is mostly well-written and easy to follow.\n\n### Quality\nI have several concerns regarding the quality of experiments and method itself. Especially, I am not fully convinced whether this proposed method is really useful or not.\n\n### Novelty\nAs far as I know, the proposed approach using weakest precondition is new.\n\n### Reproducibility\nThe source-doe is attached, and reproducibility is high.",
+          "summary_of_the_review": "Though this paper presents a new, promising method for an interesting problems, there are several issues and concerns about the applicability and empirical evaluations. Hence, I recommend rejection for now.",
+          "correctness": "2: Several of the paper’s claims are incorrect or not well-supported.",
+          "technical_novelty_and_significance": "3: The contributions are significant and somewhat new. Aspects of the contributions exist in prior work.",
+          "empirical_novelty_and_significance": "2: The contributions are only marginally significant or novel.",
+          "flag_for_ethics_review": [
+            "NO."
+          ],
+          "recommendation": "6: marginally above the acceptance threshold"
+        },
+        "forum": "zzqBoIFOQ1",
+        "referent": null,
+        "invitation": "ICLR.cc/2023/Conference/Paper3283/-/Official_Review",
+        "replyto": "zzqBoIFOQ1",
+        "readers": [
+          "everyone"
+        ],
+        "nonreaders": [],
+        "signatures": [
+          "ICLR.cc/2023/Conference/Paper3283/Reviewer_aN3N"
+        ],
+        "writers": [
+          "ICLR.cc/2023/Conference",
+          "ICLR.cc/2023/Conference/Paper3283/Reviewer_aN3N"
+        ]
+      },
+      {
+        "id": "AQTBBXOc898",
+        "original": null,
+        "cdate": 1666651351449,
+        "pdate": null,
+        "odate": null,
+        "mdate": null,
+        "tcdate": 1666651351449,
+        "tmdate": 1666651351449,
+        "ddate": null,
+        "number": 2,
+        "content": {
+          "confidence": "3: You are fairly confident in your assessment. It is possible that you did not understand some parts of the submission or that you are unfamiliar with some pieces of related work. Math/other details were not carefully checked.",
+          "summary_of_the_paper": "This paper adapts ideas from formal program analysis, i.e. weakest preconditions, to the constrained  reinforcement learning. Here an emphasis is made for (i) working in an a-priori unknown MDP and (ii) minimizing constraint violations during deployment *and* training. \n\nThe key idea is to alternate (i) shielded exploration (ii) system identification/ model learning and (iii) computing a new avoid predicate for the shield. Again, this is done by adapting a classic idea from program analysis (called weakest preconditions) where one tries to identify the largest set such of inputs (the precondition) that guarantees the property (here not violating the constraint) is satisfied.\n\nTechnically, this by linearizing the learned model and learning a (union) of precondition polyhedra. These polyhedra are then used to project the actions proposed by the learned control policy to a safe action (according the learned model).\n\nEmpirically this seems to be very effective and future extensions are proposed (using non-linear models) that would likely yield unambigously state-of-the-art performance.",
+          "strength_and_weaknesses": "# Strengths\n\nThe technique is well motivated and a good proof of concept regarding combining model based safety analysis with model free RL. There is a clear path towards having robust theoretical guarantees (see weaknesses below) and a there is a literature of techniques on abstract interpretation that are likely to improve the representations of the preconditions.\n\n# Weaknesses\n\n1. Some of the assumptions in the theorems seems difficult to realize. In particular, because the learned safety shield biases the exploration, it seems difficult to assert that the final model will always achieve a given PAC bound. Perhaps I am missing something.\n\n2. The analysis is done using a linearization of the model. This limits the class of models for which the shield can accurately forecast safety. This is acknowledged in the paper and the proposed directions for mitigation seem reasonable.\n\n3. Missing from the related work seems to the literature on abstract interpretation that (from my outsider knowledge) offers a similar promise of learning pre-conditions for safety. Since the preconditions considered in this work are (under?) approximations for the learned model, it seems good to compare.",
+          "clarity,_quality,_novelty_and_reproducibility": "The technique and motivation are clearly communicated and the algorithm is (to my knowledge) distinct from other shielding techniques. While the individual building blocks are well established, this seems to be a novel application well worth studying.",
+          "summary_of_the_review": "The paper contributes a novel algorithm for creating safety shields during the training of RL-agents. It provides a nice demonstration of the power of alternating model learning and state-of-the-art RL techniques for safe RL. In particular, the paper highlights how model learning in this setting need only deal with qualitative semantics (i.e., is it possible to reach state s) and can let the RL algorithm handle the quantitative optimizations.",
+          "correctness": "4: All of the claims and statements are well-supported and correct.",
+          "technical_novelty_and_significance": "3: The contributions are significant and somewhat new. Aspects of the contributions exist in prior work.",
+          "empirical_novelty_and_significance": "3: The contributions are significant and somewhat new. Aspects of the contributions exist in prior work.",
+          "flag_for_ethics_review": [
+            "NO."
+          ],
+          "recommendation": "8: accept, good paper"
+        },
+        "forum": "zzqBoIFOQ1",
+        "referent": null,
+        "invitation": "ICLR.cc/2023/Conference/Paper3283/-/Official_Review",
+        "replyto": "zzqBoIFOQ1",
+        "readers": [
+          "everyone"
+        ],
+        "nonreaders": [],
+        "signatures": [
+          "ICLR.cc/2023/Conference/Paper3283/Reviewer_PYp3"
+        ],
+        "writers": [
+          "ICLR.cc/2023/Conference",
+          "ICLR.cc/2023/Conference/Paper3283/Reviewer_PYp3"
+        ]
+      },
+      {
+        "id": "aib0K4Qbbj",
+        "original": null,
+        "cdate": 1666735486524,
+        "pdate": null,
+        "odate": null,
+        "mdate": null,
+        "tcdate": 1666735486524,
+        "tmdate": 1666735486524,
+        "ddate": null,
+        "number": 3,
+        "content": {
+          "confidence": "3: You are fairly confident in your assessment. It is possible that you did not understand some parts of the submission or that you are unfamiliar with some pieces of related work. Math/other details were not carefully checked.",
+          "summary_of_the_paper": "The paper proposes a method for safe reinforcement learning whereby it uses a\nlearnt environment to not only optimise policies but also to improve safe\nexploration. Concretely, this is realised by taking a linear approximation of\nthe environment, which in conjunction with the safety specification gives\nlinear constraints (called weakest preconditions in the paper) on the actions\nthat are safe to be performed.",
+          "strength_and_weaknesses": "+ The approach reduces the number of safety violations during training when\ncompared with the state-of-the-art in the area.\n\n- Somewhat straightforward and incremental: straightforward in that it relies\n  on linear approximations of the environment and incremental in that the\n  contribution is limited to the derivation of safety predicates within a\n  previously studied framework.",
+          "clarity,_quality,_novelty_and_reproducibility": "The paper is overall well written and presented. The contribution includes some\nnovel aspects pertaining to the computation of the weakest preconditions. The\nsignificance of the overall method is adequately evaluated.",
+          "summary_of_the_review": "The paper builds on previous work on safe reinforcement learning  to derive a\nmethod which although makes strong, linearity assumptions on the environment is\nable to outperform the state-of-the-art in terms of the number of safety\nviolations during training.",
+          "correctness": "4: All of the claims and statements are well-supported and correct.",
+          "technical_novelty_and_significance": "3: The contributions are significant and somewhat new. Aspects of the contributions exist in prior work.",
+          "empirical_novelty_and_significance": "2: The contributions are only marginally significant or novel.",
+          "flag_for_ethics_review": [
+            "NO."
+          ],
+          "recommendation": "6: marginally above the acceptance threshold"
+        },
+        "forum": "zzqBoIFOQ1",
+        "referent": null,
+        "invitation": "ICLR.cc/2023/Conference/Paper3283/-/Official_Review",
+        "replyto": "zzqBoIFOQ1",
+        "readers": [
+          "everyone"
+        ],
+        "nonreaders": [],
+        "signatures": [
+          "ICLR.cc/2023/Conference/Paper3283/Reviewer_HV3z"
+        ],
+        "writers": [
+          "ICLR.cc/2023/Conference",
+          "ICLR.cc/2023/Conference/Paper3283/Reviewer_HV3z"
+        ]
+      },
+      {
+        "id": "d3-kXa-Agu",
+        "original": null,
+        "cdate": 1667459319188,
+        "pdate": null,
+        "odate": null,
+        "mdate": null,
+        "tcdate": 1667459319188,
+        "tmdate": 1670985996556,
+        "ddate": null,
+        "number": 4,
+        "content": {
+          "confidence": "4: You are confident in your assessment, but not absolutely certain. It is unlikely, but not impossible, that you did not understand some parts of the submission or that you are unfamiliar with some pieces of related work.",
+          "summary_of_the_paper": "The paper proposes a safe RL algorithm, Symbolic Preconditions for Constrained Exploration (SPICE), that uses a model-based shielding mechanism to produce safe actions. A linearization of the model and polyhedral state constraints are used to determine which actions are safe, and then the proposed action is projected onto the space of safe actions. The paper provides a regret bound for the algorithm and demonstrates that SPICE can attain fewer safety violations during training than model-free baselines.",
+          "strength_and_weaknesses": "Strengths:\n* SPICE’s use of formal methods provides strong safety guarantees if the assumptions hold. This is very desirable in safety critical applications.\n* In experiments, SPICE substantially reduces the number of violations substantially compared to CPO and CSC.\n\nWeaknesses:\n* A footnote states \"We use a modified version of our approach instead of comparing to Bharadhwaj et al. (2021) directly because the code for that paper is unavailable.\" While this is reasonable, the present paper does not provide a description of your modifications. It is difficult for the reader to compare the performance of SPICE vs. “CSC” without knowing exactly what “CSC” means.\n* From Figure 3, the variance of the policy’s performance appears extremely high for both SPICE and CSC. The plots in the CSC paper look much less noisy. This raises questions about the quality of the implementation.\n* SPICE converges to a suboptimal policy (worse than CPO) in many cases.\n* The experiments do not compare to any other model-based safe RL algorithms.\n* Linearization of the model may limit what types of problems SPICE can solve effectively.",
+          "clarity,_quality,_novelty_and_reproducibility": "The paper is generally clear. I appreciate the use of examples to demonstrate the approach.\nHowever, the statement of theorem 2 should be improved:\n* Some of the symbols that appear in the regret bound are only defined in the appendix ($L_R$, $\\sigma$) or in the following text ($\\zeta$).\n* To be precise, $\\epsilon_m$ and $\\epsilon_\\pi$ are upper bounds on the divergences that hold for all $T$. (This is stated in the appendix, but not in the main text.) The actual divergences are changing throughout training as the model and policy are updated.\n\nThe proposed approach is novel, to my knowledge.\n\nRegarding reproducibility, the lack of details regarding the CSC implementation is a significant concern.\n\nThe paper is missing some relevant references to model-based safe RL papers, such as\n* Safe Reinforcement Learning Using Robust MPC. M. Zanon, S. Gros\n* Safe Reinforcement Learning by Imagining the Near Future. G. Thomas, Y. Luo, T. Ma\n",
+          "summary_of_the_review": "I like the proposed approach and its associated guarantees. My main issues are in the experiments, as detailed above. The state of the experiments makes it hard to recommend acceptance in the paper’s current form, in spite of other positive attributes of the paper.",
+          "correctness": "4: All of the claims and statements are well-supported and correct.",
+          "technical_novelty_and_significance": "3: The contributions are significant and somewhat new. Aspects of the contributions exist in prior work.",
+          "empirical_novelty_and_significance": "2: The contributions are only marginally significant or novel.",
+          "flag_for_ethics_review": [
+            "NO."
+          ],
+          "recommendation": "6: marginally above the acceptance threshold"
+        },
+        "forum": "zzqBoIFOQ1",
+        "referent": null,
+        "invitation": "ICLR.cc/2023/Conference/Paper3283/-/Official_Review",
+        "replyto": "zzqBoIFOQ1",
+        "readers": [
+          "everyone"
+        ],
+        "nonreaders": [],
+        "signatures": [
+          "ICLR.cc/2023/Conference/Paper3283/Reviewer_euEh"
+        ],
+        "writers": [
+          "ICLR.cc/2023/Conference",
+          "ICLR.cc/2023/Conference/Paper3283/Reviewer_euEh"
+        ]
+      }
+    ],
+    "pdf_downloaded": false,
+    "crawled_at": "2025-06-10T12:46:29.443869"
+  },
+  {
+    "paper": {
+      "id": "zzL_5WoI3I",
+      "original": "EJIdt37FT3h",
+      "cdate": 1663849997042,
+      "pdate": 1675279800000,
+      "odate": 1664468100000,
+      "mdate": null,
+      "tcdate": 1663849997042,
+      "tmdate": 1676330934915,
+      "ddate": null,
+      "number": 1739,
+      "content": {
+        "title": "An Adaptive Entropy-Regularization Framework for Multi-Agent Reinforcement Learning",
+        "authorids": [
+          "~Woojun_Kim1",
+          "~Youngchul_Sung1"
+        ],
+        "authors": [
+          "Woojun Kim",
+          "Youngchul Sung"
+        ],
+        "keywords": [
+          "Multi-Agent Reinforcement Learning",
+          "Entropy Regularization",
+          "Exploration-Exploitation Tradeoff"
+        ],
+        "TL;DR": "This paper proposes  an adaptive entropy-regularization framework for multi-agent reinforcement learning to learn the adequate amount of exploration for each agent based on the degree of required exploration.",
+        "abstract": "In this paper, we propose an adaptive entropy-regularization framework (ADER) for multi-agent reinforcement learning (RL) to learn the adequate amount of exploration for each agent based on the degree of required exploration. In order to handle instability arising from updating multiple entropy temperature parameters for multiple agents, we disentangle the soft value function into two types: one for pure reward and the other for entropy. By applying multi-agent value factorization to the disentangled value function of pure reward, we obtain a relevant metric to assess the necessary degree of exploration for each agent. Based on this metric, we propose the ADER algorithm based on maximum entropy RL, which controls the necessary level of exploration across agents over time by learning the proper target entropy for each agent. Experimental results show that the proposed scheme significantly outperforms current state-of-the-art multi-agent RL algorithms. ",
+        "anonymous_url": "I certify that there is no URL (e.g., github page) that could be used to find authors’ identity.",
+        "no_acknowledgement_section": "I certify that there is no acknowledgement section in this submission for double blind review.",
+        "code_of_ethics": "I acknowledge that I and all co-authors of this work have read and commit to adhering to the ICLR Code of Ethics",
+        "submission_guidelines": "Yes",
+        "resubmission": "",
+        "student_author": "",
+        "Please_choose_the_closest_area_that_your_submission_falls_into": "Reinforcement Learning (eg, decision and control, planning, hierarchical RL, robotics)",
+        "paperhash": "kim|an_adaptive_entropyregularization_framework_for_multiagent_reinforcement_learning",
+        "pdf": "/pdf/326b9e492a2f9b8c9c6b57df0cc2821d16942084.pdf",
+        "supplementary_material": "/attachment/c92d3217bdb922932b70d43807071a9fdc1247b2.zip",
+        "_bibtex": "@misc{\nkim2023an,\ntitle={An Adaptive Entropy-Regularization Framework for Multi-Agent Reinforcement Learning},\nauthor={Woojun Kim and Youngchul Sung},\nyear={2023},\nurl={https://openreview.net/forum?id=zzL_5WoI3I}\n}",
+        "venue": "Submitted to ICLR 2023",
+        "venueid": "ICLR.cc/2023/Conference"
+      },
+      "forum": "zzL_5WoI3I",
+      "referent": null,
+      "invitation": "ICLR.cc/2023/Conference/-/Blind_Submission",
+      "replyto": null,
+      "readers": [
+        "everyone"
+      ],
+      "nonreaders": [],
+      "signatures": [
+        "ICLR.cc/2023/Conference"
+      ],
+      "writers": [
+        "ICLR.cc/2023/Conference"
+      ]
+    },
+    "reviews": [
+      {
+        "id": "f8lmUCwMFi",
+        "original": null,
+        "cdate": 1666264303145,
+        "pdate": null,
+        "odate": null,
+        "mdate": null,
+        "tcdate": 1666264303145,
+        "tmdate": 1666264303145,
+        "ddate": null,
+        "number": 1,
+        "content": {
+          "confidence": "4: You are confident in your assessment, but not absolutely certain. It is unlikely, but not impossible, that you did not understand some parts of the submission or that you are unfamiliar with some pieces of related work.",
+          "summary_of_the_paper": "This paper presents an MARL algorithm to adpatively handle the entropy regularization in multi-agent RL. In this method, the level of exploration of each agent is controlled by its time-varying target entropy, which severs as a constraint in the optimization problem. To determine a proper target entropy for each agent, the authors propose a partial derivative-based metric to evaluate the benefit of exploration and then use this term to decide the target entropy for each agent. Empirically, in a customized SMAC environment, their method is demonstrated to be better than other value-decomposition methods.\n",
+          "strength_and_weaknesses": "### Strengths\n\n1. This paper studies adaptive entropy regularization, which is important in entroy-regularized MARL and well-demonstrated in the motivation section.\n\n2. The authors provide a comprehensive literature review of entropy-based MARL algorithms.\n\n3. A variety of baselines is included in their SMAC experiments. \n\n### Weaknesses\n\n1. **Standard SMAC maps and more baselines should be included.** In the experiment section, MAPPO should also be included as a baseline, as it is one of the SOTA MARL algorithms. Also, experiments on the *standard* (unmodified) SMAC environment should be included, as it is a standard of all MARL papers. Moreover, for the matrix game, FOP should also be included as a baselines. As far as I understand, FOP uses a weight network to determine individual temperature parameters in their tasks except SMAC. That said, adaptive entropy regularization over agents and time is indeed considered in FOP. \n\n2. **The writing can be largely improved.** Some paragraphs are too long, e.g., Section 1 is one paragraph, and Section 3.1 is one paragraph. Some references to equations are misused in section 3.4. The authors should refer to where those equations appear in the main text, not where they are in the appendix. For example, eq B.7 should be eq 15 in the main text.\n\n4. **The presentation of the proposed method can be improved.** The overall workflow of this algorithm is complicated and unclear. An algorithm should be included to make it clear. Figure 6 does not provide a clear illustration. \n\n### Questions\n\n1. Two mixer networks are used in this method. The update of Q-mixer and $Q_i$ is common and easy to understand. However, It seems two methods are mentioned for computing $V_{jt}$. One is using V-mixer $V_{jt} = f_{mix}(s, V_1, \\cdots V_n)$ and another is using expectation $V_{jt} = E[Q_{jt}]$. Do these two methods result in the same value? Or do you use those two values in different places?\n\n2. As stated in eq 13, the policy update is achieved in a joint form using joint value function $Q_{jt}$, so the $Q_i$ will only be used for the computation of target entropy? If so, why do we need a mixer network for $Q_{jt}$, as we can directly parameterize $Q_{jt}$ via a single neural network? The learning of the proposed method is unclear in many ways, though I may misunderstand some parts. \n\n3. As mentioned in Section 3.4, the partial derivative $\\frac{\\partial V_{jt}^{R}}{\\partial H(\\pi^i)}$ is used to determine the target entropy of agent $i$. For the categorical policy of discrete action space, as stated in eq 16, $\\frac{\\partial V_{jt}^{R}}{\\partial H(\\pi^i)} = \\frac{\\partial V_{jt}^{R}}{\\partial V_i^R} \\times \\frac{\\partial V_i^R}{\\partial H(\\pi^i)}$. The second term is approximated by $\\frac{\\Delta V_i^R(\\tau^i)}{\\Delta \\mathcal{H}(\\pi^i_t)}$. However, it is still unclear to me how it is computed numerically. ",
+          "clarity,_quality,_novelty_and_reproducibility": "The Clarity of this paper can definitely be improved. Some references to equations are misused. Also, the authors should shorten the length of the motivation section and spend more paragraphs explaining the purpose of each component, as this is a relatively complex framework. Moreover, I think figure 6 can be improved by associating the loss function in it to better explain how each component is trained.\n\nThe Novelty of this paper heavily lies in the method of computing target entropy for each agent. However, as mentioned above, the computation of those partial derivative terms has to be further explained in order to judge the importance of this work.\n",
+          "summary_of_the_review": "This paper studies adaptive entropy regularization in MARL, and provides a naive yet reasonable solution for this problem. However, the presentation of this paper can be substantially improved, and some technical details about the computation of partial derivatives have to be further explained.  In short, I will not recommend acceptance of this paper, but I will be happy to reconsider it if the authors can address all those problems.\n",
+          "correctness": "2: Several of the paper’s claims are incorrect or not well-supported.",
+          "technical_novelty_and_significance": "2: The contributions are only marginally significant or novel.",
+          "empirical_novelty_and_significance": "2: The contributions are only marginally significant or novel.",
+          "flag_for_ethics_review": [
+            "NO."
+          ],
+          "recommendation": "3: reject, not good enough"
+        },
+        "forum": "zzL_5WoI3I",
+        "referent": null,
+        "invitation": "ICLR.cc/2023/Conference/Paper1739/-/Official_Review",
+        "replyto": "zzL_5WoI3I",
+        "readers": [
+          "everyone"
+        ],
+        "nonreaders": [],
+        "signatures": [
+          "ICLR.cc/2023/Conference/Paper1739/Reviewer_mfnN"
+        ],
+        "writers": [
+          "ICLR.cc/2023/Conference",
+          "ICLR.cc/2023/Conference/Paper1739/Reviewer_mfnN"
+        ]
+      },
+      {
+        "id": "OP22Ykrg2_",
+        "original": null,
+        "cdate": 1666543387728,
+        "pdate": null,
+        "odate": null,
+        "mdate": null,
+        "tcdate": 1666543387728,
+        "tmdate": 1666543387728,
+        "ddate": null,
+        "number": 2,
+        "content": {
+          "confidence": "4: You are confident in your assessment, but not absolutely certain. It is unlikely, but not impossible, that you did not understand some parts of the submission or that you are unfamiliar with some pieces of related work.",
+          "summary_of_the_paper": "This paper proposes an adaptive entropy-regularization framework (ADER) to address the multi-agent exploration-exploitation trade-off problem in MARL. The key insight of ADER is that the amount of exploration every agent needs to perform is different and can change over time, so we need to adaptively control the amount of exploration each agent conducts and learn this amount across agents and over time. To achieve this, ADER adaptively learn an individual target entropy for each agent over time (to control the amount of exploration for each agent), assuming a fixed total entropy budget. And it uses the change in the joint pure-return value w.r.t. the change in agent $i$'s policy entropy to estimate the benefits of increasing the target entropy of agent $i$.  In addition, in ADER, the exploration and exploitation is disentangled by disentangling the return from the entropy (i.e., the joint soft Q-function is decomposed into one joint Q-function for reward and one joint Q-function for the entropy). ",
+          "strength_and_weaknesses": "- Strengths:\n\t- The proposed framework is well motivated and seems to work well in a variety of complex cooperative tasks that require adaptive exploration across agents over time.\n\t- The main idea of adaptively learning an individual target entropy for each agent over time to better balance the exploration and exploitation in the dimension of agents is very interesting and seems novel to me. \n\t- The paper is well-written and easy to follow overall. \n- Weaknesses:\n\t- It is not clear how the proposed method performs in cooperative tasks that do not require adaptive exploration across agents over time.",
+          "clarity,_quality,_novelty_and_reproducibility": "The paper has good clarity overall. Most of the key components of ADER are well motivated and clearly explained, although the necessity of using monotonic value function factorization is not very clear to me. \n\nThe key idea of ADER looks novel to me. ",
+          "summary_of_the_review": "I like the main idea of ADER. It seems to provide a simple yet effective way to better coordinate the level of exploration across different agents over time in cooperative tasks. I think the authors do a very good job at explaining the main intuitions of the proposed method. For instance, the motivation example is quite nice. It clearly explains how one agent's exploration can change over time and how it can hinder other agents' exploitation, thus showing the necessity of adaptively controlling the trade-off between exploitation and exploration across multiple agents. \n\nMy only (small) concern of the paper is most of the cooperative tasks tested (e.g., predator-prey and SMAC) in the experiments were different from the original settings. They were specifically designed to be difficult for the agents to gain positive rewards under simultaneous exploration (or similar levels of exploration). While I understand this might be because exploration is not a big problem in these original tasks, it seems that the authors could have evaluated their method on MARL benchmark like Google Research Football (with the original setting), which is known to have hard exploration issues. Also, it'd be nice to know if ADER could perform well in the original SMAC tasks, such that we could know if continuously learning the target entropy for each agent could hurt performance in cooperative tasks that do not require adaptive exploration across agents. \n\nSome minor comments/suggestions:\n- I think the introduction could be improved some. For example, the introduction says \"This disentanglement alleviates instability which can occur due to the updates of the temperature parameters and enables applying value factorization to return and entropy separately.\" It suddenly mentions value function factorization, but does not explain the motivation/necessity for using it. \n- The related work section mentions that LICA does not maximize the cumulative sum of entropy but regularize the action entropy. Why maximizing the cumulative sum of entropy can be better than regularizing the action entropy? This could be explained some. \n- The ablation study section mentions \"we compare ADER with and without the monotonic constraint to show the necessity of the monotonic constraint.\" For ADER without the monotonic constraint, how does it learn the joint $Q$ or $V$? Does it learn a centralized critic that directly conditions on the global state and joint action of agents? Also, I do not understand why it is necessary to use a *monotonic* value factorization. ADER learns both actors and critics and only the actors are needed during execution. So one can also use a *nonmonotonic* value function factorization. ",
+          "correctness": "4: All of the claims and statements are well-supported and correct.",
+          "technical_novelty_and_significance": "4: The contributions are significant, and do not exist in prior works.",
+          "empirical_novelty_and_significance": "3: The contributions are significant and somewhat new. Aspects of the contributions exist in prior work.",
+          "flag_for_ethics_review": [
+            "NO."
+          ],
+          "recommendation": "8: accept, good paper"
+        },
+        "forum": "zzL_5WoI3I",
+        "referent": null,
+        "invitation": "ICLR.cc/2023/Conference/Paper1739/-/Official_Review",
+        "replyto": "zzL_5WoI3I",
+        "readers": [
+          "everyone"
+        ],
+        "nonreaders": [],
+        "signatures": [
+          "ICLR.cc/2023/Conference/Paper1739/Reviewer_dyHK"
+        ],
+        "writers": [
+          "ICLR.cc/2023/Conference",
+          "ICLR.cc/2023/Conference/Paper1739/Reviewer_dyHK"
+        ]
+      },
+      {
+        "id": "3EILcfDnSF",
+        "original": null,
+        "cdate": 1666643166239,
+        "pdate": null,
+        "odate": null,
+        "mdate": null,
+        "tcdate": 1666643166239,
+        "tmdate": 1666643166239,
+        "ddate": null,
+        "number": 3,
+        "content": {
+          "confidence": "3: You are fairly confident in your assessment. It is possible that you did not understand some parts of the submission or that you are unfamiliar with some pieces of related work. Math/other details were not carefully checked.",
+          "summary_of_the_paper": "This paper aims to solve the exploration-exploitation tradeoff problem in the context of multi-agent reinforcement learning. While there have been a myriad of works on exploration-exploitation tradeoff on single age reinforcement learning, there are not many on the multi agent RL. This work proposes an adaptive entropy-regularization framework that learns adequate amount of exploration for each agent. To this end, this work proposes to decompose the joint soft value function into pure return and entropy sum. This disentanglements enable a more stable while updating the temperature parameters. This work focuses entropy-based MARL. ",
+          "strength_and_weaknesses": "- The strength of the paper comes from the idea that, while previous works encourage same level of exploration across agents, this work proposes to differentiate the level of exploration across agents in multi-agent RL setting. \n- Another strength comes from the core idea of this work: joint soft value function decomposition / separated factorization. \n- The motivation part 3.1 sounds convincing to me; one agent’s exploration can hinder other agent’s exploitation, resulting that simultaneous exploration of multiple agents can make learning unstable. Need a framework that can adaptively learn proper levels of exploration for each agent. \n- Experiments are well done, not extensive though. \n\nQuestions. \n\nQ1. Question about ADER performance shown in Figure 2a. It seems that ADER outperforms other methods like SER-DCE, SER-MARL, but there is a point where ADER’s performance suddenly jumps up in the middle. Is there any explanation on why this happens? \n\nQ2. In Appendix B, could you give me more justification on setting the coefficient beta_i? Especially, line B.7, beta_i are defined as softmax of expectation of \\partial V^R_{JT}(s,\\tau) / \\partial H (pi (|))) ? Could you give us more detailed explanations on it? And can you explain why it is difficult to directly obtain the partial derivative in discrete-action case, and using chain rule is justified? ",
+          "clarity,_quality,_novelty_and_reproducibility": "This paper is well-written with high clarity. Somewhat novel, but not groundbreakingly novel. I think the authors showed good amount of experiments and evaluations on various benchmarks, and ablation studies, which seem to be reproducible.  ",
+          "summary_of_the_review": "I would give marginally above the acceptance threshold. It would be good if the authors could answer my questions. There might be some issues that I didn’t catch, and if other reviewers have raised issues, I’m happy to discuss.  ",
+          "correctness": "4: All of the claims and statements are well-supported and correct.",
+          "technical_novelty_and_significance": "3: The contributions are significant and somewhat new. Aspects of the contributions exist in prior work.",
+          "empirical_novelty_and_significance": "2: The contributions are only marginally significant or novel.",
+          "flag_for_ethics_review": [
+            "NO."
+          ],
+          "recommendation": "6: marginally above the acceptance threshold"
+        },
+        "forum": "zzL_5WoI3I",
+        "referent": null,
+        "invitation": "ICLR.cc/2023/Conference/Paper1739/-/Official_Review",
+        "replyto": "zzL_5WoI3I",
+        "readers": [
+          "everyone"
+        ],
+        "nonreaders": [],
+        "signatures": [
+          "ICLR.cc/2023/Conference/Paper1739/Reviewer_5qy9"
+        ],
+        "writers": [
+          "ICLR.cc/2023/Conference",
+          "ICLR.cc/2023/Conference/Paper1739/Reviewer_5qy9"
+        ]
+      }
+    ],
+    "pdf_downloaded": false,
+    "crawled_at": "2025-06-10T12:46:29.444122"
+  },
+  {
+    "paper": {
+      "id": "zyfEWkV6it",
+      "original": "xRjo6l1iSF0",
+      "cdate": 1663849959079,
+      "pdate": 1675279800000,
+      "odate": 1664468100000,
+      "mdate": null,
+      "tcdate": 1663849959079,
+      "tmdate": 1676330946293,
+      "ddate": null,
+      "number": 1417,
+      "content": {
+        "title": "AutoSparse: Towards Automated Sparse Training",
+        "authorids": [
+          "~Abhisek_Kundu1",
+          "~Naveen_Mellempudi1",
+          "dharma.teja.vooturi@intel.com",
+          "~Bharat_Kaul1",
+          "~Pradeep_Dubey1"
+        ],
+        "authors": [
+          "Abhisek Kundu",
+          "Naveen Mellempudi",
+          "Dharma Teja Vooturi",
+          "Bharat Kaul",
+          "Pradeep Dubey"
+        ],
+        "keywords": [
+          "sparsity",
+          "sparse training",
+          "deep learning"
+        ],
+        "abstract": "Sparse training is emerging as a promising avenue for reducing the computational cost of training neural networks. Several recent studies have proposed pruning methods using learnable thresholds to efficiently explore the non-uniform distribution of sparsity inherent within the models. In this paper, we propose Gradient Annealing (GA), a gradient driven approach where gradients to pruned out weights are scaled down in a non-linear manner. GA eliminates the need for additional sparsity-inducing regularization by providing an elegant trade-off between sparsity and accuracy. We integrated GA with the latest learnable threshold based pruning methods to create an automated sparse training algorithm called AutoSparse. Our algorithm achieves state-of-the-art accuracy with 80% sparsity for ResNet50 and 75% sparsity for  MobileNetV1 on Imagenet-1K. AutoSparse also results in 7× reduction in inference FLOPS and > 2× reduction in training FLOPS for ResNet50 on ImageNet at 80% sparsity. Finally, GA generalizes well to fixed-budget (Top-K, 80%) sparse training methods, improving the accuracy of ResNet50 on Imagenet-1K, to outperform TopKAST+PP by 0.3%.",
+        "anonymous_url": "I certify that there is no URL (e.g., github page) that could be used to find authors’ identity.",
+        "no_acknowledgement_section": "I certify that there is no acknowledgement section in this submission for double blind review.",
+        "code_of_ethics": "I acknowledge that I and all co-authors of this work have read and commit to adhering to the ICLR Code of Ethics",
+        "submission_guidelines": "Yes",
+        "resubmission": "",
+        "student_author": "",
+        "Please_choose_the_closest_area_that_your_submission_falls_into": "Deep Learning and representational learning",
+        "paperhash": "kundu|autosparse_towards_automated_sparse_training",
+        "pdf": "/pdf/313cf89cc88e2246fb00c5ee369cd4f9170c30d9.pdf",
+        "supplementary_material": "/attachment/2f64c0ed8fa410f8d0c9bb0c4c059c3e85d2d726.zip",
+        "_bibtex": "@misc{\nkundu2023autosparse,\ntitle={AutoSparse: Towards Automated Sparse Training},\nauthor={Abhisek Kundu and Naveen Mellempudi and Dharma Teja Vooturi and Bharat Kaul and Pradeep Dubey},\nyear={2023},\nurl={https://openreview.net/forum?id=zyfEWkV6it}\n}",
+        "venue": "Submitted to ICLR 2023",
+        "venueid": "ICLR.cc/2023/Conference"
+      },
+      "forum": "zyfEWkV6it",
+      "referent": null,
+      "invitation": "ICLR.cc/2023/Conference/-/Blind_Submission",
+      "replyto": null,
+      "readers": [
+        "everyone"
+      ],
+      "nonreaders": [],
+      "signatures": [
+        "ICLR.cc/2023/Conference"
+      ],
+      "writers": [
+        "ICLR.cc/2023/Conference"
+      ]
+    },
+    "reviews": [
+      {
+        "id": "tLSsnSAJhF",
+        "original": null,
+        "cdate": 1666595754176,
+        "pdate": null,
+        "odate": null,
+        "mdate": null,
+        "tcdate": 1666595754176,
+        "tmdate": 1666595754176,
+        "ddate": null,
+        "number": 1,
+        "content": {
+          "confidence": "4: You are confident in your assessment, but not absolutely certain. It is unlikely, but not impossible, that you did not understand some parts of the submission or that you are unfamiliar with some pieces of related work.",
+          "summary_of_the_paper": "This paper first introduces a technique called Gradient Annealing, which utilizes a similar concept of the straight-through estimator to enable weight updates on the pruned weights. Specifically, the gradient on the pruned weights will be shrunk by a factor, which is decaying over time. They argue that using a non-linear annealing scheme can help stabilize the sparse budgets. The authors further propose a sparse training algorithm called AutoSparse, that involves a layer-wise learnable threshold for pruning, and also applies the Gradient Annealing technique on a subset of parameters and can enhance efficiency as claimed by the authors. Experiments show performance gain on image classification and NLP tasks. \n",
+          "strength_and_weaknesses": "Strengths:\n\n- Provided intuitive examples and explanations (Page 3-4)\n- Substantial amount of experiments on large-scale datasets (ImageNet and WMT). \n\nWeakness: \n\n- Some details are hard to follow.  \n- Evaluation is not sufficient to justify the effectiveness of the proposed techniques",
+          "clarity,_quality,_novelty_and_reproducibility": "Clarity & reproducibility:\n- Some hyperparameters are introduced but not introduced elsewhere, for example, the ``s_init'' on page 7 line 1. \n- Some details are missing and hard to infer from the paper. What is the exact form of $g(\\cdot)$ in Section 3? and $T_l$ is only defined but never used. \n- (Cont'd) The gradient annealing technique is only applied for a few epochs. Is the value of $\\alpha$ decayed to $0$ in, say 10 epochs, or just cut off after 10 epochs?\n- If decaying to $0$ in 10 epochs, then what is the value of $L_0$, $L_1$, etc. that helps control the sparsity level? Also, I was wondering if one wants to achieve $70\\%$ sparsity, could the proposed method achieve this goal? \n- Reporting FLOPs is helpful and fair, but it would be better to see the reduction in wall-clock time if any. Structured pruning methods may save fewer FLOPs but can lead to a reduction in training time. \n\nQuality & Novelty:\n- The division of sparse training methods missed some pruning methods that are (1) not using fixed sparsity budget and (2) not using learnable threshold pruning methods, such as CS [1], supermasks [2,3], GDP [4]. It would be helpful to discuss these works (and maybe compare them). \n- I am not fully convinced of the practical benefits of gradient annealing due to (1) the gradient annealing is only applied on a small subset of weights (B\\A); (2) the technique is only applied for a short time; (3) the advantage of the non-linear scheme over linear decay is not justified in terms of the performance of the trained model. To be more specific, using layerwise learned threshold with a constant 0, constant 1, or linearly decay $\\alpha$ may also achieve good performance. The same for the experiments combining TopKAST with GA: using a constant or linear decay $\\alpha$ may also improve the performance. \n- Threshold-based methods are commonly used for pruning, for example K Azarian et al. [5] proposed a very similar formulation. The authors should consider cite this work and compare with them. \n\n[1] Winning the Lottery with Continuous Sparsification\n\n[2] Deconstructing lottery tickets: Zeros, signs, and the supermask\n\n[3] Signing The Supermask: Keep, Hide, Invert\n\n[4] GDP: Stabilized Neural Network Pruning via Gates with Differentiable Polarization\n\n[5] Learned Threshold Pruning ",
+          "summary_of_the_review": "Overall I appreciate the authors' work, and it could be the community's interest and inspire future research. However, there are still several things that I believe are necessary to address. Therefore I give a marginal score, but I am also open to changing my score based on the authors' responses.",
+          "correctness": "3: Some of the paper’s claims have minor issues. A few statements are not well-supported, or require small changes to be made correct.",
+          "technical_novelty_and_significance": "3: The contributions are significant and somewhat new. Aspects of the contributions exist in prior work.",
+          "empirical_novelty_and_significance": "2: The contributions are only marginally significant or novel.",
+          "flag_for_ethics_review": [
+            "NO."
+          ],
+          "recommendation": "5: marginally below the acceptance threshold"
+        },
+        "forum": "zyfEWkV6it",
+        "referent": null,
+        "invitation": "ICLR.cc/2023/Conference/Paper1417/-/Official_Review",
+        "replyto": "zyfEWkV6it",
+        "readers": [
+          "everyone"
+        ],
+        "nonreaders": [],
+        "signatures": [
+          "ICLR.cc/2023/Conference/Paper1417/Reviewer_EMVQ"
+        ],
+        "writers": [
+          "ICLR.cc/2023/Conference",
+          "ICLR.cc/2023/Conference/Paper1417/Reviewer_EMVQ"
+        ]
+      },
+      {
+        "id": "c1Ef_XDl1bl",
+        "original": null,
+        "cdate": 1666830817420,
+        "pdate": null,
+        "odate": null,
+        "mdate": null,
+        "tcdate": 1666830817420,
+        "tmdate": 1670202088340,
+        "ddate": null,
+        "number": 2,
+        "content": {
+          "confidence": "5: You are absolutely certain about your assessment. You are very familiar with the related work and checked the math/other details carefully.",
+          "summary_of_the_paper": "The paper introduces Gradient Annealing (GA) as a key component for learnable sparsity training to further improve training and inference efficiency alongside accuracy. The authors propose AutoSparse, a training sparse training algorithm that combines GA with the generalized formulation of STR (Kusupati et al., ICML 2020). The paper argues that GA is a crucial component and improves accuracies further compared to vanilla STR formulation, at the same time also improving accuracy for deterministic pruning methods like TopKAST.\n\nThe paper also provides the choices for the GA hyperparameter ($\\alpha$) alongside an analysis of why having a GA-style non-linear decay of gradients of potentially inactive weights helps in having higher accuracy than an STR + STE variant or STR with no GA. \n\nThe paper also supports the method with extensive experimentation on ImageNet with MobileNet and ResNet50 compared against various baselines across efficiency and accuracy metrics both for STR style methods and deterministic methods. Auto Sparse was also extended to an LM task. \n\nNote that the brevity of the review should not be taken as a negative aspect, as the paper's point is clear and direct given the similarity to STR in the formulation. ",
+          "strength_and_weaknesses": "I will go sequentially for both strengths and weaknesses.\n\nStrengths:\n1) The paper is well motivated and understands the one major problem plaguing learnable sparsity methods and exposits well.\n2) The related work is well-placed.\n3) The explanation and exposition of the GA method, design choices, and analysis are done well. \n4) The experiments are thorough and in line with the baseline papers like STR. \n5) The experiments with training and inference metrics are appreciated. \n6) Backward sparsity results showcase the generality of GA\n\nWeakness:\n1) The writing is not clear and would definitely benefit from revision during the course of the discussion. This also includes the aesthetics and the issues with citation style (whatever is used is not the default for ICLR 2023) -- The second aspect has not affected my perception of the paper, but I would recommend a revision to fix them.\n2) While the proposed solution of GA is interesting and states that it alleviates some of the hparam issues of learnable sparsity, its design choices often are indicative of the potential search through human function design. For example, the non-linear decay comes from the observation of not letting sparsity hit 100% soon for STR when the s_init is small in magnitude. While I like that the design helps with better scalability and applicability, it feels like each of the aspects is being handled specifically -- not a major weakness but something that struck me.\n3) AutoSparse is a generalized formulation of STR, however, when comparing, AutoSparse was only compared to STR. I think it makes a lot of sense to compare AustoSparse to STR + STE (by setting $\\alpha=1$) -- This experiment would show if GA is the major factor for the gains or if is it just the dead gradients through ReLU -- this is a major concern. \n4) In Table 2, why don't we have an apples to apples comparison with the same sparsity for TopKAST as it is deterministic -- I would love to see the accuracy of 85% sparse topKAST solution.\n5) While the application to LM is interesting, it serves little purpose in helping us understand without any baseline -- Please add a strong baselines like STR on AutoSparse for this -- I understand STR might not have done this, but it is the duty of the authors to apply an existing technique and its obvious variants as baselines for a strong paper. \n6) Lastly, I also do not agree with the claim that the top-k sorting in deterministic pruning is a compute-intensive step. -- any thoughts?\n\nI am open to discussion when the rebuttal and revisions come with answers to my mentioned weaknesses. I am looking forward to it and potentially changing my score. ",
+          "clarity,_quality,_novelty_and_reproducibility": "The code snippets are provided in the appendix along with the required params for each of adoption.\n\nThe rest of the points are covered in the earlier section.",
+          "summary_of_the_review": "While the idea of GA alleviates some of the issues in learnable sparsity, it brings in a bit of design complication -- which is fine. However, the bigger concerns are with comparisons to some missing baselines as well as the writing. I think the paper has potential and with a strong revision is worth publishing. \n\n----\nAfter rebuttal, I think the paper might be a good  addition to the iclr community. However, it still has issues that need to be addressed as pointed by the other reviewers as well.",
+          "correctness": "3: Some of the paper’s claims have minor issues. A few statements are not well-supported, or require small changes to be made correct.",
+          "technical_novelty_and_significance": "2: The contributions are only marginally significant or novel.",
+          "empirical_novelty_and_significance": "2: The contributions are only marginally significant or novel.",
+          "flag_for_ethics_review": [
+            "NO."
+          ],
+          "recommendation": "6: marginally above the acceptance threshold"
+        },
+        "forum": "zyfEWkV6it",
+        "referent": null,
+        "invitation": "ICLR.cc/2023/Conference/Paper1417/-/Official_Review",
+        "replyto": "zyfEWkV6it",
+        "readers": [
+          "everyone"
+        ],
+        "nonreaders": [],
+        "signatures": [
+          "ICLR.cc/2023/Conference/Paper1417/Reviewer_djDX"
+        ],
+        "writers": [
+          "ICLR.cc/2023/Conference",
+          "ICLR.cc/2023/Conference/Paper1417/Reviewer_djDX"
+        ]
+      },
+      {
+        "id": "1JFpPf30yT",
+        "original": null,
+        "cdate": 1666841526437,
+        "pdate": null,
+        "odate": null,
+        "mdate": null,
+        "tcdate": 1666841526437,
+        "tmdate": 1666841526437,
+        "ddate": null,
+        "number": 3,
+        "content": {
+          "confidence": "5: You are absolutely certain about your assessment. You are very familiar with the related work and checked the math/other details carefully.",
+          "summary_of_the_paper": "This paper proposes gradient annealing method in dynamic sparse training to improve the performance. Based on gradient annealing, the author of the paper proposes AutoSparse algorithm that uses a learnable threshold to find better sparse topology and sparsity distribution during DST. Multiple experiments are conducted on ImageNet.",
+          "strength_and_weaknesses": "Strengths\n\n1. This paper investigates different types of non-linear annealing methods and did a thorough analysis\n\n2. The author of the paper not only performs experiments on CV models but also on Language models.\n\n\nWeaknesses\n\n1. The overall contribution is incremental to existing approaches. Investigating and adding different annealing methods to sparse training is not a major contribution. Additionally, I don’t see a very strong motivation for using this GA method. It is more like a training “trick” of dynamic sparse training.\n\n2. The accuracy improvements are not significant. Many existing works on sparse training are not compared, such as MEST (NeurIPS 2021) or GradMax (ICLR 2022).\n\n3. Writing is not clear. For example, in the introduction, the author first claims deterministic pruning sets desired fixed sparsity for each layer before training, then at the deterministic pruning subsection, they claim method [26] (DSR) is belong to deterministic pruning. However, DSR changes sparsity distribution during training, which is not what the author claimed in the earlier part of this paper. So I think some of the writing is not rigorous.\n\n4. It is not true that non-uniform sparsity distribution “did not show any improvement” to uniform distribution. RigL (ICML 2020) and GaP (ICLR 2022, Effective Model Sparsification by Scheduled Grow-and-Prune Methods) are all showing non-uniform sparse distribution achieves lot more better accuracy. So it is not rigorous to have that strong claim in this paper without any experimental data to prove such claim.\n\n5. The overall writing and paper organization is not good. The introduction part is not entirely clear to me, and the structure is confusing. Some part of the introduction feels like a related work survey.\n\n6. Very limited experimental results in this paper. The author didn’t show any data for motivation, and no ablation study showing why the proposed method is effective. No analytical or empirical experiments are performed to convince the reader on why the results is outperforming others.\n",
+          "clarity,_quality,_novelty_and_reproducibility": "To sum up, the clarity and quality of this paper need to be improved. The novelty is lacking since the proposed method is incremental. Please refer to strengths and weaknesses for more information. ",
+          "summary_of_the_review": " I think this paper needs major revision, both on the technical contribution and writing. My suggestion is reject.",
+          "correctness": "3: Some of the paper’s claims have minor issues. A few statements are not well-supported, or require small changes to be made correct.",
+          "technical_novelty_and_significance": "1: The contributions are neither significant nor novel.",
+          "empirical_novelty_and_significance": "1: The contributions are neither significant nor novel.",
+          "flag_for_ethics_review": [
+            "NO."
+          ],
+          "recommendation": "3: reject, not good enough"
+        },
+        "forum": "zyfEWkV6it",
+        "referent": null,
+        "invitation": "ICLR.cc/2023/Conference/Paper1417/-/Official_Review",
+        "replyto": "zyfEWkV6it",
+        "readers": [
+          "everyone"
+        ],
+        "nonreaders": [],
+        "signatures": [
+          "ICLR.cc/2023/Conference/Paper1417/Reviewer_G8BR"
+        ],
+        "writers": [
+          "ICLR.cc/2023/Conference",
+          "ICLR.cc/2023/Conference/Paper1417/Reviewer_G8BR"
+        ]
+      },
+      {
+        "id": "Az1mDQkwYc",
+        "original": null,
+        "cdate": 1666894494836,
+        "pdate": null,
+        "odate": null,
+        "mdate": null,
+        "tcdate": 1666894494836,
+        "tmdate": 1666894494836,
+        "ddate": null,
+        "number": 4,
+        "content": {
+          "confidence": "5: You are absolutely certain about your assessment. You are very familiar with the related work and checked the math/other details carefully.",
+          "summary_of_the_paper": "In this paper, the authors propose a new sparse neural network training method. The key component in the proposed method is called Gradient Annealing (GA). GA can automatically find a sparse subnetwork in the end of training. The authors also propose some tricks to sparsify the computation in training. A series of experiments are used to evaluate the performance of the proposed method. ",
+          "strength_and_weaknesses": "Strength:\n1.\tThis paper is well written and easy to read. \n2.\tThe experiments show that the proposed method can find a sparse subnetwork during training. \n\nWeaknesses:\n\n1. Some overclaim statements. In page 4, the authors claim that “minimize sparsification overhead” and “optimal trade-off”. How to prove these optima, as the proposed method is heuristic?\n\n2. This paper is not well motivated. In the abstract, the authors say that the proposed method eliminates the need for sparsity inducing regularizer. I don’t think this is an advantage. Moreover, in the proposed method, it seems that it is difficult to control the sparsity of the finally trained neural networks, which is very important in real applications.\n\n3. The authors propose some tricks to sparisfy the computation in training, such as in sparsifying the weight gradient. It is unclear whether these tricks would produce bad impacts in training as no theoretical analysis is provided in this paper. \n\n4. The authors claim that the proposed method can reduce the FLOPS in training. Since the structure of sparse computation in this method is complicated, how to calculate/count the computational savings in FLOPs? The authors are recommended to release the code to  show this counting procedure. \n",
+          "clarity,_quality,_novelty_and_reproducibility": "See the strength and weaknesses. ",
+          "summary_of_the_review": "1. The proposed method seems tricky and not elegant. It is unclear whether these tricks would produce negative impacts in training. \n\n2. This paper is not well motivated. \n\n3. It is difficult to control the final sparsity in the proposed method, which is very important in real applications. \n\n4. Some details, such as how to calculate the computational saving, are missing.  \n",
+          "correctness": "2: Several of the paper’s claims are incorrect or not well-supported.",
+          "technical_novelty_and_significance": "2: The contributions are only marginally significant or novel.",
+          "empirical_novelty_and_significance": "1: The contributions are neither significant nor novel.",
+          "flag_for_ethics_review": [
+            "NO."
+          ],
+          "recommendation": "3: reject, not good enough"
+        },
+        "forum": "zyfEWkV6it",
+        "referent": null,
+        "invitation": "ICLR.cc/2023/Conference/Paper1417/-/Official_Review",
+        "replyto": "zyfEWkV6it",
+        "readers": [
+          "everyone"
+        ],
+        "nonreaders": [],
+        "signatures": [
+          "ICLR.cc/2023/Conference/Paper1417/Reviewer_5Hu8"
+        ],
+        "writers": [
+          "ICLR.cc/2023/Conference",
+          "ICLR.cc/2023/Conference/Paper1417/Reviewer_5Hu8"
+        ]
+      },
+      {
+        "id": "3MB7g0ICwd5",
+        "original": null,
+        "cdate": 1667211471986,
+        "pdate": null,
+        "odate": null,
+        "mdate": null,
+        "tcdate": 1667211471986,
+        "tmdate": 1667211471986,
+        "ddate": null,
+        "number": 5,
+        "content": {
+          "confidence": "3: You are fairly confident in your assessment. It is possible that you did not understand some parts of the submission or that you are unfamiliar with some pieces of related work. Math/other details were not carefully checked.",
+          "summary_of_the_paper": "The paper proposes Gradient Annealing (GA) and AutoSparse, two complementary approaches to achieve a towards optimal sparsity-accuracy trade-off during the training of sparse neural networks.",
+          "strength_and_weaknesses": "Strength:\n* Interesting idea with a small level of novelty\n* The proposed method seems to be able to slightly improve the performance on top of the baselines.\n* Experiments performed on large datasets and models\n\nWeaknesses:\n* The categorization of sparse training methods from the first page and the related work is shallow and misleading. For instance, “deterministic pruning” takes the reader to the idea of a deterministic process, while in reality just the sparsity level may be fixed (or some rules of pruning a part of the connections, etc.), but the output itself (e.g., the sparse connectivity) is a result of (in most cases) a random process (e.g, random pruning, random sparse initialization, stochastic gradient descent, etc). This needs serious adjustment (including of a number of statements in the paper) to reflect better the state-of-the-art and to clarify sharply the paper contributions on top of the existing work. One could start from latest survey papers such as [1]\n* The proposed method has a small level of novelty. Some of the main paper claims are perhaps too strong.\n* The improvement achieved by the proposed method over the baselines seems marginal. The statistical significance of the results has to be studied in order to boost the paper quality. If the large datasets/models hinder this operation then smaller datasets and other type of layers (e.g., fully-connected) could contribute in offering a more comprehensive understanding of the proposed method behaviors. \n* Minor: TopKAST doesn't achieve anymore the state of the art performance. For instance, the results reported in [2] seems higher than the results achieved in this paper. A direct comparison or a study to see if the proposed method can improve also MEST is necessary. Please note that this may lead to claims re-adjustments.\n* Minor: Some parts of the used terminology can bring confusion. It has to be made more rigorous. For instance, GA is an acronym typically used for Genetic Algorithms. \n\nNon-exhaustive list of missing references:\n\n[1] Torsten Hoefler, Dan Alistarh, Tal Ben-Nun, Nikoli Dryden, Alexandra Peste, Sparsity in Deep Learning: Pruning and growth for efficient inference and training in neural networks.\nAuthors, JMLR 2021, https://www.jmlr.org/papers/volume22/21-0366/21-0366.pdf \n\n[2] Geng Yuan, Xiaolong Ma, Wei Niu, Zhengang Li, Zhenglun Kong, Ning Liu, Yifan Gong, Zheng Zhan, Chaoyang He, Qing Jin, Siyue Wang, Minghai Qin, Bin Ren, Yanzhi Wang, Sijia Liu, Xue Lin, MEST: Accurate and Fast Memory-Economic Sparse Training Framework on the Edge, NeurIPS 2021, https://arxiv.org/abs/2110.14032 \n\n\n",
+          "clarity,_quality,_novelty_and_reproducibility": "Clarity: The paper writing style is a bit verbose and perhaps misleading in some places. In needs a careful revision in order to make sharp clear the actual paper contributions, the underlying mechanisms/behaviour behind the proposed methodology, while reflecting accurately the literature. The paper would benefit also from a discussion in conclusion about the limitations of the work.\n\nQuality: Can be improved considerably.\n\nOriginality: Likely, small but ok.\n\nReproducibility: I see that the code of the proposed method is printed in an appendix. It would be much more beneficial for the reader to provide a full prototype open-source code which runs at a click.\n",
+          "summary_of_the_review": "Interesting work, but it seems to be a bit immature and not ready yet for publication.",
+          "correctness": "2: Several of the paper’s claims are incorrect or not well-supported.",
+          "technical_novelty_and_significance": "2: The contributions are only marginally significant or novel.",
+          "empirical_novelty_and_significance": "2: The contributions are only marginally significant or novel.",
+          "flag_for_ethics_review": [
+            "NO."
+          ],
+          "recommendation": "5: marginally below the acceptance threshold"
+        },
+        "forum": "zyfEWkV6it",
+        "referent": null,
+        "invitation": "ICLR.cc/2023/Conference/Paper1417/-/Official_Review",
+        "replyto": "zyfEWkV6it",
+        "readers": [
+          "everyone"
+        ],
+        "nonreaders": [],
+        "signatures": [
+          "ICLR.cc/2023/Conference/Paper1417/Reviewer_7rY9"
+        ],
+        "writers": [
+          "ICLR.cc/2023/Conference",
+          "ICLR.cc/2023/Conference/Paper1417/Reviewer_7rY9"
+        ]
+      },
+      {
+        "id": "apmjMXvpru",
+        "original": null,
+        "cdate": 1667337552704,
+        "pdate": null,
+        "odate": null,
+        "mdate": null,
+        "tcdate": 1667337552704,
+        "tmdate": 1667663184614,
+        "ddate": null,
+        "number": 6,
+        "content": {
+          "confidence": "2: You are willing to defend your assessment, but it is quite likely that you did not understand the central parts of the submission or that you are unfamiliar with some pieces of related work. Math/other details were not carefully checked.",
+          "summary_of_the_paper": "This paper focuses on sparse training, which aims to reduce the computational overhead of deep neural networks. Specifically, this work proposes a non-linear gradient-based method, namely, Gradient Annealing (GA), to address the trade-off between model sparsity and accuracy. Meanwhile, this paper combines one latest sparse training method with GA, arriving at a unified training algorithm, i.e., AutoSparse. Extensive experimental results demonstrate that the proposed method could achieve the state-of-the-art model sparsity of 80% on ResNet and of 75% on MobileNetV1. Besides, GA outperforms TopKAST+PP by 0.3% in terms of classification accuracy on ImageNet.",
+          "strength_and_weaknesses": "### Strengths\n\n- This paper is well-written and easy to follow.\n\n- The technical contributions,  i.e., GA, a gradient-based non-linear method, for addressing the trade-off for model sparsity and accuracy, are novel.\n\n- The experimental evaluation is solid, including baseline comparisons in the main paper and ablation studies in the appendix.\n\n  \n\n### Weaknesses\n\n- Vision Transformers (ViT) is a popular backbone network in recent years. The empirical evaluations shall conduct baseline comparisons by using ViT on ImageNet.\n\n\n\n[1] An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale, ICLR 2021.",
+          "clarity,_quality,_novelty_and_reproducibility": "- The quality of the writing is good, though there are some typos:\n\n  - In Section 5.1, \"largescale\" -> \"large-scale\".\n\n  - In Section 5.1, \"warm up 4000,,\" -> \"warm up 4000,\"\n\n    \n\n- The technical contributions seem to be novel, though I am not an expert in this field.\n\n- This paper provides the demo code in the appendix, so it appears to me that this work can be reproduced based on the current version.",
+          "summary_of_the_review": "This paper proposes Gradient Annealing (GA) to address the trade-off between model sparsity and accuracy, and then, combine GA with the recent state-of-the-art method, arriving at a unified training algorithm called AutoSparse. The technical contributions seem to be novel. Meanwhile, this paper is well-written and the proposed method is reproducible. Based on the above consideration, I recommend accepting this paper. But, since I am not an expert in this field, I am open to changing my score, based on the authors' responses and other reviewers' comments.",
+          "correctness": "3: Some of the paper’s claims have minor issues. A few statements are not well-supported, or require small changes to be made correct.",
+          "technical_novelty_and_significance": "3: The contributions are significant and somewhat new. Aspects of the contributions exist in prior work.",
+          "empirical_novelty_and_significance": "3: The contributions are significant and somewhat new. Aspects of the contributions exist in prior work.",
+          "flag_for_ethics_review": [
+            "NO."
+          ],
+          "recommendation": "6: marginally above the acceptance threshold"
+        },
+        "forum": "zyfEWkV6it",
+        "referent": null,
+        "invitation": "ICLR.cc/2023/Conference/Paper1417/-/Official_Review",
+        "replyto": "zyfEWkV6it",
+        "readers": [
+          "everyone"
+        ],
+        "nonreaders": [],
+        "signatures": [
+          "ICLR.cc/2023/Conference/Paper1417/Reviewer_Xqxh"
+        ],
+        "writers": [
+          "ICLR.cc/2023/Conference",
+          "ICLR.cc/2023/Conference/Paper1417/Reviewer_Xqxh"
+        ]
+      }
+    ],
+    "pdf_downloaded": false,
+    "crawled_at": "2025-06-10T12:46:29.444281"
+  }
+]

@@ -67,6 +67,7 @@ def download_and_save_model(model_name, cache_dir):
     # Download model
     model = AutoModelForSequenceClassification.from_pretrained(
         model_name,
+        trust_remote_code=True
         num_labels=2,
         torch_dtype=torch.float16,
         cache_dir=cache_dir

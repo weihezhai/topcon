@@ -12,8 +12,8 @@
 
 # Load necessary modules
 module load Anaconda3/2024.02-1
-# module load cuDNN/8.7.0.84-CUDA-11.8.0
-module load cuDNN/8.9.2.26-CUDA-12.1.1
+module load cuDNN/8.7.0.84-CUDA-11.8.0
+# module load cuDNN/8.9.2.26-CUDA-12.1.1
 module load GCC/11.2.0
 
 # Activate your conda environment
@@ -22,4 +22,4 @@ source activate deepspeed_env
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed
-deepspeed --num_gpus=2 train_shef.py
+deepspeed --num_gpus=3 train_shef.py

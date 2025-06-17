@@ -106,7 +106,7 @@ def main():
     # Configuration
     MODEL_NAME = "Qwen/Qwen3-8B"  # or "meta-llama/Meta-Llama-3-8B"
     DATA_FOLDER = "/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/"  # Update this path
-    LABELS_FILE = ""  # Update this path
+    LABELS_FILE = "/mnt/parscratch/users/acr24wz/topcon/train/llm_paper/label_simple.json"  # Update this path
     
     # Model directories
     BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/base_model"  # Where to cache the downloaded model

@@ -211,10 +211,11 @@ def main():
     # Training arguments
     training_args = TrainingArguments(
         output_dir=OUTPUT_DIR,
+        deepspeed="ds_config.json",
         num_train_epochs=5,
         per_device_train_batch_size=1,  # Adjust based on GPU memory
         per_device_eval_batch_size=1,
-        gradient_accumulation_steps=8,
+        gradient_accumulation_steps=16,
         warmup_steps=100,
         weight_decay=0.01,
         logging_dir=f"{OUTPUT_DIR}/logs",

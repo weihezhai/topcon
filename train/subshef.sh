@@ -15,9 +15,10 @@ module load Anaconda3/2024.02-1
 module load cuDNN/8.9.2.26-CUDA-12.1.1
 # module load cuDNN/8.7.0.84-CUDA-11.8.0
 # Activate your conda environment
-source activate etu
-# source activate qwen-env
+# source activate etu
+source activate qwen-env
+pip install deepspeed
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed
-python train_shef.py 
+deepspeed --num_gpus=2 train_shef.py

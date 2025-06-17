@@ -130,6 +130,7 @@ def main():
     # LoRA configuration
     lora_config = LoraConfig(
         task_type=TaskType.SEQ_CLS,
+        use_bnb=False,
         inference_mode=False,
         r=16,
         lora_alpha=32,

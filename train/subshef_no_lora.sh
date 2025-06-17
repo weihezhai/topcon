@@ -19,7 +19,7 @@ module load CUDA/12.4.0
 
 # Activate your conda environment
 # source activate etu
-source activate deepspeed_env
+source activate training_env
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed

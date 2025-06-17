@@ -19,4 +19,4 @@ source activate etu
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed
-python train.py 
+python train_shef.py 

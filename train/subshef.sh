@@ -17,7 +17,7 @@ module load GCC/11.2.0
 # module load cuDNN/8.7.0.84-CUDA-11.8.0
 # Activate your conda environment
 # source activate etu
-source activate qwen
+source activate deepspeed_env
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed

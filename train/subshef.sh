@@ -14,7 +14,7 @@
 module load Anaconda3/2024.02-1
 # module load cuDNN/8.7.0.84-CUDA-11.8.0
 module load cuDNN/8.9.2.26-CUDA-12.1.1
-# module load GCC/11.2.0
+module load GCC/11.2.0
 
 # Activate your conda environment
 # source activate etu

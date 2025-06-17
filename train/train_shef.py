@@ -27,6 +27,7 @@ import numpy as np
 
 # Import the dataset builder
 from dataset_builder import TextDatasetBuilder
+from datasets import load_from_disk
 
 def compute_metrics(eval_pred):
     """Compute metrics for evaluation"""
@@ -142,8 +143,24 @@ def main():
         tokenizer.pad_token = tokenizer.eos_token
     
     # Load and prepare dataset
-    dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
-    dataset = dataset_builder.load_dataset()
+    print("Loading dataset...")
+    
+    # Define processed dataset cache path
+    PROCESSED_DATASET_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset"
+    os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
+    
+    # Check if processed dataset exists
+    if os.path.exists(os.path.join(PROCESSED_DATASET_CACHE, "dataset_dict.json")):
+        print("Loading cached processed dataset...")
+        dataset = load_from_disk(PROCESSED_DATASET_CACHE)
+    else:
+        print("Processing dataset for the first time...")
+        dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
+        dataset = dataset_builder.load_dataset()
+        
+        # Save processed dataset to cache
+        print(f"Saving processed dataset to {PROCESSED_DATASET_CACHE}")
+        dataset.save_to_disk(PROCESSED_DATASET_CACHE)
     
     # Print dataset statistics
     stats = dataset_builder.get_dataset_stats(dataset)

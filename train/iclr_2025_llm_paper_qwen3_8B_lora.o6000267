@@ -1,0 +1,115 @@
+Using cached model from /data/scratch/mpx602/model/paper_pred/base_model
+Processed 3716 files
+Dataset Statistics:
+Total samples: 3716
+Label distribution: {'accepted (1)': np.int64(1253), 'rejected (0)': np.int64(2463)}
+Average text length: 10878.43 words
+Splitting dataset...
+Train set: 2972 samples
+Test set: 744 samples
+Tokenizing datasets...
+Map:   0%|          | 0/2972 [00:00<?, ? examples/s]Map:  34%|███▎      | 1000/2972 [00:17<00:33, 58.81 examples/s]Map:  34%|███▎      | 1000/2972 [00:31<00:33, 58.81 examples/s]Map:  67%|██████▋   | 2000/2972 [00:34<00:16, 58.60 examples/s]Map: 100%|██████████| 2972/2972 [00:50<00:00, 58.25 examples/s]Map: 100%|██████████| 2972/2972 [00:50<00:00, 58.36 examples/s]
+Map:   0%|          | 0/744 [00:00<?, ? examples/s]Map: 100%|██████████| 744/744 [00:12<00:00, 58.64 examples/s]Map: 100%|██████████| 744/744 [00:12<00:00, 58.63 examples/s]
+Loading model...
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:05<00:15,  5.10s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:10<00:10,  5.11s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:15<00:05,  5.15s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:15<00:00,  3.27s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:15<00:00,  3.95s/it]
+/data/scratch/mpx602/topcon-1/train/train.py:220: FutureWarning: `tokenizer` is deprecated and will be removed in version 5.0.0 for `Trainer.__init__`. Use `processing_class` instead.
+  trainer = Trainer(
+No label_names provided for model class `PeftModelForSequenceClassification`. Since `PeftModel` hides base models input arguments, if label_names is not given, label_names can't be set automatically within `Trainer`. Note that empty label_names list will be used instead.
+trainable params: 43,655,168 || all params: 7,612,068,864 || trainable%: 0.5735
+Starting training...
+  0%|          | 0/372 [00:00<?, ?it/s]Traceback (most recent call last):
+  File "/data/scratch/mpx602/topcon-1/train/train.py", line 233, in main
+    trainer.train()
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/transformers/trainer.py", line 2240, in train
+    return inner_training_loop(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/transformers/trainer.py", line 2555, in _inner_training_loop
+    tr_loss_step = self.training_step(model, inputs, num_items_in_batch)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/transformers/trainer.py", line 3745, in training_step
+    loss = self.compute_loss(model, inputs, num_items_in_batch=num_items_in_batch)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/transformers/trainer.py", line 3810, in compute_loss
+    outputs = model(**inputs)
+              ^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/accelerate/utils/operations.py", line 819, in forward
+    return model_forward(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/accelerate/utils/operations.py", line 807, in __call__
+    return convert_to_fp32(self.model_forward(*args, **kwargs))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/torch/amp/autocast_mode.py", line 44, in decorate_autocast
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/peft/peft_model.py", line 1559, in forward
+    return self.base_model(
+           ^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/peft/tuners/tuners_utils.py", line 193, in forward
+    return self.model.forward(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/transformers/utils/generic.py", line 969, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/transformers/models/qwen3/modeling_qwen3.py", line 812, in forward
+    transformer_outputs: BaseModelOutputWithPast = self.model(
+                                                   ^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/transformers/utils/generic.py", line 969, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/transformers/models/qwen3/modeling_qwen3.py", line 463, in forward
+    layer_outputs = decoder_layer(
+                    ^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/transformers/modeling_layers.py", line 48, in __call__
+    return super().__call__(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/transformers/models/qwen3/modeling_qwen3.py", line 300, in forward
+    hidden_states = self.mlp(hidden_states)
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/transformers/models/qwen3/modeling_qwen3.py", line 90, in forward
+    down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+                                           ^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/peft/tuners/lora/layer.py", line 724, in forward
+    x = self._cast_input_dtype(x, lora_A.weight.dtype)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/home/mpx602/projects/py311/lib/python3.11/site-packages/peft/tuners/lora/layer.py", line 508, in _cast_input_dtype
+    return x.to(dtype=dtype)
+           ^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 314.00 MiB. GPU 0 has a total capacity of 39.49 GiB of which 71.38 MiB is free. Including non-PyTorch memory, this process has 39.42 GiB memory in use. Of the allocated memory 38.66 GiB is allocated by PyTorch, and 263.61 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+  0%|          | 0/372 [00:02<?, ?it/s]
+Training failed: CUDA out of memory. Tried to allocate 314.00 MiB. GPU 0 has a total capacity of 39.49 GiB of which 71.38 MiB is free. Including non-PyTorch memory, this process has 39.42 GiB memory in use. Of the allocated memory 38.66 GiB is allocated by PyTorch, and 263.61 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

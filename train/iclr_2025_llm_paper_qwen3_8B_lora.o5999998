@@ -1,0 +1,23 @@
+Downloading model Qwen/Qwen3-8B to /data/scratch/mpx602/model/paper_pred/base_model...
+Fetching 5 files:   0%|          | 0/5 [00:00<?, ?it/s]Fetching 5 files:  20%|██        | 1/5 [00:07<00:30,  7.59s/it]Fetching 5 files:  40%|████      | 2/5 [00:25<00:41, 13.89s/it]Fetching 5 files:  60%|██████    | 3/5 [00:33<00:21, 10.80s/it]Fetching 5 files:  80%|████████  | 4/5 [00:36<00:08,  8.02s/it]Fetching 5 files: 100%|██████████| 5/5 [00:43<00:00,  7.71s/it]Fetching 5 files: 100%|██████████| 5/5 [00:43<00:00,  8.79s/it]
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:03<00:13,  3.50s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:06<00:10,  3.45s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:10<00:06,  3.48s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:13<00:03,  3.27s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:13<00:00,  2.68s/it]
+Some weights of Qwen3ForSequenceClassification were not initialized from the model checkpoint at Qwen/Qwen3-8B and are newly initialized: ['score.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+/data/scratch/mpx602/topcon-1/train/dataset_builder.py:93: FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a future version, integer keys will always be treated as labels (consistent with DataFrame behavior). To access a value by position, use `ser.iloc[pos]`
+  'accepted (1)': label_counts.get(1, 0),
+/data/scratch/mpx602/topcon-1/train/dataset_builder.py:94: FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a future version, integer keys will always be treated as labels (consistent with DataFrame behavior). To access a value by position, use `ser.iloc[pos]`
+  'rejected (0)': label_counts.get(0, 0)
+Model downloaded and saved to /data/scratch/mpx602/model/paper_pred/base_model
+Processed 0 files
+Warning: 3720 files had no corresponding labels
+First few missing IDs: ['0L8wZ9WRah_', 'n7iwmPacDt_', 'mHx8JFURtn_', 'SOVwGa0H2c_', '49qqV4NTdy_']
+Traceback (most recent call last):
+  File "/data/scratch/mpx602/topcon-1/train/train.py", line 205, in <module>
+    main()
+  File "/data/scratch/mpx602/topcon-1/train/train.py", line 117, in main
+    stats = dataset_builder.get_dataset_stats(dataset)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/scratch/mpx602/topcon-1/train/dataset_builder.py", line 97, in get_dataset_stats
+    'avg_length_words': sum(text_lengths) / len(text_lengths),
+                        ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: division by zero

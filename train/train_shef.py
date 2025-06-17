@@ -12,7 +12,7 @@
 import os
 import torch
 import pandas as pd
-from datasets import Dataset, ClassLabel
+from datasets import Dataset
 from transformers import (
     AutoTokenizer, 
     AutoModelForSequenceClassification,
@@ -104,16 +104,21 @@ def split_dataset_stratified(dataset, test_size=0.2, seed=42):
 
 def main():
     # Configuration
-    MODEL_NAME = "Qwen3/Qwen3-8B"  # Using smaller model for testing
-    DATA_FOLDER = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text"
-    LABELS_FILE = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/label_simple.json"
+    MODEL_NAME = "Qwen/Qwen3-8B"  # or "meta-llama/Meta-Llama-3-8B"
+    DATA_FOLDER = "/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/"  # Update this path
+    LABELS_FILE = ""  # Update this path
     
     # Model directories
-    BASE_MODEL_CACHE = "/data/scratch/mpx602/model/paper_pred/base_model"
-    OUTPUT_DIR = "/data/scratch/mpx602/model/paper_pred/finetuned_model"
+    BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/base_model"  # Where to cache the downloaded model
+    OUTPUT_DIR = "/mnt/parscratch/users/acr24wz/etu/topcon/finetuned_model"   # Where to save the fine-tuned model
     
-    MAX_LENGTH = 20000  # Reduced further due to long texts (avg 10,878 words)
+    MAX_LENGTH = 20000  # Adjust based on memory constraints
     
+    # Create base model cache directory if it doesn't exist
+    os.makedirs(BASE_MODEL_CACHE, exist_ok=True)
+    # Create output directory if it doesn't exist
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
     # Download and cache the base model if not already cached
     config_file = os.path.join(BASE_MODEL_CACHE, "config.json")
     if not os.path.exists(config_file):
@@ -121,7 +126,7 @@ def main():
     else:
         print(f"Using cached model from {BASE_MODEL_CACHE}")
     
-    # LoRA configuration - adjusted for Qwen model
+    # LoRA configuration
     lora_config = LoraConfig(
         task_type=TaskType.SEQ_CLS,
         inference_mode=False,
@@ -147,11 +152,6 @@ def main():
     print(f"Label distribution: {stats['label_distribution']}")
     print(f"Average text length: {stats['text_stats']['avg_length_words']:.2f} words")
     
-    # Check if dataset is empty
-    if len(dataset) == 0:
-        print("❌ Dataset is empty. Exiting...")
-        return
-    
     # Split dataset using sklearn for proper stratification
     print("Splitting dataset...")
     train_test_split_result = split_dataset_stratified(dataset, test_size=0.2, seed=42)
@@ -162,7 +162,6 @@ def main():
     print(f"Test set: {len(eval_dataset)} samples")
     
     # Tokenize datasets
-    print("Tokenizing datasets...")
     train_dataset = train_dataset.map(
         lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
         batched=True,
@@ -176,7 +175,6 @@ def main():
     )
     
     # Load model from cached location
-    print("Loading model...")
     model = AutoModelForSequenceClassification.from_pretrained(
         BASE_MODEL_CACHE,
         num_labels=2,
@@ -191,20 +189,20 @@ def main():
     # Data collator
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
     
-    # Training arguments - adjusted for large dataset and long texts
+    # Training arguments
     training_args = TrainingArguments(
         output_dir=OUTPUT_DIR,
-        num_train_epochs=2,  # Reduced epochs for initial testing
-        per_device_train_batch_size=1,  # Very small batch size due to long texts
-        per_device_eval_batch_size=2,
-        gradient_accumulation_steps=16,  # Increased to maintain effective batch size
+        num_train_epochs=5,
+        per_device_train_batch_size=2,  # Adjust based on GPU memory
+        per_device_eval_batch_size=4,
+        gradient_accumulation_steps=8,
         warmup_steps=100,
         weight_decay=0.01,
         logging_dir=f"{OUTPUT_DIR}/logs",
         logging_steps=50,
         evaluation_strategy="steps",
-        eval_steps=500,  # Increased due to larger dataset
-        save_steps=500,
+        eval_steps=200,
+        save_steps=200,
         save_total_limit=3,
         load_best_model_at_end=True,
         metric_for_best_model="f1",
@@ -212,8 +210,6 @@ def main():
         fp16=True,
         dataloader_pin_memory=False,
         remove_unused_columns=False,
-        report_to=None,  # Disable wandb logging
-        dataloader_num_workers=0,  # Reduce memory usage
     )
     
     # Initialize trainer
@@ -229,23 +225,17 @@ def main():
     
     # Train the model
     print("Starting training...")
-    try:
-        trainer.train()
-        
-        # Save the fine-tuned model
-        print(f"Saving fine-tuned model to {OUTPUT_DIR}")
-        trainer.save_model()
-        tokenizer.save_pretrained(OUTPUT_DIR)
-        
-        # Final evaluation
-        eval_results = trainer.evaluate()
-        print(f"Final evaluation results: {eval_results}")
-        print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
-        
-    except Exception as e:
-        print(f"Training failed: {e}")
-        import traceback
-        traceback.print_exc()
+    trainer.train()
+    
+    # Save the fine-tuned model
+    print(f"Saving fine-tuned model to {OUTPUT_DIR}")
+    trainer.save_model()
+    tokenizer.save_pretrained(OUTPUT_DIR)
+    
+    # Final evaluation
+    eval_results = trainer.evaluate()
+    print(f"Final evaluation results: {eval_results}")
+    print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
 
 if __name__ == "__main__":
     main()

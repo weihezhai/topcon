@@ -1,0 +1,18 @@
+/data/scratch/mpx602/topcon-1/train/dataset_builder.py:93: FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a future version, integer keys will always be treated as labels (consistent with DataFrame behavior). To access a value by position, use `ser.iloc[pos]`
+  'accepted (1)': label_counts.get(1, 0),
+/data/scratch/mpx602/topcon-1/train/dataset_builder.py:94: FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a future version, integer keys will always be treated as labels (consistent with DataFrame behavior). To access a value by position, use `ser.iloc[pos]`
+  'rejected (0)': label_counts.get(0, 0)
+Using cached model from /data/scratch/mpx602/model/paper_pred/base_model
+Processed 0 files
+Warning: 3720 files had no corresponding labels
+First few missing IDs: ['0L8wZ9WRah_', 'n7iwmPacDt_', 'mHx8JFURtn_', 'SOVwGa0H2c_', '49qqV4NTdy_']
+Traceback (most recent call last):
+  File "/data/scratch/mpx602/topcon-1/train/train.py", line 205, in <module>
+    main()
+  File "/data/scratch/mpx602/topcon-1/train/train.py", line 117, in main
+    stats = dataset_builder.get_dataset_stats(dataset)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/scratch/mpx602/topcon-1/train/dataset_builder.py", line 97, in get_dataset_stats
+    'avg_length_words': sum(text_lengths) / len(text_lengths),
+                        ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: division by zero

@@ -201,7 +201,7 @@ def main():
         weight_decay=0.01,
         logging_dir=f"{OUTPUT_DIR}/logs",
         logging_steps=50,
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         eval_steps=200,
         save_steps=200,
         save_total_limit=3,

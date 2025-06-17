@@ -1,3 +1,32 @@
+<title_and_abstract>
+# Title and Abstract
+
+InfoNet:
+Missing Information Retrieval in
+Multi-Stream Sensing Systems
+Anonymous authors
+Paper under double-blind review
+Abstract
+Faulty sensors in a multiple input stream setup are more prone to corrupted
+input data streams, hindering the performance of Deep Neural Networks
+(DNN), which focus on deducing information from data. However, the rel-
+evant information among multiple input streams has correlations and con-
+tains mutual information. This paper utilizes this opportunity to retrieve
+perturbed information caused by corrupted input streams. We propose In-
+foNet, which estimates the information entropy at every element of the
+input feature to the network and retrieves the missing information in the
+input feature matrix. Finally, using the estimated information entropy and
+retrieved data, we introduce a novel guided replacement procedure to re-
+cover the complete information that is the input to the downstream DNN
+task. We evaluate the proposed algorithm for sound localization where au-
+dio streams from the microphone array are corrupted. We have recovered
+the performance drop due to the corrupted input stream and reduced the
+localization error with non-corrupted input streams. Finally, we assess the
+potential of using the proposed algorithm for retrieving information in other
+sensing modalities, e.g., wireless signal-based source localization.
+1
+</title_and_abstract>
+
 <introduction>
 # Introduction
 

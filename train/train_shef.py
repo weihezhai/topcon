@@ -130,7 +130,6 @@ def main():
     # LoRA configuration
     lora_config = LoraConfig(
         task_type=TaskType.SEQ_CLS,
-        use_bnb=False,
         inference_mode=False,
         r=16,
         lora_alpha=32,
@@ -196,8 +195,7 @@ def main():
     model = AutoModelForSequenceClassification.from_pretrained(
         BASE_MODEL_CACHE,
         num_labels=2,
-        torch_dtype=torch.float16,
-        device_map="auto"
+        torch_dtype=torch.float16
     )
 
     print(model) # <--- ADD THIS LINE

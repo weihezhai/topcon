@@ -113,7 +113,7 @@ def main():
     BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/base_model"  # Where to cache the downloaded model
     OUTPUT_DIR = "/mnt/parscratch/users/acr24wz/etu/topcon/finetuned_model"   # Where to save the fine-tuned model
     
-    MAX_LENGTH = 20000  # Adjust based on memory constraints
+    MAX_LENGTH = 10000 # Adjust based on memory constraints
     
     # Create base model cache directory if it doesn't exist
     os.makedirs(BASE_MODEL_CACHE, exist_ok=True)

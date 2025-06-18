@@ -105,13 +105,13 @@ def split_dataset_stratified(dataset, test_size=0.2, seed=42):
 
 def main():
     # Configuration
-    MODEL_NAME = "Qwen/Qwen3-8B"  # or "meta-llama/Meta-Llama-3-8B"
+    MODEL_NAME = "Qwen/Qwen3-1.7B"  # or "meta-llama/Meta-Llama-3-8B"
     DATA_FOLDER = "/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/"  # Update this path
     LABELS_FILE = "/mnt/parscratch/users/acr24wz/topcon/train/llm_paper/label_simple.json"  # Update this path
     
     # Model directories
-    BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/base_model"  # Where to cache the downloaded model
-    OUTPUT_DIR = "/mnt/parscratch/users/acr24wz/etu/topcon/finetuned_model"   # Where to save the fine-tuned model
+    BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B"  # Where to cache the downloaded model
+    OUTPUT_DIR = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model"   # Where to save the fine-tuned model
     
     MAX_LENGTH = 10000 # Adjust based on memory constraints
     
@@ -210,7 +210,6 @@ def main():
     # Training arguments
     training_args = TrainingArguments(
         output_dir=OUTPUT_DIR,
-        deepspeed="ds_config.json",
         num_train_epochs=5,
         per_device_train_batch_size=1,  # Adjust based on GPU memory
         per_device_eval_batch_size=1,

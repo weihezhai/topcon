@@ -46,6 +46,7 @@ def compute_metrics(eval_pred):
 
 def preprocess_function(examples, tokenizer, max_length=1024):
     """Tokenize the texts"""
+    # examples['text'] is already a list when batched=True
     result = tokenizer(
         examples['text'],
         truncation=True,
@@ -155,6 +156,8 @@ def main():
     if os.path.exists(os.path.join(PROCESSED_DATASET_CACHE, "dataset_dict.json")):
         print("Loading cached processed dataset...")
         dataset = load_from_disk(PROCESSED_DATASET_CACHE)
+        # Still need to create dataset_builder for stats
+        dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
     else:
         print("Processing dataset for the first time...")
         dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
@@ -179,6 +182,11 @@ def main():
     
     print(f"Train set: {len(train_dataset)} samples")
     print(f"Test set: {len(eval_dataset)} samples")
+    
+    # Debug: Check data types
+    print(f"Sample train data: {train_dataset[0]}")
+    print(f"Type of text: {type(train_dataset[0]['text'])}")
+    print(f"Type of labels: {type(train_dataset[0]['labels'])}")
     
     # Tokenize datasets
     train_dataset = train_dataset.map(

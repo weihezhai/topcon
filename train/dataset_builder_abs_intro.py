@@ -130,6 +130,8 @@ class TextDatasetBuilder:
                         with open(filepath, 'r', encoding='utf-8') as f:
                             text = f.read().strip()
                             if text:  # Only add non-empty texts
+                                # Apply abs_intro to extract only text before </introduction>
+                                text = self.abs_intro(text)
                                 texts.append(text)
                                 labels.append(label)
                                 processed_files += 1

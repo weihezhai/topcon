@@ -18,7 +18,7 @@ from transformers import (
     AutoModelForSequenceClassification,
     TrainingArguments, 
     Trainer,
-    DataCollatorWithPadding
+    DataCollatorForLanguageModeling  # Changed for causal LM
 )
 from peft import LoraConfig, get_peft_model, TaskType
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
@@ -30,19 +30,11 @@ from dataset_builder_abs_intro import TextDatasetBuilder
 from datasets import load_from_disk
 
 def compute_metrics(eval_pred):
-    """Compute metrics for evaluation"""
-    predictions, labels = eval_pred
-    predictions = np.argmax(predictions, axis=1)
-    
-    precision, recall, f1, _ = precision_recall_fscore_support(labels, predictions, average='binary')
-    accuracy = accuracy_score(labels, predictions)
-    
-    return {
-        'accuracy': accuracy,
-        'f1': f1,
-        'precision': precision,
-        'recall': recall
-    }
+    """Compute metrics for causal language modeling evaluation"""
+    # For language modeling, we typically just use perplexity
+    # which is calculated from the loss automatically
+    # We can add custom metrics here if needed
+    return {}
 
 def preprocess_function(examples, tokenizer, max_length=1024):
     """Tokenize the texts and prepare for token probability training"""
@@ -89,6 +81,12 @@ def preprocess_function(examples, tokenizer, max_length=1024):
         
         # Create labels (ignore input tokens, only compute loss on target tokens)
         label_ids = [-100] * len(result['input_ids'][i]) + target_encodings['input_ids'][i]
+        
+        # Ensure all sequences have the same length by truncating if needed
+        if len(full_input) > max_length:
+            full_input = full_input[:max_length]
+            full_mask = full_mask[:max_length]
+            label_ids = label_ids[:max_length]
         
         combined_input_ids.append(full_input)
         combined_attention_mask.append(full_mask)
@@ -159,7 +157,7 @@ def main():
     BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B"  # Where to cache the downloaded model
     OUTPUT_DIR = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model"   # Where to save the fine-tuned model
     
-    MAX_LENGTH = 4096 # Adjust based on memory constraints
+    MAX_LENGTH = 2048  # Reduced to avoid memory issues and ensure more consistent lengths
     
     # Create base model cache directory if it doesn't exist
     os.makedirs(BASE_MODEL_CACHE, exist_ok=True)
@@ -276,8 +274,12 @@ def main():
     
     print(f"Model parameters without LoRA:")
     
-    # Data collator
-    data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+    # Data collator for language modeling
+    data_collator = DataCollatorForLanguageModeling(
+        tokenizer=tokenizer,
+        mlm=False,  # Not masked language modeling
+        pad_to_multiple_of=8  # Padding optimization
+    )
     
     # Training arguments
     training_args = TrainingArguments(

@@ -241,10 +241,12 @@ def main():
     # Initialize the classification head properly
     if hasattr(model, 'classifier'):
         torch.nn.init.normal_(model.classifier.weight, std=0.02)
-        torch.nn.init.zeros_(model.classifier.bias)
+        if model.classifier.bias is not None:
+            torch.nn.init.zeros_(model.classifier.bias)
     elif hasattr(model, 'score'):
         torch.nn.init.normal_(model.score.weight, std=0.02)
-        torch.nn.init.zeros_(model.score.bias)
+        if model.score.bias is not None:
+            torch.nn.init.zeros_(model.score.bias)
 
     print(model) # <--- ADD THIS LINE
     

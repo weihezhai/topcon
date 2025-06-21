@@ -18,7 +18,8 @@ from transformers import (
     AutoModelForSequenceClassification,
     TrainingArguments, 
     Trainer,
-    DataCollatorForLanguageModeling  # Changed for causal LM
+    DataCollatorForLanguageModeling,  # Changed for causal LM
+    default_data_collator
 )
 from peft import LoraConfig, get_peft_model, TaskType
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
@@ -185,6 +186,9 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_CACHE)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+    # Ensure pad_token_id is set
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token_id = tokenizer.eos_token_id
     
     # Load and prepare dataset
     print("Loading dataset...")
@@ -275,10 +279,9 @@ def main():
     print(f"Model parameters without LoRA:")
     
     # Data collator for language modeling
-    data_collator = DataCollatorForLanguageModeling(
+    data_collator = CustomDataCollator(
         tokenizer=tokenizer,
-        mlm=False,  # Not masked language modeling
-        pad_to_multiple_of=8  # Padding optimization
+        max_length=MAX_LENGTH
     )
     
     # Training arguments

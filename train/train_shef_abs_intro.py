@@ -45,19 +45,60 @@ def compute_metrics(eval_pred):
     }
 
 def preprocess_function(examples, tokenizer, max_length=1024):
-    """Tokenize the texts"""
-    # examples['text'] is already a list when batched=True
+    """Tokenize the texts and prepare for token probability training"""
+    # Create prompts that ask for accept/reject decision
+    prompts = []
+    for text in examples['text']:
+        prompt = f"Based on this research paper abstract and introduction, should this paper be accepted or rejected?\n\nPaper content:\n{text}\n\nDecision:"
+        prompts.append(prompt)
+    
+    # Tokenize the prompts
     result = tokenizer(
-        examples['text'],
+        prompts,
         truncation=True,
-        padding=False,  # Let the data collator handle padding
-        max_length=max_length,
+        padding=False,
+        max_length=max_length-10,  # Leave space for answer tokens
         return_attention_mask=True,
         return_token_type_ids=False
     )
-    # Ensure labels are included in the output
-    result['labels'] = examples['labels']
-    return result
+    
+    # Add target tokens based on labels
+    target_tokens = []
+    for label in examples['labels']:
+        if label == 1:
+            target_tokens.append(" accept")
+        else:
+            target_tokens.append(" reject")
+    
+    # Tokenize target tokens
+    target_encodings = tokenizer(
+        target_tokens,
+        add_special_tokens=False,
+        return_attention_mask=False
+    )
+    
+    # Combine input and target
+    combined_input_ids = []
+    combined_attention_mask = []
+    labels_for_loss = []
+    
+    for i in range(len(result['input_ids'])):
+        # Combine input + target
+        full_input = result['input_ids'][i] + target_encodings['input_ids'][i]
+        full_mask = result['attention_mask'][i] + [1] * len(target_encodings['input_ids'][i])
+        
+        # Create labels (ignore input tokens, only compute loss on target tokens)
+        label_ids = [-100] * len(result['input_ids'][i]) + target_encodings['input_ids'][i]
+        
+        combined_input_ids.append(full_input)
+        combined_attention_mask.append(full_mask)
+        labels_for_loss.append(label_ids)
+    
+    return {
+        'input_ids': combined_input_ids,
+        'attention_mask': combined_attention_mask,
+        'labels': labels_for_loss
+    }
 
 def download_and_save_model(model_name, cache_dir):
     """Download and save the base model locally"""
@@ -70,10 +111,10 @@ def download_and_save_model(model_name, cache_dir):
     tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
     tokenizer.save_pretrained(cache_dir)
     
-    # Download model
-    model = AutoModelForSequenceClassification.from_pretrained(
+    # Download model for causal language modeling
+    from transformers import AutoModelForCausalLM
+    model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        num_labels=2,
         torch_dtype=torch.float16,
         cache_dir=cache_dir
     )
@@ -132,14 +173,14 @@ def main():
     else:
         print(f"Using cached model from {BASE_MODEL_CACHE}")
     
-    # LoRA configuration
+    # LoRA configuration for causal LM
     lora_config = LoraConfig(
-        task_type=TaskType.SEQ_CLS,
+        task_type=TaskType.CAUSAL_LM,  # Changed from SEQ_CLS
         inference_mode=False,
-        r=8,  # Much smaller rank for stability
-        lora_alpha=16,  # Reduced alpha
+        r=8,
+        lora_alpha=16,
         lora_dropout=0.1,
-        target_modules=["q_proj", "v_proj"]  # Only target key projection layers
+        target_modules=["q_proj", "v_proj"]
     )
     
     # Load tokenizer from cached model
@@ -192,32 +233,21 @@ def main():
     print(f"First text sample length: {len(train_dataset[0]['text'])}")
     print(f"Text preview: {train_dataset[0]['text'][:100]}...")
     
-    # Tokenize datasets
+    # Tokenize datasets using the new approach
     print("Tokenizing datasets...")
     
-    def tokenize_function(examples):
-        # Simple tokenization without excessive debug output
-        result = tokenizer(
-            examples['text'],
-            truncation=True,
-            padding=False,  # Let DataCollator handle padding
-            max_length=MAX_LENGTH,
-        )
-        return result
-    
-    # Process small batches to avoid memory issues
     train_dataset = train_dataset.map(
-        tokenize_function,
+        lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
         batched=True,
         batch_size=100,  # Process in smaller batches
-        remove_columns=['text']  # Remove text column but keep labels
+        remove_columns=['text', 'labels']  # Remove original columns
     )
     
     eval_dataset = eval_dataset.map(
-        tokenize_function,
+        lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
         batched=True,
         batch_size=100,  # Process in smaller batches
-        remove_columns=['text']  # Remove text column but keep labels
+        remove_columns=['text', 'labels']  # Remove original columns
     )
     
     print("Tokenization complete")
@@ -231,24 +261,14 @@ def main():
     print(f"Sample labels type: {type(sample['labels'])}")
     print(f"Sample labels value: {sample['labels']}")
     
-    # Load model from cached location
-    model = AutoModelForSequenceClassification.from_pretrained(
+    # Load model from cached location (now using CausalLM)
+    from transformers import AutoModelForCausalLM
+    model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL_CACHE,
-        num_labels=2,
         torch_dtype=torch.float32  # Use full precision
     )
-    
-    # Initialize the classification head properly
-    if hasattr(model, 'classifier'):
-        torch.nn.init.normal_(model.classifier.weight, std=0.02)
-        if model.classifier.bias is not None:
-            torch.nn.init.zeros_(model.classifier.bias)
-    elif hasattr(model, 'score'):
-        torch.nn.init.normal_(model.score.weight, std=0.02)
-        if model.score.bias is not None:
-            torch.nn.init.zeros_(model.score.bias)
 
-    print(model) # <--- ADD THIS LINE
+    print(model)
     
     # Apply LoRA - TEMPORARILY DISABLED FOR DEBUGGING
     # model = get_peft_model(model, lora_config)
@@ -266,7 +286,7 @@ def main():
         per_device_train_batch_size=1,
         per_device_eval_batch_size=1,
         gradient_accumulation_steps=4,  # Smaller accumulation
-        learning_rate=1e-7,  # Extremely small learning rate
+        learning_rate=1e-5,  # More reasonable learning rate for causal LM
         warmup_steps=20,  # Smaller warmup
         weight_decay=0.001,  # Smaller weight decay
         logging_dir=f"{OUTPUT_DIR}/logs",
@@ -276,15 +296,15 @@ def main():
         save_steps=50,
         save_total_limit=2,
         load_best_model_at_end=True,
-        metric_for_best_model="f1",
-        greater_is_better=True,
+        metric_for_best_model="eval_loss",  # Use eval_loss for causal LM
+        greater_is_better=False,  # Lower loss is better
         fp16=False,  # Disable fp16 for more stability
         dataloader_pin_memory=False,
         remove_unused_columns=False,
         label_names=["labels"],
-        max_grad_norm=0.5,  # Much stricter gradient clipping
+        max_grad_norm=1.0,  # Less aggressive gradient clipping
         adam_epsilon=1e-8,
-        lr_scheduler_type="constant",  # Constant learning rate
+        lr_scheduler_type="linear",  # Linear scheduler
         optim="adamw_torch"  # Use standard AdamW
     )
     

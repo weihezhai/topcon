@@ -30,6 +30,43 @@ import numpy as np
 from dataset_builder_abs_intro import TextDatasetBuilder
 from datasets import load_from_disk
 
+class CustomDataCollator:
+    """Custom data collator that handles variable-length sequences"""
+    def __init__(self, tokenizer, max_length=2048):
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+    
+    def __call__(self, features):
+        # Find the maximum length in this batch
+        max_len = max(len(f['input_ids']) for f in features)
+        max_len = min(max_len, self.max_length)  # Don't exceed max_length
+        
+        batch = {
+            'input_ids': [],
+            'attention_mask': [],
+            'labels': []
+        }
+        
+        for feature in features:
+            input_ids = feature['input_ids'][:max_len]
+            attention_mask = feature['attention_mask'][:max_len]
+            labels = feature['labels'][:max_len]
+            
+            # Pad to max_len
+            pad_length = max_len - len(input_ids)
+            if pad_length > 0:
+                input_ids.extend([self.tokenizer.pad_token_id] * pad_length)
+                attention_mask.extend([0] * pad_length)
+                labels.extend([-100] * pad_length)
+            
+            batch['input_ids'].append(input_ids)
+            batch['attention_mask'].append(attention_mask)
+            batch['labels'].append(labels)
+        
+        # Convert to tensors
+        batch = {k: torch.tensor(v) for k, v in batch.items()}
+        return batch
+
 def compute_metrics(eval_pred):
     """Compute metrics for causal language modeling evaluation"""
     # For language modeling, we typically just use perplexity

@@ -235,7 +235,7 @@ def main():
     model = AutoModelForSequenceClassification.from_pretrained(
         BASE_MODEL_CACHE,
         num_labels=2,
-        torch_dtype=torch.float16
+        torch_dtype=torch.float32  # Use full precision
     )
     
     # Initialize the classification head properly
@@ -250,9 +250,11 @@ def main():
 
     print(model) # <--- ADD THIS LINE
     
-    # Apply LoRA
-    model = get_peft_model(model, lora_config)
-    model.print_trainable_parameters()
+    # Apply LoRA - TEMPORARILY DISABLED FOR DEBUGGING
+    # model = get_peft_model(model, lora_config)
+    # model.print_trainable_parameters()
+    
+    print(f"Model parameters without LoRA:")
     
     # Data collator
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
@@ -264,7 +266,7 @@ def main():
         per_device_train_batch_size=1,
         per_device_eval_batch_size=1,
         gradient_accumulation_steps=4,  # Smaller accumulation
-        learning_rate=1e-6,  # Much smaller learning rate
+        learning_rate=1e-7,  # Extremely small learning rate
         warmup_steps=20,  # Smaller warmup
         weight_decay=0.001,  # Smaller weight decay
         logging_dir=f"{OUTPUT_DIR}/logs",

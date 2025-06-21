@@ -50,8 +50,10 @@ def preprocess_function(examples, tokenizer, max_length=1024):
     result = tokenizer(
         examples['text'],
         truncation=True,
-        padding=True,
-        max_length=max_length
+        padding=False,  # Let the data collator handle padding
+        max_length=max_length,
+        return_attention_mask=True,
+        return_token_type_ids=False
     )
     # Ensure labels are included in the output
     result['labels'] = examples['labels']
@@ -183,21 +185,47 @@ def main():
     print(f"Train set: {len(train_dataset)} samples")
     print(f"Test set: {len(eval_dataset)} samples")
     
-    # Debug: Check data types
+    # Debug: Check data types and first few samples
     print(f"Sample train data: {train_dataset[0]}")
     print(f"Type of text: {type(train_dataset[0]['text'])}")
     print(f"Type of labels: {type(train_dataset[0]['labels'])}")
+    print(f"First text sample length: {len(train_dataset[0]['text'])}")
+    print(f"Text preview: {train_dataset[0]['text'][:100]}...")
     
     # Tokenize datasets
+    print("Tokenizing datasets...")
+    
+    def tokenize_function(examples):
+        print(f"Tokenizing batch of {len(examples['text'])} examples")
+        print(f"First text type: {type(examples['text'][0])}")
+        print(f"First text length: {len(examples['text'][0])}")
+        result = tokenizer(
+            examples['text'],
+            truncation=True,
+            padding=False,  # Let DataCollator handle padding
+            max_length=MAX_LENGTH,
+        )
+        print(f"Tokenized result keys: {result.keys()}")
+        print(f"First input_ids shape: {len(result['input_ids'][0])}")
+        return result
+    
     train_dataset = train_dataset.map(
-        lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
-        batched=True
+        tokenize_function,
+        batched=True,
+        remove_columns=['text']  # Remove text column but keep labels
     )
     
     eval_dataset = eval_dataset.map(
-        lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
-        batched=True
+        tokenize_function,
+        batched=True,
+        remove_columns=['text']  # Remove text column but keep labels
     )
+    
+    # Set format for PyTorch
+    train_dataset.set_format("torch")
+    eval_dataset.set_format("torch")
+    
+    print("Tokenization complete")
     
     # Load model from cached location
     model = AutoModelForSequenceClassification.from_pretrained(

@@ -195,7 +195,7 @@ def main():
     BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B"  # Where to cache the downloaded model
     OUTPUT_DIR = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model"   # Where to save the fine-tuned model
     
-    MAX_LENGTH = 2048  # Further reduced to save memory
+    MAX_LENGTH = 1400  # Further reduced to save memory
     
     # Create base model cache directory if it doesn't exist
     os.makedirs(BASE_MODEL_CACHE, exist_ok=True)
@@ -304,7 +304,7 @@ def main():
     from transformers import AutoModelForCausalLM
     model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL_CACHE,
-        torch_dtype=torch.float16  # Use half precision to save memory
+        torch_dtype=torch.float32  # Back to full precision for stability
     )
 
     print(model)
@@ -328,7 +328,7 @@ def main():
         per_device_train_batch_size=1,
         per_device_eval_batch_size=1,
         gradient_accumulation_steps=8,  # Increased to maintain effective batch size
-        learning_rate=1e-5,
+        learning_rate=1e-5,  # Even smaller learning rate
         warmup_steps=20,
         weight_decay=0.001,
         logging_dir=f"{OUTPUT_DIR}/logs",
@@ -340,11 +340,11 @@ def main():
         load_best_model_at_end=False,  # Disable to save memory
         metric_for_best_model="eval_loss",
         greater_is_better=False,
-        fp16=True,  # Enable fp16 to save memory
+        fp16=False,  # Disable fp16 for stability
         dataloader_pin_memory=False,
         remove_unused_columns=False,
         label_names=["labels"],
-        max_grad_norm=1.0,
+        max_grad_norm=1.0,  # Much stricter gradient clipping
         adam_epsilon=1e-8,
         lr_scheduler_type="linear",
         optim="adamw_torch",

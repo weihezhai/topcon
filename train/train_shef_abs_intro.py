@@ -200,7 +200,7 @@ def main():
     BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B"  # Where to cache the downloaded model
     OUTPUT_DIR = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model"   # Where to save the fine-tuned model
     
-    MAX_LENGTH = 1400  # Further reduced to save memory
+    MAX_LENGTH = 2048 # Further reduced to save memory
     
     # Print GPU information
     if torch.cuda.is_available():

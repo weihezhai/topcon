@@ -195,7 +195,7 @@ def main():
     BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B"  # Where to cache the downloaded model
     OUTPUT_DIR = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model"   # Where to save the fine-tuned model
     
-    MAX_LENGTH = 2048  # Reduced to avoid memory issues and ensure more consistent lengths
+    MAX_LENGTH = 2048  # Further reduced to save memory
     
     # Create base model cache directory if it doesn't exist
     os.makedirs(BASE_MODEL_CACHE, exist_ok=True)
@@ -304,7 +304,7 @@ def main():
     from transformers import AutoModelForCausalLM
     model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL_CACHE,
-        torch_dtype=torch.float32  # Use full precision
+        torch_dtype=torch.float16  # Use half precision to save memory
     )
 
     print(model)
@@ -327,27 +327,29 @@ def main():
         num_train_epochs=3,
         per_device_train_batch_size=1,
         per_device_eval_batch_size=1,
-        gradient_accumulation_steps=4,  # Smaller accumulation
-        learning_rate=1e-5,  # More reasonable learning rate for causal LM
-        warmup_steps=20,  # Smaller warmup
-        weight_decay=0.001,  # Smaller weight decay
+        gradient_accumulation_steps=8,  # Increased to maintain effective batch size
+        learning_rate=1e-5,
+        warmup_steps=20,
+        weight_decay=0.001,
         logging_dir=f"{OUTPUT_DIR}/logs",
-        logging_steps=5,
+        logging_steps=10,  # Reduce logging frequency
         eval_strategy="steps",
-        eval_steps=50,
-        save_steps=50,
+        eval_steps=100,  # Reduce evaluation frequency to save memory
+        save_steps=100,
         save_total_limit=2,
-        load_best_model_at_end=True,
-        metric_for_best_model="eval_loss",  # Use eval_loss for causal LM
-        greater_is_better=False,  # Lower loss is better
-        fp16=False,  # Disable fp16 for more stability
+        load_best_model_at_end=False,  # Disable to save memory
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
+        fp16=True,  # Enable fp16 to save memory
         dataloader_pin_memory=False,
         remove_unused_columns=False,
         label_names=["labels"],
-        max_grad_norm=1.0,  # Less aggressive gradient clipping
+        max_grad_norm=1.0,
         adam_epsilon=1e-8,
-        lr_scheduler_type="linear",  # Linear scheduler
-        optim="adamw_torch"  # Use standard AdamW
+        lr_scheduler_type="linear",
+        optim="adamw_torch",
+        eval_accumulation_steps=1,  # Process eval in smaller chunks
+        dataloader_num_workers=0  # Disable multiprocessing to save memory
     )
     
     # Initialize trainer

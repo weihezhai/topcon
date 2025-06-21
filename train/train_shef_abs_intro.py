@@ -196,36 +196,40 @@ def main():
     print("Tokenizing datasets...")
     
     def tokenize_function(examples):
-        print(f"Tokenizing batch of {len(examples['text'])} examples")
-        print(f"First text type: {type(examples['text'][0])}")
-        print(f"First text length: {len(examples['text'][0])}")
+        # Simple tokenization without excessive debug output
         result = tokenizer(
             examples['text'],
             truncation=True,
             padding=False,  # Let DataCollator handle padding
             max_length=MAX_LENGTH,
         )
-        print(f"Tokenized result keys: {result.keys()}")
-        print(f"First input_ids shape: {len(result['input_ids'][0])}")
         return result
     
+    # Process small batches to avoid memory issues
     train_dataset = train_dataset.map(
         tokenize_function,
         batched=True,
+        batch_size=100,  # Process in smaller batches
         remove_columns=['text']  # Remove text column but keep labels
     )
     
     eval_dataset = eval_dataset.map(
         tokenize_function,
         batched=True,
+        batch_size=100,  # Process in smaller batches
         remove_columns=['text']  # Remove text column but keep labels
     )
     
-    # Set format for PyTorch
-    train_dataset.set_format("torch")
-    eval_dataset.set_format("torch")
-    
     print("Tokenization complete")
+    print(f"Train dataset columns: {train_dataset.column_names}")
+    print(f"Train dataset sample: {train_dataset[0]}")
+    
+    # Debug tensor shapes
+    sample = train_dataset[0]
+    print(f"Sample input_ids type: {type(sample['input_ids'])}")
+    print(f"Sample input_ids length: {len(sample['input_ids'])}")
+    print(f"Sample labels type: {type(sample['labels'])}")
+    print(f"Sample labels value: {sample['labels']}")
     
     # Load model from cached location
     model = AutoModelForSequenceClassification.from_pretrained(
@@ -233,6 +237,14 @@ def main():
         num_labels=2,
         torch_dtype=torch.float16
     )
+    
+    # Initialize the classification head properly
+    if hasattr(model, 'classifier'):
+        torch.nn.init.normal_(model.classifier.weight, std=0.02)
+        torch.nn.init.zeros_(model.classifier.bias)
+    elif hasattr(model, 'score'):
+        torch.nn.init.normal_(model.score.weight, std=0.02)
+        torch.nn.init.zeros_(model.score.bias)
 
     print(model) # <--- ADD THIS LINE
     
@@ -246,18 +258,19 @@ def main():
     # Training arguments
     training_args = TrainingArguments(
         output_dir=OUTPUT_DIR,
-        num_train_epochs=5,
-        per_device_train_batch_size=1,  # Adjust based on GPU memory
+        num_train_epochs=3,  # Reduced epochs
+        per_device_train_batch_size=1,
         per_device_eval_batch_size=1,
-        gradient_accumulation_steps=16,
-        warmup_steps=100,
+        gradient_accumulation_steps=8,  # Reduced accumulation
+        learning_rate=5e-6,  # Even smaller learning rate
+        warmup_steps=50,  # Reduced warmup
         weight_decay=0.01,
         logging_dir=f"{OUTPUT_DIR}/logs",
-        logging_steps=50,
+        logging_steps=10,
         eval_strategy="steps",
-        eval_steps=200,
-        save_steps=200,
-        save_total_limit=3,
+        eval_steps=100,
+        save_steps=100,
+        save_total_limit=2,
         load_best_model_at_end=True,
         metric_for_best_model="f1",
         greater_is_better=True,
@@ -265,6 +278,9 @@ def main():
         dataloader_pin_memory=False,
         remove_unused_columns=False,
         label_names=["labels"],
+        max_grad_norm=1.0,  # Gradient clipping to prevent explosion
+        adam_epsilon=1e-8,
+        lr_scheduler_type="linear"
     )
     
     # Initialize trainer

@@ -38,6 +38,35 @@ class TextDatasetBuilder:
             # If no </introduction> tag found, return original text
             return text.strip()
     
+    def clean_text(self, text):
+        """Remove specific phrases that might leak review status information and title/author sections"""
+        # Remove title and authors section between '# Title and Abstract' and 'ABSTRACT'
+        title_start = "# Title and Abstract"
+        abstract_start = "ABSTRACT"
+        
+        if title_start in text and abstract_start in text:
+            # Find the positions
+            start_pos = text.find(title_start)
+            end_pos = text.find(abstract_start, start_pos)
+            if start_pos != -1 and end_pos != -1:
+                # Remove everything between (including the title marker but keeping ABSTRACT)
+                text = text[:start_pos] + text[end_pos:]
+        
+        # Remove specific phrases that might leak review status
+        phrases_to_remove = [
+            "Published as a conference paper at ICLR 2025",
+            "Paper under double-blind review",
+            "Anonymous authors"
+        ]
+        
+        cleaned_text = text
+        for phrase in phrases_to_remove:
+            cleaned_text = cleaned_text.replace(phrase, "")
+        
+        # Clean up extra whitespace that might be left after removal
+        cleaned_text = " ".join(cleaned_text.split())
+        return cleaned_text
+    
     def debug_label_matching(self):
         """Debug function to check label matching issues"""
         print("\n=== DEBUGGING LABEL MATCHING ===")
@@ -130,6 +159,8 @@ class TextDatasetBuilder:
                         with open(filepath, 'r', encoding='utf-8') as f:
                             text = f.read().strip()
                             if text:  # Only add non-empty texts
+                                # Clean text to remove phrases that might leak review status
+                                text = self.clean_text(text)
                                 # Apply abs_intro to extract only text before </introduction>
                                 text = self.abs_intro(text)
                                 texts.append(text)

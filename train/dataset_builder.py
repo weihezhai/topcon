@@ -38,6 +38,22 @@ class TextDatasetBuilder:
             # If no </introduction> tag found, return original text
             return text.strip()
     
+    def clean_text(self, text):
+        """Remove specific phrases that might leak review status information"""
+        phrases_to_remove = [
+            "Published as a conference paper at ICLR 2025",
+            "Paper under double-blind review",
+            "Anonymous authors"
+        ]
+        
+        cleaned_text = text
+        for phrase in phrases_to_remove:
+            cleaned_text = cleaned_text.replace(phrase, "")
+        
+        # Clean up extra whitespace that might be left after removal
+        cleaned_text = " ".join(cleaned_text.split())
+        return cleaned_text
+    
     def debug_label_matching(self):
         """Debug function to check label matching issues"""
         print("\n=== DEBUGGING LABEL MATCHING ===")
@@ -130,6 +146,8 @@ class TextDatasetBuilder:
                         with open(filepath, 'r', encoding='utf-8') as f:
                             text = f.read().strip()
                             if text:  # Only add non-empty texts
+                                # Clean text to remove phrases that might leak review status
+                                text = self.clean_text(text)
                                 texts.append(text)
                                 labels.append(label)
                                 processed_files += 1

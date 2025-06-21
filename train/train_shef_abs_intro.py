@@ -25,10 +25,12 @@ from peft import LoraConfig, get_peft_model, TaskType
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.model_selection import train_test_split
 import numpy as np
+import torch.nn as nn
 
 # Import the dataset builder
 from dataset_builder_abs_intro import TextDatasetBuilder
 from datasets import load_from_disk
+from accelerate import Accelerator
 
 class CustomDataCollator:
     """Custom data collator that handles variable-length sequences"""
@@ -151,7 +153,7 @@ def download_and_save_model(model_name, cache_dir):
     from transformers import AutoModelForCausalLM
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float16,
+        torch_dtype=torch.float32,
         cache_dir=cache_dir
     )
     model.save_pretrained(cache_dir)
@@ -186,6 +188,9 @@ def split_dataset_stratified(dataset, test_size=0.2, seed=42):
     return {'train': train_dataset, 'test': test_dataset}
 
 def main():
+    # Initialize accelerator for distributed training
+    accelerator = Accelerator()
+    
     # Configuration
     MODEL_NAME = "Qwen/Qwen3-1.7B"  # or "meta-llama/Meta-Llama-3-8B"
     DATA_FOLDER = "/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/"  # Update this path
@@ -196,6 +201,13 @@ def main():
     OUTPUT_DIR = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model"   # Where to save the fine-tuned model
     
     MAX_LENGTH = 1400  # Further reduced to save memory
+    
+    # Print GPU information
+    if torch.cuda.is_available():
+        print(f"Number of GPUs available: {torch.cuda.device_count()}")
+        for i in range(torch.cuda.device_count()):
+            gpu_memory = torch.cuda.get_device_properties(i).total_memory / 1024**3
+            print(f"GPU {i}: {torch.cuda.get_device_name(i)} - {gpu_memory:.1f} GB")
     
     # Create base model cache directory if it doesn't exist
     os.makedirs(BASE_MODEL_CACHE, exist_ok=True)
@@ -304,12 +316,17 @@ def main():
     from transformers import AutoModelForCausalLM
     model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL_CACHE,
-        torch_dtype=torch.float32  # Back to full precision for stability
+        torch_dtype=torch.float32,  # Use fp16 for memory efficiency
+        device_map="auto"  # Enable automatic device mapping for model parallelism
     )
 
     print(model)
     
-    # Apply LoRA - TEMPORARILY DISABLED FOR DEBUGGING
+    # Check if model is distributed across multiple GPUs
+    if hasattr(model, 'hf_device_map'):
+        print(f"Model device map: {model.hf_device_map}")
+    
+    # Apply LoRA - DISABLED for debugging
     # model = get_peft_model(model, lora_config)
     # model.print_trainable_parameters()
     
@@ -325,7 +342,7 @@ def main():
     training_args = TrainingArguments(
         output_dir=OUTPUT_DIR,
         num_train_epochs=3,
-        per_device_train_batch_size=1,
+        per_device_train_batch_size=2,
         per_device_eval_batch_size=1,
         gradient_accumulation_steps=8,  # Increased to maintain effective batch size
         learning_rate=1e-5,  # Even smaller learning rate
@@ -340,7 +357,7 @@ def main():
         load_best_model_at_end=False,  # Disable to save memory
         metric_for_best_model="eval_loss",
         greater_is_better=False,
-        fp16=False,  # Disable fp16 for stability
+        fp16=False,  # Enable fp16 for memory efficiency
         dataloader_pin_memory=False,
         remove_unused_columns=False,
         label_names=["labels"],
@@ -349,7 +366,9 @@ def main():
         lr_scheduler_type="linear",
         optim="adamw_torch",
         eval_accumulation_steps=1,  # Process eval in smaller chunks
-        dataloader_num_workers=0  # Disable multiprocessing to save memory
+        dataloader_num_workers=0,  # Disable multiprocessing to save memory
+        ddp_find_unused_parameters=False,  # Optimize for model parallelism
+        deepspeed=None,  # Can be configured for ZeRO if needed
     )
     
     # Initialize trainer
@@ -361,6 +380,11 @@ def main():
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
+    )
+    
+    # Prepare everything with accelerator for model parallelism
+    model, trainer.optimizer, train_dataset, eval_dataset = accelerator.prepare(
+        model, trainer.optimizer, train_dataset, eval_dataset
     )
     
     # Train the model

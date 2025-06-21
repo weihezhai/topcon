@@ -46,13 +46,15 @@ def compute_metrics(eval_pred):
 
 def preprocess_function(examples, tokenizer, max_length=1024):
     """Tokenize the texts"""
-    return tokenizer(
+    result = tokenizer(
         examples['text'],
         truncation=True,
         padding=True,
-        max_length=max_length,
-        return_tensors='pt'
+        max_length=max_length
     )
+    # Ensure labels are included in the output
+    result['labels'] = examples['labels']
+    return result
 
 def download_and_save_model(model_name, cache_dir):
     """Download and save the base model locally"""
@@ -181,14 +183,12 @@ def main():
     # Tokenize datasets
     train_dataset = train_dataset.map(
         lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
-        batched=True,
-        remove_columns=train_dataset.column_names
+        batched=True
     )
     
     eval_dataset = eval_dataset.map(
         lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
-        batched=True,
-        remove_columns=eval_dataset.column_names
+        batched=True
     )
     
     # Load model from cached location
@@ -228,6 +228,7 @@ def main():
         fp16=True,
         dataloader_pin_memory=False,
         remove_unused_columns=False,
+        label_names=["labels"],
     )
     
     # Initialize trainer

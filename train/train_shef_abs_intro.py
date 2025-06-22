@@ -395,7 +395,7 @@ def main():
         logging_dir=f"{OUTPUT_DIR}/logs",
         logging_steps=10,  # Reduce logging frequency
         eval_strategy="steps",
-        eval_steps=200,  # Increase evaluation frequency to save memory
+        eval_steps=100,  # Increase evaluation frequency to save memory
         save_steps=200,
         save_total_limit=2,
         load_best_model_at_end=False,  # Disable to save memory

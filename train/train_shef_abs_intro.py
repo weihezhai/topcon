@@ -187,6 +187,20 @@ def split_dataset_stratified(dataset, test_size=0.2, seed=42):
     
     return {'train': train_dataset, 'test': test_dataset}
 
+def custom_evaluate_with_memory_cleanup(trainer, eval_dataset=None):
+    """Custom evaluation that clears memory cache to prevent slowdown"""
+    # Clear GPU cache before evaluation
+    torch.cuda.empty_cache()
+    
+    # Run evaluation
+    with torch.no_grad():
+        eval_results = trainer.evaluate(eval_dataset=eval_dataset)
+    
+    # Clear GPU cache after evaluation
+    torch.cuda.empty_cache()
+    
+    return eval_results
+
 def main():
     # Initialize accelerator for distributed training
     accelerator = Accelerator()
@@ -273,9 +287,12 @@ def main():
     train_test_split_result = split_dataset_stratified(dataset, test_size=0.2, seed=42)
     train_dataset = train_test_split_result['train']
     eval_dataset = train_test_split_result['test']
+
+    # Create a smaller subset for faster evaluation during training
+    small_eval_dataset = eval_dataset.select(range(min(50, len(eval_dataset))))  # Even smaller for faster eval
     
     print(f"Train set: {len(train_dataset)} samples")
-    print(f"Test set: {len(eval_dataset)} samples")
+    print(f"Test set: {len(eval_dataset)} samples ({len(small_eval_dataset)} used for periodic eval)")
     
     # Debug: Check data types and first few samples
     print(f"Sample train data: {train_dataset[0]}")
@@ -299,6 +316,14 @@ def main():
         batched=True,
         batch_size=100,  # Process in smaller batches
         remove_columns=['text', 'labels']  # Remove original columns
+    )
+    
+    # Also tokenize the small eval dataset for periodic evaluation
+    small_eval_dataset = small_eval_dataset.map(
+        lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
+        batched=True,
+        batch_size=100,
+        remove_columns=['text', 'labels']
     )
     
     print("Tokenization complete")
@@ -351,8 +376,8 @@ def main():
         logging_dir=f"{OUTPUT_DIR}/logs",
         logging_steps=10,  # Reduce logging frequency
         eval_strategy="steps",
-        eval_steps=100,  # Reduce evaluation frequency to save memory
-        save_steps=100,
+        eval_steps=200,  # Increase evaluation frequency to save memory
+        save_steps=200,
         save_total_limit=2,
         load_best_model_at_end=False,  # Disable to save memory
         metric_for_best_model="eval_loss",
@@ -365,10 +390,12 @@ def main():
         adam_epsilon=1e-8,
         lr_scheduler_type="linear",
         optim="adamw_torch",
-        eval_accumulation_steps=1,  # Process eval in smaller chunks
+        eval_accumulation_steps=4,  # Process eval in smaller chunks
         dataloader_num_workers=0,  # Disable multiprocessing to save memory
         ddp_find_unused_parameters=False,  # Optimize for model parallelism
         deepspeed=None,  # Can be configured for ZeRO if needed
+        prediction_loss_only=True,  # Only compute loss during evaluation
+        skip_memory_metrics=True,  # Skip memory metrics to save memory
     )
     
     # Initialize trainer
@@ -376,7 +403,7 @@ def main():
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
+        eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
@@ -389,6 +416,17 @@ def main():
     
     # Train the model
     print("Starting training...")
+    
+    # Override evaluation to use memory cleanup
+    original_evaluate = trainer.evaluate
+    def memory_safe_evaluate(*args, **kwargs):
+        torch.cuda.empty_cache()
+        with torch.no_grad():
+            result = original_evaluate(*args, **kwargs)
+        torch.cuda.empty_cache()
+        return result
+    trainer.evaluate = memory_safe_evaluate
+    
     trainer.train()
     
     # Save the fine-tuned model
@@ -397,7 +435,7 @@ def main():
     tokenizer.save_pretrained(OUTPUT_DIR)
     
     # Final evaluation
-    eval_results = trainer.evaluate()
+    eval_results = custom_evaluate_with_memory_cleanup(trainer)
     print(f"Final evaluation results: {eval_results}")
     print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
 

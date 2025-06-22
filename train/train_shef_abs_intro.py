@@ -243,20 +243,23 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10):
         trainer.args.prediction_loss_only = False
         
         with torch.no_grad():
+            # Use trainer.predict to get predictions
+            eval_output = trainer.predict(batch_dataset)
+            predictions = eval_output.predictions
+            labels = eval_output.label_ids
+            
+            # Convert logits to predicted tokens
+            predictions = np.argmax(predictions, axis=-1)
+            
+            # Extract non-ignored labels and predictions
+            for j in range(len(labels)):
+                for k in range(len(labels[j])):
+                    if labels[j][k] != -100:
+                        all_labels.append(labels[j][k])
+                        all_predictions.append(predictions[j][k])
+            
+            # Get loss from evaluation
             eval_results = trainer.evaluate(eval_dataset=batch_dataset)
-            
-            # If we have predictions, extract them
-            if hasattr(trainer, '_last_eval_predictions'):
-                predictions, labels = trainer._last_eval_predictions
-                predictions = np.argmax(predictions, axis=-1)
-                
-                # Extract non-ignored labels and predictions
-                for j in range(len(labels)):
-                    for k in range(len(labels[j])):
-                        if labels[j][k] != -100:
-                            all_labels.append(labels[j][k])
-                            all_predictions.append(predictions[j][k])
-            
             total_loss += eval_results['eval_loss'] * (batch_end - i)
             num_batches += 1
         

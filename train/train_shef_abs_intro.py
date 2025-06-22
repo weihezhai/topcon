@@ -365,7 +365,7 @@ def main():
         adam_epsilon=1e-8,
         lr_scheduler_type="linear",
         optim="adamw_torch",
-        eval_accumulation_steps=1,  # Process eval in smaller chunks
+        eval_accumulation_steps=4,  # Process eval in smaller chunks
         dataloader_num_workers=0,  # Disable multiprocessing to save memory
         ddp_find_unused_parameters=False,  # Optimize for model parallelism
         deepspeed=None,  # Can be configured for ZeRO if needed

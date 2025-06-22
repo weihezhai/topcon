@@ -71,10 +71,29 @@ class CustomDataCollator:
 
 def compute_metrics(eval_pred):
     """Compute metrics for causal language modeling evaluation"""
-    # For language modeling, we typically just use perplexity
-    # which is calculated from the loss automatically
-    # We can add custom metrics here if needed
-    return {}
+    predictions, labels = eval_pred
+    
+    # For causal LM, we need to extract the predictions for the target tokens
+    # The predictions are logits, we need to get the predicted tokens
+    predictions = np.argmax(predictions, axis=-1)
+    
+    # Extract only the non-ignored labels (not -100)
+    # and their corresponding predictions
+    true_labels = []
+    pred_labels = []
+    
+    for i in range(len(labels)):
+        for j in range(len(labels[i])):
+            if labels[i][j] != -100:  # Not an ignored token
+                true_labels.append(labels[i][j])
+                pred_labels.append(predictions[i][j])
+    
+    # Calculate accuracy
+    if len(true_labels) > 0:
+        accuracy = accuracy_score(true_labels, pred_labels)
+        return {"accuracy": accuracy}
+    else:
+        return {"accuracy": 0.0}
 
 def preprocess_function(examples, tokenizer, max_length=1024):
     """Tokenize the texts and prepare for token probability training"""
@@ -376,7 +395,7 @@ def main():
         logging_dir=f"{OUTPUT_DIR}/logs",
         logging_steps=10,  # Reduce logging frequency
         eval_strategy="steps",
-        eval_steps=100,  # Increase evaluation frequency to save memory
+        eval_steps=200,  # Increase evaluation frequency to save memory
         save_steps=200,
         save_total_limit=2,
         load_best_model_at_end=False,  # Disable to save memory
@@ -394,7 +413,6 @@ def main():
         dataloader_num_workers=0,  # Disable multiprocessing to save memory
         ddp_find_unused_parameters=False,  # Optimize for model parallelism
         deepspeed=None,  # Can be configured for ZeRO if needed
-        prediction_loss_only=True,  # Only compute loss during evaluation
         skip_memory_metrics=True,  # Skip memory metrics to save memory
     )
     

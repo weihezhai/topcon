@@ -218,6 +218,74 @@ def generate_predictions_for_analysis(model, tokenizer, eval_dataset, device, ma
     
     return predictions_analysis
 
+def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=25):
+    """Evaluate accuracy in small batches to prevent OOM"""
+    print(f"Running batched accuracy evaluation on {len(eval_dataset)} samples...")
+    
+    all_predictions = []
+    all_labels = []
+    total_loss = 0.0
+    num_batches = 0
+    
+    # Process evaluation dataset in small batches
+    for i in range(0, len(eval_dataset), batch_size):
+        batch_end = min(i + batch_size, len(eval_dataset))
+        batch_dataset = eval_dataset.select(range(i, batch_end))
+        
+        print(f"Processing batch {i//batch_size + 1}/{(len(eval_dataset) + batch_size - 1)//batch_size} (samples {i}-{batch_end-1})")
+        
+        # Clear cache before each batch
+        torch.cuda.empty_cache()
+        
+        # Temporarily enable full prediction for this batch
+        trainer.args.prediction_loss_only = False
+        
+        with torch.no_grad():
+            eval_results = trainer.evaluate(eval_dataset=batch_dataset)
+            
+            # Get predictions from the evaluation
+            if hasattr(eval_results, 'predictions') and eval_results.predictions is not None:
+                predictions = eval_results.predictions
+                labels = eval_results.label_ids
+            else:
+                # Fallback: manually get predictions
+                outputs = trainer.predict(batch_dataset)
+                predictions = outputs.predictions
+                labels = outputs.label_ids
+            
+            # Convert logits to predicted tokens
+            predictions = np.argmax(predictions, axis=-1)
+            
+            # Extract non-ignored labels and predictions
+            for j in range(len(labels)):
+                for k in range(len(labels[j])):
+                    if labels[j][k] != -100:
+                        all_labels.append(labels[j][k])
+                        all_predictions.append(predictions[j][k])
+            
+            total_loss += eval_results['eval_loss'] * (batch_end - i)
+            num_batches += 1
+        
+        # Reset to loss-only mode
+        trainer.args.prediction_loss_only = True
+        
+        # Clear cache after each batch
+        torch.cuda.empty_cache()
+    
+    # Calculate overall metrics
+    avg_loss = total_loss / len(eval_dataset)
+    accuracy = accuracy_score(all_labels, all_predictions) if len(all_labels) > 0 else 0.0
+    precision, recall, f1, _ = precision_recall_fscore_support(all_labels, all_predictions, average='weighted') if len(all_labels) > 0 else (0.0, 0.0, 0.0, None)
+    
+    return {
+        'eval_loss': avg_loss,
+        'eval_accuracy': accuracy,
+        'eval_precision': precision,
+        'eval_recall': recall,
+        'eval_f1': f1,
+        'eval_samples': len(eval_dataset)
+    }
+
 def main():
     # Configuration
     MODEL_PATH = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model"  # Path to your trained model
@@ -306,7 +374,7 @@ def main():
         label_names=["labels"],
         eval_accumulation_steps=4,
         dataloader_num_workers=0,
-        prediction_loss_only=False,  # We want full predictions for metrics
+        prediction_loss_only=True,  # Start with loss-only to prevent OOM
     )
     
     # Initialize trainer for evaluation
@@ -319,14 +387,21 @@ def main():
         compute_metrics=compute_detailed_metrics,
     )
     
-    # Run evaluation
-    print("Running evaluation...")
+    # Run evaluation - first basic loss evaluation
+    print("Running basic loss evaluation...")
     torch.cuda.empty_cache()
     
     with torch.no_grad():
-        eval_results = trainer.evaluate()
+        basic_eval_results = trainer.evaluate()
     
     torch.cuda.empty_cache()
+    
+    # Run detailed batched evaluation for accuracy metrics
+    print("Running detailed batched evaluation for accuracy...")
+    detailed_eval_results = batched_accuracy_evaluation(trainer, eval_dataset, batch_size=25)
+    
+    # Combine results
+    eval_results = {**basic_eval_results, **detailed_eval_results}
     
     # Print results
     print("\n" + "="*50)

@@ -220,12 +220,68 @@ def custom_evaluate_with_memory_cleanup(trainer, eval_dataset=None):
     
     return eval_results
 
+def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10):
+    """Evaluate accuracy in small batches to prevent OOM"""
+    print(f"Running batched accuracy evaluation on {len(eval_dataset)} samples...")
+    
+    all_predictions = []
+    all_labels = []
+    total_loss = 0.0
+    num_batches = 0
+    
+    # Process evaluation dataset in small batches
+    for i in range(0, len(eval_dataset), batch_size):
+        batch_end = min(i + batch_size, len(eval_dataset))
+        batch_dataset = eval_dataset.select(range(i, batch_end))
+        
+        print(f"Processing batch {i//batch_size + 1}/{(len(eval_dataset) + batch_size - 1)//batch_size} (samples {i}-{batch_end-1})")
+        
+        # Clear cache before each batch
+        torch.cuda.empty_cache()
+        
+        # Temporarily enable full prediction for this batch
+        trainer.args.prediction_loss_only = False
+        
+        with torch.no_grad():
+            eval_results = trainer.evaluate(eval_dataset=batch_dataset)
+            
+            # If we have predictions, extract them
+            if hasattr(trainer, '_last_eval_predictions'):
+                predictions, labels = trainer._last_eval_predictions
+                predictions = np.argmax(predictions, axis=-1)
+                
+                # Extract non-ignored labels and predictions
+                for j in range(len(labels)):
+                    for k in range(len(labels[j])):
+                        if labels[j][k] != -100:
+                            all_labels.append(labels[j][k])
+                            all_predictions.append(predictions[j][k])
+            
+            total_loss += eval_results['eval_loss'] * (batch_end - i)
+            num_batches += 1
+        
+        # Reset to loss-only mode
+        trainer.args.prediction_loss_only = True
+        
+        # Clear cache after each batch
+        torch.cuda.empty_cache()
+    
+    # Calculate overall metrics
+    avg_loss = total_loss / len(eval_dataset)
+    accuracy = accuracy_score(all_labels, all_predictions) if len(all_labels) > 0 else 0.0
+    
+    return {
+        'eval_loss': avg_loss,
+        'eval_accuracy': accuracy,
+        'eval_samples': len(eval_dataset)
+    }
+
 def main():
     # Initialize accelerator for distributed training
     accelerator = Accelerator()
     
     # Configuration
-    MODEL_NAME = "Qwen/Qwen3-1.7B"  # or "meta-llama/Meta-Llama-3-8B"
+    MODEL_NAME = "Qwen/Qwen3-4B"  # or "meta-llama/Meta-Llama-3-8B"
     DATA_FOLDER = "/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/"  # Update this path
     LABELS_FILE = "/mnt/parscratch/users/acr24wz/topcon/train/llm_paper/label_simple.json"  # Update this path
     
@@ -453,13 +509,11 @@ def main():
     trainer.save_model()
     tokenizer.save_pretrained(OUTPUT_DIR)
     
-    # Final evaluation with full metrics
+    # Final evaluation with full metrics using batched approach
     print("Running final evaluation with accuracy computation...")
     
-    # Temporarily enable full metrics computation for final evaluation
-    trainer.args.prediction_loss_only = False
-    eval_results = custom_evaluate_with_memory_cleanup(trainer, eval_dataset)
-    trainer.args.prediction_loss_only = True  # Reset back
+    # Use batched evaluation to prevent OOM
+    eval_results = batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10)
     
     print(f"Final evaluation results: {eval_results}")
     print(f"Fine-tuned model saved to: {OUTPUT_DIR}")

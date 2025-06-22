@@ -20,7 +20,7 @@ module load cuDNN/8.9.2.26-CUDA-12.1.1
 
 # Activate your conda environment
 # source activate etu
-source envs/py310/bin/activate
+source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed

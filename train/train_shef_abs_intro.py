@@ -413,6 +413,7 @@ def main():
         dataloader_num_workers=0,  # Disable multiprocessing to save memory
         ddp_find_unused_parameters=False,  # Optimize for model parallelism
         deepspeed=None,  # Can be configured for ZeRO if needed
+        prediction_loss_only=True,  # Only compute loss during periodic evaluation
         skip_memory_metrics=True,  # Skip memory metrics to save memory
     )
     
@@ -452,8 +453,14 @@ def main():
     trainer.save_model()
     tokenizer.save_pretrained(OUTPUT_DIR)
     
-    # Final evaluation
-    eval_results = custom_evaluate_with_memory_cleanup(trainer)
+    # Final evaluation with full metrics
+    print("Running final evaluation with accuracy computation...")
+    
+    # Temporarily enable full metrics computation for final evaluation
+    trainer.args.prediction_loss_only = False
+    eval_results = custom_evaluate_with_memory_cleanup(trainer, eval_dataset)
+    trainer.args.prediction_loss_only = True  # Reset back
+    
     print(f"Final evaluation results: {eval_results}")
     print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
 

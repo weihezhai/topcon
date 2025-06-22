@@ -153,7 +153,7 @@ def download_and_save_model(model_name, cache_dir):
     from transformers import AutoModelForCausalLM
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float32,
+        torch_dtype=torch.bfloat16,
         cache_dir=cache_dir
     )
     model.save_pretrained(cache_dir)
@@ -316,7 +316,7 @@ def main():
     from transformers import AutoModelForCausalLM
     model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL_CACHE,
-        torch_dtype=torch.float32,  # Use fp16 for memory efficiency
+        torch_dtype=torch.bfloat16,  # Use bf16 for memory efficiency
         device_map="auto"  # Enable automatic device mapping for model parallelism
     )
 
@@ -342,7 +342,7 @@ def main():
     training_args = TrainingArguments(
         output_dir=OUTPUT_DIR,
         num_train_epochs=3,
-        per_device_train_batch_size=1,
+        per_device_train_batch_size=2,
         per_device_eval_batch_size=1,
         gradient_accumulation_steps=8,  # Increased to maintain effective batch size
         learning_rate=1e-5,  # Even smaller learning rate
@@ -357,7 +357,7 @@ def main():
         load_best_model_at_end=False,  # Disable to save memory
         metric_for_best_model="eval_loss",
         greater_is_better=False,
-        fp16=False,  # Enable fp16 for memory efficiency
+        bf16=True,  # Enable bf16 for memory efficiency
         dataloader_pin_memory=False,
         remove_unused_columns=False,
         label_names=["labels"],
@@ -365,7 +365,7 @@ def main():
         adam_epsilon=1e-8,
         lr_scheduler_type="linear",
         optim="adamw_torch",
-        eval_accumulation_steps=4,  # Process eval in smaller chunks
+        eval_accumulation_steps=1,  # Process eval in smaller chunks
         dataloader_num_workers=0,  # Disable multiprocessing to save memory
         ddp_find_unused_parameters=False,  # Optimize for model parallelism
         deepspeed=None,  # Can be configured for ZeRO if needed

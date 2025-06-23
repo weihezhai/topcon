@@ -101,7 +101,7 @@ def preprocess_function(examples, tokenizer, max_length=1024):
     # Create prompts that ask for accept/reject decision
     prompts = []
     for text in examples['text']:
-        prompt = f"Based on this research paper abstract and introduction, should this paper be accepted?\n\nPaper content:\n{text}\n\nDecision:"
+        prompt = f"Based on this research paper's abstract and introduction, should this paper be accepted?\n\nPaper content:\n{text}\n\nDecision:"
         prompts.append(prompt)
     
     # First, tokenize target tokens to know their length

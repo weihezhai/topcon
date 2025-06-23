@@ -26,6 +26,7 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.model_selection import train_test_split
 import numpy as np
 import torch.nn as nn
+import argparse
 
 # Import the dataset builder
 from dataset_builder_abs_intro import TextDatasetBuilder
@@ -280,19 +281,42 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10):
     }
 
 def main():
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Fine-tune a language model with LoRA")
+    parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
+    parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
+    parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/", help="Path to the folder containing training data")
+    parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/llm_paper/label_simple.json", help="Path to the file containing labels")
+    parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model", help="Directory to save/load the fine-tuned model")
+    parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
+    args = parser.parse_args()
+    
     # Initialize accelerator for distributed training
     accelerator = Accelerator()
     
     # Configuration
-    MODEL_NAME = "Qwen/Qwen3-4B"  # or "meta-llama/Meta-Llama-3-8B"
-    DATA_FOLDER = "/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/"  # Update this path
-    LABELS_FILE = "/mnt/parscratch/users/acr24wz/topcon/train/llm_paper/label_simple.json"  # Update this path
+    MODEL_NAME = args.model_name
+    DATA_FOLDER = args.data_folder
+    LABELS_FILE = args.labels_file
+    OUTPUT_DIR = args.output_dir
+    MAX_LENGTH = args.max_length
     
     # Model directories
     BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B"  # Where to cache the downloaded model
-    OUTPUT_DIR = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model"   # Where to save the fine-tuned model
     
-    MAX_LENGTH = 10000 # Further reduced to save memory
+    # If in evaluation mode, use the fine-tuned model directory
+    if args.eval:
+        if not os.path.exists(OUTPUT_DIR):
+            print(f"Error: Fine-tuned model not found at {OUTPUT_DIR}")
+            print("Please run training first without --eval flag")
+            return
+        MODEL_PATH = OUTPUT_DIR
+        print(f"Running evaluation mode using model from {MODEL_PATH}")
+    else:
+        MODEL_PATH = BASE_MODEL_CACHE
+        print(f"Running training mode using base model from {MODEL_PATH}")
+    
+    # MAX_LENGTH = 10000 # Further reduced to save memory
     
     # Print GPU information
     if torch.cuda.is_available():
@@ -306,25 +330,26 @@ def main():
     # Create output directory if it doesn't exist
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    # Download and cache the base model if not already cached
-    config_file = os.path.join(BASE_MODEL_CACHE, "config.json")
-    if not os.path.exists(config_file):
-        download_and_save_model(MODEL_NAME, BASE_MODEL_CACHE)
-    else:
-        print(f"Using cached model from {BASE_MODEL_CACHE}")
+    # Download and cache the base model if not already cached (only for training mode)
+    if not args.eval:
+        config_file = os.path.join(BASE_MODEL_CACHE, "config.json")
+        if not os.path.exists(config_file):
+            download_and_save_model(MODEL_NAME, BASE_MODEL_CACHE)
+        else:
+            print(f"Using cached model from {BASE_MODEL_CACHE}")
     
     # LoRA configuration for causal LM
     lora_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,  # Changed from SEQ_CLS
-        inference_mode=False,
+        inference_mode=args.eval,  # Set to True for evaluation mode
         r=8,
         lora_alpha=16,
         lora_dropout=0.1,
         target_modules=["q_proj", "v_proj"]
     )
     
-    # Load tokenizer from cached model
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_CACHE)
+    # Load tokenizer from appropriate model path
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     # Ensure pad_token_id is set
@@ -415,13 +440,27 @@ def main():
     print(f"Sample labels type: {type(sample['labels'])}")
     print(f"Sample labels value: {sample['labels']}")
     
-    # Load model from cached location (now using CausalLM)
+    # Load model from appropriate path (now using CausalLM)
     from transformers import AutoModelForCausalLM
-    model = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL_CACHE,
-        torch_dtype=torch.bfloat16,  # Use bf16 for memory efficiency
-        device_map="auto"  # Enable automatic device mapping for model parallelism
-    )
+    
+    if args.eval:
+        # Load the fine-tuned model with LoRA adapters for evaluation
+        model = AutoModelForCausalLM.from_pretrained(
+            BASE_MODEL_CACHE,  # Base model
+            torch_dtype=torch.bfloat16,
+            device_map="auto"
+        )
+        # Apply LoRA adapters from the fine-tuned model
+        model = get_peft_model(model, lora_config)
+        model.load_adapter(OUTPUT_DIR)
+        print("Loaded fine-tuned model with LoRA adapters for evaluation")
+    else:
+        # Load base model for training
+        model = AutoModelForCausalLM.from_pretrained(
+            BASE_MODEL_CACHE,
+            torch_dtype=torch.bfloat16,
+            device_map="auto"
+        )
 
     print(model)
     
@@ -429,11 +468,12 @@ def main():
     if hasattr(model, 'hf_device_map'):
         print(f"Model device map: {model.hf_device_map}")
     
-    # Apply LoRA - DISABLED for debugging
-    # model = get_peft_model(model, lora_config)
-    # model.print_trainable_parameters()
+    # Apply LoRA for training mode only
+    if not args.eval:
+        model = get_peft_model(model, lora_config)
+        model.print_trainable_parameters()
     
-    print(f"Model parameters without LoRA:")
+    print(f"Model parameters with LoRA:")
     
     # Data collator for language modeling
     data_collator = CustomDataCollator(
@@ -441,85 +481,111 @@ def main():
         max_length=MAX_LENGTH
     )
     
-    # Training arguments
-    training_args = TrainingArguments(
-        output_dir=OUTPUT_DIR,
-        num_train_epochs=3,
-        per_device_train_batch_size=1,
-        per_device_eval_batch_size=1,
-        gradient_accumulation_steps=8,  # Increased to maintain effective batch size
-        learning_rate=1e-5,  # Even smaller learning rate
-        warmup_steps=20,
-        weight_decay=0.001,
-        logging_dir=f"{OUTPUT_DIR}/logs",
-        logging_steps=10,  # Reduce logging frequency
-        eval_strategy="steps",
-        eval_steps=100,  # Increase evaluation frequency to save memory
-        save_steps=200,
-        save_total_limit=2,
-        load_best_model_at_end=False,  # Disable to save memory
-        metric_for_best_model="eval_loss",
-        greater_is_better=False,
-        bf16=True,  # Enable bf16 for memory efficiency
-        dataloader_pin_memory=False,
-        remove_unused_columns=False,
-        label_names=["labels"],
-        max_grad_norm=1.0,  # Much stricter gradient clipping
-        adam_epsilon=1e-8,
-        lr_scheduler_type="linear",
-        optim="adamw_torch",
-        eval_accumulation_steps=4,  # Process eval in smaller chunks
-        dataloader_num_workers=0,  # Disable multiprocessing to save memory
-        ddp_find_unused_parameters=False,  # Optimize for model parallelism
-        deepspeed=None,  # Can be configured for ZeRO if needed
-        prediction_loss_only=True,  # Only compute loss during periodic evaluation
-        skip_memory_metrics=True,  # Skip memory metrics to save memory
-    )
+    # Only run training if not in evaluation mode
+    if not args.eval:
+        # Training arguments
+        training_args = TrainingArguments(
+            output_dir=OUTPUT_DIR,
+            num_train_epochs=3,
+            per_device_train_batch_size=1,
+            per_device_eval_batch_size=1,
+            gradient_accumulation_steps=8,  # Increased to maintain effective batch size
+            learning_rate=1e-5,  # Even smaller learning rate
+            warmup_steps=20,
+            weight_decay=0.001,
+            logging_dir=f"{OUTPUT_DIR}/logs",
+            logging_steps=10,  # Reduce logging frequency
+            eval_strategy="steps",
+            eval_steps=100,  # Increase evaluation frequency to save memory
+            save_steps=200,
+            save_total_limit=2,
+            load_best_model_at_end=False,  # Disable to save memory
+            metric_for_best_model="eval_loss",
+            greater_is_better=False,
+            bf16=True,  # Enable bf16 for memory efficiency
+            dataloader_pin_memory=False,
+            remove_unused_columns=False,
+            label_names=["labels"],
+            max_grad_norm=1.0,  # Much stricter gradient clipping
+            adam_epsilon=1e-8,
+            lr_scheduler_type="linear",
+            optim="adamw_torch",
+            eval_accumulation_steps=4,  # Process eval in smaller chunks
+            dataloader_num_workers=0,  # Disable multiprocessing to save memory
+            ddp_find_unused_parameters=False,  # Optimize for model parallelism
+            deepspeed=None,  # Can be configured for ZeRO if needed
+            prediction_loss_only=True,  # Only compute loss during periodic evaluation
+            skip_memory_metrics=True,  # Skip memory metrics to save memory
+        )
+        
+        # Initialize trainer
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=train_dataset,
+            eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
+            tokenizer=tokenizer,
+            data_collator=data_collator,
+            compute_metrics=compute_metrics,
+        )
+        
+        # Prepare everything with accelerator for model parallelism
+        model, trainer.optimizer, train_dataset, eval_dataset = accelerator.prepare(
+            model, trainer.optimizer, train_dataset, eval_dataset
+        )
+        
+        # Train the model
+        print("Starting training...")
+        
+        # Override evaluation to use memory cleanup
+        original_evaluate = trainer.evaluate
+        def memory_safe_evaluate(*args, **kwargs):
+            torch.cuda.empty_cache()
+            with torch.no_grad():
+                result = original_evaluate(*args, **kwargs)
+            torch.cuda.empty_cache()
+            return result
+        trainer.evaluate = memory_safe_evaluate
+        
+        trainer.train()
+        
+        # Save the fine-tuned model
+        print(f"Saving fine-tuned model to {OUTPUT_DIR}")
+        trainer.save_model()
+        tokenizer.save_pretrained(OUTPUT_DIR)
+        
+        print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
     
-    # Initialize trainer
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
-        tokenizer=tokenizer,
-        data_collator=data_collator,
-        compute_metrics=compute_metrics,
-    )
-    
-    # Prepare everything with accelerator for model parallelism
-    model, trainer.optimizer, train_dataset, eval_dataset = accelerator.prepare(
-        model, trainer.optimizer, train_dataset, eval_dataset
-    )
-    
-    # Train the model
-    print("Starting training...")
-    
-    # Override evaluation to use memory cleanup
-    original_evaluate = trainer.evaluate
-    def memory_safe_evaluate(*args, **kwargs):
-        torch.cuda.empty_cache()
-        with torch.no_grad():
-            result = original_evaluate(*args, **kwargs)
-        torch.cuda.empty_cache()
-        return result
-    trainer.evaluate = memory_safe_evaluate
-    
-    trainer.train()
-    
-    # Save the fine-tuned model
-    print(f"Saving fine-tuned model to {OUTPUT_DIR}")
-    trainer.save_model()
-    tokenizer.save_pretrained(OUTPUT_DIR)
-    
-    # Final evaluation with full metrics using batched approach
+    # Always run final evaluation (in both train and eval modes)
     print("Running final evaluation with accuracy computation...")
+    
+    # For evaluation mode, we need to create a trainer for evaluation
+    if args.eval:
+        training_args = TrainingArguments(
+            output_dir=OUTPUT_DIR,
+            per_device_eval_batch_size=1,
+            bf16=True,
+            dataloader_pin_memory=False,
+            remove_unused_columns=False,
+            label_names=["labels"],
+            eval_accumulation_steps=4,
+            dataloader_num_workers=0,
+            prediction_loss_only=True,
+            skip_memory_metrics=True,
+        )
+        
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            tokenizer=tokenizer,
+            data_collator=data_collator,
+            compute_metrics=compute_metrics,
+        )
     
     # Use batched evaluation to prevent OOM
     eval_results = batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10)
     
     print(f"Final evaluation results: {eval_results}")
-    print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
 
 if __name__ == "__main__":
     main()

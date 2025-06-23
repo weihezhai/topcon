@@ -22,7 +22,7 @@ from transformers import (
     default_data_collator
 )
 # Removed LoRA - using full fine-tuning
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix, classification_report
 from sklearn.model_selection import train_test_split
 import numpy as np
 import torch.nn as nn
@@ -221,7 +221,7 @@ def custom_evaluate_with_memory_cleanup(trainer, eval_dataset=None):
     
     return eval_results
 
-def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10):
+def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None):
     """Evaluate accuracy in small batches to prevent OOM"""
     print(f"Running batched accuracy evaluation on {len(eval_dataset)} samples...")
     
@@ -229,6 +229,17 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10):
     all_labels = []
     total_loss = 0.0
     num_batches = 0
+    
+    # For detailed evaluation, we'll also collect the actual text predictions
+    accept_token_id = None
+    reject_token_id = None
+    if detailed_eval and tokenizer:
+        accept_tokens = tokenizer(" accept", add_special_tokens=False)['input_ids']
+        reject_tokens = tokenizer(" reject", add_special_tokens=False)['input_ids'] 
+        if len(accept_tokens) > 0:
+            accept_token_id = accept_tokens[0]
+        if len(reject_tokens) > 0:
+            reject_token_id = reject_tokens[0]
     
     # Process evaluation dataset in small batches
     for i in range(0, len(eval_dataset), batch_size):
@@ -274,16 +285,95 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10):
     avg_loss = total_loss / len(eval_dataset)
     accuracy = accuracy_score(all_labels, all_predictions) if len(all_labels) > 0 else 0.0
     
-    return {
+    results = {
         'eval_loss': avg_loss,
         'eval_accuracy': accuracy,
         'eval_samples': len(eval_dataset)
     }
+    
+    # Add detailed metrics if requested
+    if detailed_eval and len(all_labels) > 0:
+        # Convert token predictions to binary labels for analysis
+        binary_labels = []
+        binary_predictions = []
+        
+        for true_label, pred_label in zip(all_labels, all_predictions):
+            # Map tokens to binary labels (1 for accept, 0 for reject)
+            if true_label == accept_token_id:
+                binary_labels.append(1)
+            elif true_label == reject_token_id:
+                binary_labels.append(0)
+            else:
+                continue  # Skip unknown tokens
+                
+            if pred_label == accept_token_id:
+                binary_predictions.append(1)
+            elif pred_label == reject_token_id:
+                binary_predictions.append(0)
+            else:
+                # If prediction is neither accept nor reject, classify based on proximity
+                binary_predictions.append(1 if pred_label == accept_token_id else 0)
+        
+        if len(binary_labels) > 0:
+            # Calculate precision, recall, F1
+            precision, recall, f1, support = precision_recall_fscore_support(
+                binary_labels, binary_predictions, average='binary', zero_division=0
+            )
+            
+            # Calculate per-class metrics
+            precision_per_class, recall_per_class, f1_per_class, support_per_class = precision_recall_fscore_support(
+                binary_labels, binary_predictions, average=None, zero_division=0
+            )
+            
+            # Confusion matrix
+            cm = confusion_matrix(binary_labels, binary_predictions)
+            
+            # Classification report
+            class_report = classification_report(
+                binary_labels, binary_predictions, 
+                target_names=['Reject', 'Accept'], 
+                zero_division=0
+            )
+            
+            results.update({
+                'binary_accuracy': accuracy_score(binary_labels, binary_predictions),
+                'precision': precision,
+                'recall': recall,
+                'f1': f1,
+                'precision_per_class': precision_per_class.tolist(),
+                'recall_per_class': recall_per_class.tolist(),
+                'f1_per_class': f1_per_class.tolist(),
+                'support_per_class': support_per_class.tolist(),
+                'confusion_matrix': cm.tolist(),
+                'classification_report': class_report
+            })
+            
+            print("\n" + "="*50)
+            print("DETAILED EVALUATION METRICS")
+            print("="*50)
+            print(f"Binary Classification Accuracy: {results['binary_accuracy']:.4f}")
+            print(f"Precision: {precision:.4f}")
+            print(f"Recall: {recall:.4f}")
+            print(f"F1-Score: {f1:.4f}")
+            print("\nPer-class metrics:")
+            print(f"  Reject (0) - Precision: {precision_per_class[0]:.4f}, Recall: {recall_per_class[0]:.4f}, F1: {f1_per_class[0]:.4f}")
+            print(f"  Accept (1) - Precision: {precision_per_class[1]:.4f}, Recall: {recall_per_class[1]:.4f}, F1: {f1_per_class[1]:.4f}")
+            print(f"\nConfusion Matrix:")
+            print(f"              Predicted")
+            print(f"              Reject  Accept")
+            print(f"Actual Reject   {cm[0,0]:4d}    {cm[0,1]:4d}")
+            print(f"       Accept   {cm[1,0]:4d}    {cm[1,1]:4d}")
+            print(f"\nClassification Report:")
+            print(class_report)
+            print("="*50)
+    
+    return results
 
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Fine-tune a language model with LoRA")
     parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
+    parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
     parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
     parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/", help="Path to the folder containing training data")
     parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/llm_paper/label_simple.json", help="Path to the file containing labels")
@@ -565,7 +655,10 @@ def main():
         )
     
     # Use batched evaluation to prevent OOM
-    eval_results = batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10)
+    eval_results = batched_accuracy_evaluation(
+        trainer, eval_dataset, batch_size=10, 
+        detailed_eval=args.detailed_eval, tokenizer=tokenizer
+    )
     
     print(f"Final evaluation results: {eval_results}")
 

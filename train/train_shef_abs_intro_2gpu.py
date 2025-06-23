@@ -101,32 +101,35 @@ def preprocess_function(examples, tokenizer, max_length=1024):
     # Create prompts that ask for accept/reject decision
     prompts = []
     for text in examples['text']:
-        prompt = f"Based on this research paper abstract and introduction, should this paper be accepted or rejected?\n\nPaper content:\n{text}\n\nDecision:"
+        prompt = f"Based on this research paper abstract and introduction, should this paper be accepted?\n\nPaper content:\n{text}\n\nDecision:"
         prompts.append(prompt)
     
-    # Tokenize the prompts
-    result = tokenizer(
-        prompts,
-        truncation=True,
-        padding=False,
-        max_length=max_length-10,  # Leave space for answer tokens
-        return_attention_mask=True,
-        return_token_type_ids=False
-    )
-    
-    # Add target tokens based on labels
+    # First, tokenize target tokens to know their length
     target_tokens = []
     for label in examples['labels']:
         if label == 1:
-            target_tokens.append(" accept")
+            target_tokens.append(" yes")
         else:
-            target_tokens.append(" reject")
+            target_tokens.append(" no")
     
     # Tokenize target tokens
     target_encodings = tokenizer(
         target_tokens,
         add_special_tokens=False,
         return_attention_mask=False
+    )
+    
+    # Calculate the maximum target token length to reserve space
+    max_target_length = max(len(target) for target in target_encodings['input_ids'])
+    
+    # Tokenize the prompts with reserved space for target tokens
+    result = tokenizer(
+        prompts,
+        truncation=True,
+        padding=False,
+        max_length=max_length - max_target_length,  # Reserve space for target tokens
+        return_attention_mask=True,
+        return_token_type_ids=False
     )
     
     # Combine input and target
@@ -142,11 +145,19 @@ def preprocess_function(examples, tokenizer, max_length=1024):
         # Create labels (ignore input tokens, only compute loss on target tokens)
         label_ids = [-100] * len(result['input_ids'][i]) + target_encodings['input_ids'][i]
         
-        # Ensure all sequences have the same length by truncating if needed
+        # Since we reserved space, this should not exceed max_length, but double-check
         if len(full_input) > max_length:
-            full_input = full_input[:max_length]
-            full_mask = full_mask[:max_length]
-            label_ids = label_ids[:max_length]
+            print(f"Warning: Combined sequence length {len(full_input)} exceeds max_length {max_length}")
+            # If it still exceeds, truncate input while preserving target
+            excess = len(full_input) - max_length
+            input_length = len(result['input_ids'][i])
+            target_length = len(target_encodings['input_ids'][i])
+            
+            # Truncate from input
+            new_input_length = max(1, input_length - excess)  # Keep at least 1 input token
+            full_input = result['input_ids'][i][:new_input_length] + target_encodings['input_ids'][i]
+            full_mask = result['attention_mask'][i][:new_input_length] + [1] * target_length
+            label_ids = [-100] * new_input_length + target_encodings['input_ids'][i]
         
         combined_input_ids.append(full_input)
         combined_attention_mask.append(full_mask)
@@ -234,8 +245,8 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     accept_token_id = None
     reject_token_id = None
     if detailed_eval and tokenizer:
-        accept_tokens = tokenizer(" accept", add_special_tokens=False)['input_ids']
-        reject_tokens = tokenizer(" reject", add_special_tokens=False)['input_ids'] 
+        accept_tokens = tokenizer(" yes", add_special_tokens=False)['input_ids']
+        reject_tokens = tokenizer(" no", add_special_tokens=False)['input_ids'] 
         if len(accept_tokens) > 0:
             accept_token_id = accept_tokens[0]
         if len(reject_tokens) > 0:
@@ -331,7 +342,7 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
             # Classification report
             class_report = classification_report(
                 binary_labels, binary_predictions, 
-                target_names=['Reject', 'Accept'], 
+                target_names=['No', 'Yes'], 
                 zero_division=0
             )
             

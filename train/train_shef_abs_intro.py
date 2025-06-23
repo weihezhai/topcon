@@ -289,10 +289,10 @@ def main():
     LABELS_FILE = "/mnt/parscratch/users/acr24wz/topcon/train/llm_paper/label_simple.json"  # Update this path
     
     # Model directories
-    BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B"  # Where to cache the downloaded model
-    OUTPUT_DIR = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model"   # Where to save the fine-tuned model
+    BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B"  # Where to cache the downloaded model
+    OUTPUT_DIR = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model"   # Where to save the fine-tuned model
     
-    MAX_LENGTH = 2048 # Further reduced to save memory
+    MAX_LENGTH = 10000 # Further reduced to save memory
     
     # Print GPU information
     if torch.cuda.is_available():
@@ -445,7 +445,7 @@ def main():
     training_args = TrainingArguments(
         output_dir=OUTPUT_DIR,
         num_train_epochs=3,
-        per_device_train_batch_size=2,
+        per_device_train_batch_size=1,
         per_device_eval_batch_size=1,
         gradient_accumulation_steps=8,  # Increased to maintain effective batch size
         learning_rate=1e-5,  # Even smaller learning rate

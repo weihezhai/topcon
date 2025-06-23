@@ -21,7 +21,7 @@ from transformers import (
     DataCollatorForLanguageModeling,  # Changed for causal LM
     default_data_collator
 )
-from peft import LoraConfig, get_peft_model, TaskType
+# Removed LoRA - using full fine-tuning
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -355,16 +355,6 @@ def main():
         else:
             print(f"Using cached model from {BASE_MODEL_CACHE}")
     
-    # LoRA configuration for causal LM
-    lora_config = LoraConfig(
-        task_type=TaskType.CAUSAL_LM,  # Changed from SEQ_CLS
-        inference_mode=args.eval,  # Set to True for evaluation mode
-        r=8,
-        lora_alpha=16,
-        lora_dropout=0.1,
-        target_modules=["q_proj", "v_proj"]
-    )
-    
     # Load tokenizer from appropriate model path
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
     if tokenizer.pad_token is None:
@@ -470,16 +460,13 @@ def main():
         device_map = "auto"
     
     if args.eval:
-        # Load the fine-tuned model with LoRA adapters for evaluation
+        # Load the fine-tuned model for evaluation
         model = AutoModelForCausalLM.from_pretrained(
-            BASE_MODEL_CACHE,  # Base model
+            OUTPUT_DIR,  # Load from fine-tuned model directory
             torch_dtype=torch.bfloat16,
             device_map=device_map
         )
-        # Apply LoRA adapters from the fine-tuned model
-        model = get_peft_model(model, lora_config)
-        model.load_adapter(OUTPUT_DIR)
-        print("Loaded fine-tuned model with LoRA adapters for evaluation")
+        print("Loaded fine-tuned model for evaluation")
     else:
         # Load base model for training
         model = AutoModelForCausalLM.from_pretrained(
@@ -494,12 +481,7 @@ def main():
     if hasattr(model, 'hf_device_map'):
         print(f"Model device map: {model.hf_device_map}")
     
-    # Apply LoRA for training mode only
-    if not args.eval:
-        model = get_peft_model(model, lora_config)
-        model.print_trainable_parameters()
-    
-    print(f"Model parameters with LoRA:")
+    print(f"Model parameters (full fine-tuning):")
     
     # Data collator for language modeling
     data_collator = CustomDataCollator(

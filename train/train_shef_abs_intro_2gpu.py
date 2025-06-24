@@ -19,7 +19,8 @@ from transformers import (
     TrainingArguments, 
     Trainer,
     DataCollatorForLanguageModeling,  # Changed for causal LM
-    default_data_collator
+    default_data_collator,
+    TrainerCallback
 )
 # Removed LoRA - using full fine-tuning
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix, classification_report
@@ -592,7 +593,7 @@ class CustomTrainerForBinaryClassification(Trainer):
             # Fallback to standard loss if no valid samples
             return torch.tensor(0.0, device=logits.device, requires_grad=True)
 
-class BinaryClassificationCallback:
+class BinaryClassificationCallback(TrainerCallback):
     """Callback to monitor binary classification training progress"""
     
     def __init__(self, tokenizer):

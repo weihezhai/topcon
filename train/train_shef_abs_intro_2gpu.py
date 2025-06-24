@@ -517,7 +517,7 @@ class CustomTrainerForBinaryClassification(Trainer):
         
         print(f"Custom trainer using yes_token_id: {self.yes_token_id}, no_token_id: {self.no_token_id}")
     
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         """
         Custom loss computation that focuses on yes/no token probabilities
         """

@@ -19,8 +19,7 @@ from transformers import (
     TrainingArguments, 
     Trainer,
     DataCollatorForLanguageModeling,  # Changed for causal LM
-    default_data_collator,
-    TrainerCallback
+    default_data_collator
 )
 # Removed LoRA - using full fine-tuning
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix, classification_report
@@ -35,7 +34,7 @@ from datasets import load_from_disk
 from accelerate import Accelerator
 
 class CustomDataCollator:
-    """Custom data collator that handles variable-length sequences and binary labels"""
+    """Custom data collator that handles variable-length sequences"""
     def __init__(self, tokenizer, max_length=2048):
         self.tokenizer = tokenizer
         self.max_length = max_length
@@ -50,10 +49,6 @@ class CustomDataCollator:
             'attention_mask': [],
             'labels': []
         }
-        
-        # Check if binary_labels exist in features
-        if 'binary_labels' in features[0]:
-            batch['binary_labels'] = []
         
         for feature in features:
             input_ids = feature['input_ids'][:max_len]
@@ -70,74 +65,95 @@ class CustomDataCollator:
             batch['input_ids'].append(input_ids)
             batch['attention_mask'].append(attention_mask)
             batch['labels'].append(labels)
-            
-            # Add binary labels if they exist
-            if 'binary_labels' in feature:
-                batch['binary_labels'].append(feature['binary_labels'])
         
         # Convert to tensors
-        for key in ['input_ids', 'attention_mask', 'labels']:
-            batch[key] = torch.tensor(batch[key])
-        
-        # Convert binary_labels to tensor if present
-        if 'binary_labels' in batch:
-            batch['binary_labels'] = torch.tensor(batch['binary_labels'])
-            
+        batch = {k: torch.tensor(v) for k, v in batch.items()}
         return batch
 
-def compute_metrics(eval_pred):
-    """Compute metrics for causal language modeling evaluation based on yes/no token probabilities"""
+def compute_metrics(eval_pred, tokenizer=None):
+    """Compute metrics using probability comparison of yes/no tokens"""
+    if tokenizer is None:
+        # Fallback to old method if tokenizer not provided
+        predictions, labels = eval_pred
+        predictions = np.argmax(predictions, axis=-1)
+        true_labels = []
+        pred_labels = []
+        
+        for i in range(len(labels)):
+            for j in range(len(labels[i])):
+                if labels[i][j] != -100:
+                    true_labels.append(labels[i][j])
+                    pred_labels.append(predictions[i][j])
+        
+        if len(true_labels) > 0:
+            accuracy = accuracy_score(true_labels, pred_labels)
+            return {"accuracy": accuracy}
+        else:
+            return {"accuracy": 0.0}
+    
     predictions, labels = eval_pred
     
-    # This is a simplified version for periodic evaluation during training
-    # The detailed evaluation will be done in batched_accuracy_evaluation
-    predictions = np.argmax(predictions, axis=-1)
+    # Get token IDs for "yes" and "no"
+    yes_tokens = tokenizer(" yes", add_special_tokens=False)['input_ids']
+    no_tokens = tokenizer(" no", add_special_tokens=False)['input_ids']
     
-    # Extract only the non-ignored labels (not -100)
-    true_labels = []
-    pred_labels = []
+    if len(yes_tokens) == 0 or len(no_tokens) == 0:
+        return {"accuracy": 0.0}
+    
+    yes_token_id = yes_tokens[0]
+    no_token_id = no_tokens[0]
+    
+    binary_predictions = []
+    binary_labels = []
     
     for i in range(len(labels)):
+        # Find the first position where label != -100 (the decision position)
+        decision_pos = None
         for j in range(len(labels[i])):
-            if labels[i][j] != -100:  # Not an ignored token
-                true_labels.append(labels[i][j])
-                pred_labels.append(predictions[i][j])
+            if labels[i][j] != -100:
+                decision_pos = j
+                break
+        
+        if decision_pos is not None:
+            # Get logits at decision position
+            logits_at_pos = predictions[i][decision_pos]
+            
+            # Get probabilities for yes/no tokens
+            yes_logit = logits_at_pos[yes_token_id]
+            no_logit = logits_at_pos[no_token_id]
+            
+            # Predict based on which has higher probability
+            predicted_label = 1 if yes_logit > no_logit else 0
+            
+            # Get ground truth label
+            true_token_id = labels[i][decision_pos]
+            true_label = 1 if true_token_id == yes_token_id else 0
+            
+            binary_predictions.append(predicted_label)
+            binary_labels.append(true_label)
     
-    # Calculate basic token accuracy for monitoring
-    if len(true_labels) > 0:
-        accuracy = accuracy_score(true_labels, pred_labels)
+    # Calculate accuracy
+    if len(binary_labels) > 0:
+        accuracy = accuracy_score(binary_labels, binary_predictions)
         return {"accuracy": accuracy}
     else:
         return {"accuracy": 0.0}
 
 def preprocess_function(examples, tokenizer, max_length=1024):
-    """Tokenize the texts and prepare for yes/no token probability training"""
+    """Tokenize the texts and prepare for token probability training"""
     # Create prompts that ask for accept/reject decision
     prompts = []
     for text in examples['text']:
         prompt = f"Based on this research paper's abstract and introduction, should this paper be accepted?\n\nPaper content:\n{text}\n\nDecision:"
         prompts.append(prompt)
     
-    # Get yes/no token IDs for consistent training
-    yes_tokens = tokenizer(" yes", add_special_tokens=False)['input_ids']
-    no_tokens = tokenizer(" no", add_special_tokens=False)['input_ids']
-    
-    if len(yes_tokens) == 0 or len(no_tokens) == 0:
-        raise ValueError("Could not tokenize 'yes' or 'no' tokens")
-    
-    yes_token_id = yes_tokens[0]
-    no_token_id = no_tokens[0]
-    
     # First, tokenize target tokens to know their length
     target_tokens = []
-    target_token_ids = []
     for label in examples['labels']:
         if label == 1:
             target_tokens.append(" yes")
-            target_token_ids.append(yes_token_id)
         else:
             target_tokens.append(" no")
-            target_token_ids.append(no_token_id)
     
     # Tokenize target tokens
     target_encodings = tokenizer(
@@ -163,7 +179,6 @@ def preprocess_function(examples, tokenizer, max_length=1024):
     combined_input_ids = []
     combined_attention_mask = []
     labels_for_loss = []
-    binary_labels = []  # Store the binary labels for reference
     
     for i in range(len(result['input_ids'])):
         # Combine input + target
@@ -190,13 +205,11 @@ def preprocess_function(examples, tokenizer, max_length=1024):
         combined_input_ids.append(full_input)
         combined_attention_mask.append(full_mask)
         labels_for_loss.append(label_ids)
-        binary_labels.append(examples['labels'][i])  # Store original binary label
     
     return {
         'input_ids': combined_input_ids,
         'attention_mask': combined_attention_mask,
-        'labels': labels_for_loss,
-        'binary_labels': binary_labels  # Add binary labels for potential custom loss
+        'labels': labels_for_loss
     }
 
 def download_and_save_model(model_name, cache_dir):
@@ -263,27 +276,16 @@ def custom_evaluate_with_memory_cleanup(trainer, eval_dataset=None):
     return eval_results
 
 def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None):
-    """Evaluate accuracy based on yes/no token probabilities after 'Decision:'"""
-    print(f"Running batched accuracy evaluation on {len(eval_dataset)} samples...")
+    """Evaluate accuracy using probability-based comparison of yes/no tokens"""
+    print(f"Running probability-based accuracy evaluation on {len(eval_dataset)} samples...")
     
-    # Get yes/no token IDs
-    yes_tokens = tokenizer(" yes", add_special_tokens=False)['input_ids']
-    no_tokens = tokenizer(" no", add_special_tokens=False)['input_ids']
-    
-    if len(yes_tokens) == 0 or len(no_tokens) == 0:
-        print("Error: Could not tokenize 'yes' or 'no' tokens")
-        return {"eval_loss": 0.0, "eval_accuracy": 0.0}
-    
-    yes_token_id = yes_tokens[0]
-    no_token_id = no_tokens[0]
-    
-    print(f"Yes token ID: {yes_token_id} ('{tokenizer.decode([yes_token_id])}')")
-    print(f"No token ID: {no_token_id} ('{tokenizer.decode([no_token_id])}')")
+    # Get token IDs for "yes" and "no"
+    yes_token_id = tokenizer(" yes", add_special_tokens=False)['input_ids'][0]
+    no_token_id = tokenizer(" no", add_special_tokens=False)['input_ids'][0]
     
     all_binary_predictions = []
     all_binary_labels = []
     total_loss = 0.0
-    num_batches = 0
     
     # Process evaluation dataset in small batches
     for i in range(0, len(eval_dataset), batch_size):
@@ -299,53 +301,41 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
         trainer.args.prediction_loss_only = False
         
         with torch.no_grad():
-            # Use trainer.predict to get predictions (logits)
+            # Use trainer.predict to get predictions (keep as logits)
             eval_output = trainer.predict(batch_dataset)
-            predictions_logits = eval_output.predictions  # These are logits, not token IDs
+            logits = eval_output.predictions  # Keep as logits, don't take argmax
             labels = eval_output.label_ids
             
-            # For each sample in the batch, find the position where labels != -100 
-            # (this is where the target 'yes'/'no' tokens are)
+            # Process each sample in the batch
             for j in range(len(labels)):
-                sample_labels = labels[j]
-                sample_logits = predictions_logits[j]
+                # Find the decision position (first non-ignored label)
+                decision_pos = None
+                for k in range(len(labels[j])):
+                    if labels[j][k] != -100:
+                        decision_pos = k
+                        break
                 
-                # Find the first position where label is not -100 (target token position)
-                target_positions = [k for k, label in enumerate(sample_labels) if label != -100]
-                
-                if len(target_positions) > 0:
-                    # Take the first target position (should be the 'yes'/'no' token)
-                    target_pos = target_positions[0]
-                    target_label = sample_labels[target_pos]
-                    target_logits = sample_logits[target_pos]  # Logits for this position
+                if decision_pos is not None:
+                    # Get logits at decision position
+                    logits_at_pos = logits[j][decision_pos]
                     
-                    # Extract logits for yes and no tokens specifically
-                    yes_logit = target_logits[yes_token_id]
-                    no_logit = target_logits[no_token_id]
+                    # Compare yes vs no logits
+                    yes_logit = logits_at_pos[yes_token_id]
+                    no_logit = logits_at_pos[no_token_id]
                     
-                    # Convert to probabilities using softmax (only for yes/no tokens)
-                    import torch.nn.functional as F
-                    yes_no_logits = torch.tensor([no_logit, yes_logit])  # [no, yes]
-                    yes_no_probs = F.softmax(yes_no_logits, dim=0)
+                    # Predict based on higher logit
+                    predicted_label = 1 if yes_logit > no_logit else 0
                     
-                    # Prediction: 1 if yes_prob > no_prob, 0 otherwise
-                    predicted_binary = 1 if yes_no_probs[1] > yes_no_probs[0] else 0
+                    # Get ground truth
+                    true_token_id = labels[j][decision_pos]
+                    true_label = 1 if true_token_id == yes_token_id else 0
                     
-                    # Ground truth: convert token ID to binary label
-                    if target_label == yes_token_id:
-                        true_binary = 1
-                    elif target_label == no_token_id:
-                        true_binary = 0
-                    else:
-                        continue  # Skip if target is neither yes nor no
-                    
-                    all_binary_predictions.append(predicted_binary)
-                    all_binary_labels.append(true_binary)
+                    all_binary_predictions.append(predicted_label)
+                    all_binary_labels.append(true_label)
             
             # Get loss from evaluation
             eval_results = trainer.evaluate(eval_dataset=batch_dataset)
             total_loss += eval_results['eval_loss'] * (batch_end - i)
-            num_batches += 1
         
         # Reset to loss-only mode
         trainer.args.prediction_loss_only = True
@@ -355,20 +345,13 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     
     # Calculate overall metrics
     avg_loss = total_loss / len(eval_dataset)
-    
-    if len(all_binary_labels) > 0:
-        accuracy = accuracy_score(all_binary_labels, all_binary_predictions)
-    else:
-        accuracy = 0.0
+    accuracy = accuracy_score(all_binary_labels, all_binary_predictions) if len(all_binary_labels) > 0 else 0.0
     
     results = {
         'eval_loss': avg_loss,
         'eval_accuracy': accuracy,
-        'eval_samples': len(eval_dataset),
-        'processed_samples': len(all_binary_labels)
+        'eval_samples': len(eval_dataset)
     }
-    
-    print(f"Processed {len(all_binary_labels)} valid samples out of {len(eval_dataset)} total samples")
     
     # Add detailed metrics if requested
     if detailed_eval and len(all_binary_labels) > 0:
@@ -388,12 +371,12 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
         # Classification report
         class_report = classification_report(
             all_binary_labels, all_binary_predictions, 
-            target_names=['No (Reject)', 'Yes (Accept)'], 
+            target_names=['No', 'Yes'], 
             zero_division=0
         )
         
         results.update({
-            'binary_accuracy': accuracy,
+            'binary_accuracy': accuracy_score(all_binary_labels, all_binary_predictions),
             'precision': precision,
             'recall': recall,
             'f1': f1,
@@ -406,253 +389,28 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
         })
         
         print("\n" + "="*50)
-        print("DETAILED EVALUATION METRICS")
+        print("PROBABILITY-BASED EVALUATION METRICS")
         print("="*50)
-        print(f"Binary Classification Accuracy: {accuracy:.4f}")
+        print(f"Binary Classification Accuracy: {results['binary_accuracy']:.4f}")
         print(f"Precision: {precision:.4f}")
         print(f"Recall: {recall:.4f}")
         print(f"F1-Score: {f1:.4f}")
         print("\nPer-class metrics:")
-        print(f"  No/Reject (0) - Precision: {precision_per_class[0]:.4f}, Recall: {recall_per_class[0]:.4f}, F1: {f1_per_class[0]:.4f}")
-        print(f"  Yes/Accept (1) - Precision: {precision_per_class[1]:.4f}, Recall: {recall_per_class[1]:.4f}, F1: {f1_per_class[1]:.4f}")
+        print(f"  Reject (0) - Precision: {precision_per_class[0]:.4f}, Recall: {recall_per_class[0]:.4f}, F1: {f1_per_class[0]:.4f}")
+        print(f"  Accept (1) - Precision: {precision_per_class[1]:.4f}, Recall: {recall_per_class[1]:.4f}, F1: {f1_per_class[1]:.4f}")
         print(f"\nConfusion Matrix:")
-        print(f"                Predicted")
-        print(f"                No   Yes")
-        print(f"Actual No    {cm[0,0]:4d}  {cm[0,1]:4d}")
-        print(f"       Yes   {cm[1,0]:4d}  {cm[1,1]:4d}")
+        print(f"              Predicted")
+        print(f"              Reject  Accept")
+        print(f"Actual Reject   {cm[0,0]:4d}    {cm[0,1]:4d}")
+        print(f"       Accept   {cm[1,0]:4d}    {cm[1,1]:4d}")
         print(f"\nClassification Report:")
         print(class_report)
         print("="*50)
+        print("Method: Comparing logits of 'yes' vs 'no' tokens at decision position")
+        print("Prediction: Accept if P(yes) > P(no), else Reject")
+        print("="*50)
     
     return results
-
-def debug_evaluation_sample(trainer, eval_dataset, tokenizer, num_samples=3):
-    """Debug function to inspect a few evaluation samples in detail"""
-    print("\n" + "="*60)
-    print("DEBUG: EVALUATION SAMPLE INSPECTION")
-    print("="*60)
-    
-    # Get yes/no token IDs
-    yes_tokens = tokenizer(" yes", add_special_tokens=False)['input_ids']
-    no_tokens = tokenizer(" no", add_special_tokens=False)['input_ids']
-    yes_token_id = yes_tokens[0] if yes_tokens else None
-    no_token_id = no_tokens[0] if no_tokens else None
-    
-    print(f"Yes token: '{tokenizer.decode([yes_token_id])}' (ID: {yes_token_id})")
-    print(f"No token: '{tokenizer.decode([no_token_id])}' (ID: {no_token_id})")
-    
-    # Take a small sample
-    sample_dataset = eval_dataset.select(range(min(num_samples, len(eval_dataset))))
-    
-    trainer.args.prediction_loss_only = False
-    
-    with torch.no_grad():
-        eval_output = trainer.predict(sample_dataset)
-        predictions_logits = eval_output.predictions
-        labels = eval_output.label_ids
-        
-        for i in range(len(labels)):
-            print(f"\n--- Sample {i+1} ---")
-            
-            # Reconstruct the input text
-            input_ids = sample_dataset[i]['input_ids']
-            input_text = tokenizer.decode(input_ids, skip_special_tokens=True)
-            print(f"Input text preview: ...{input_text[-200:]}")
-            
-            # Find target positions
-            sample_labels = labels[i]
-            target_positions = [j for j, label in enumerate(sample_labels) if label != -100]
-            print(f"Target positions (non -100): {target_positions}")
-            
-            if target_positions:
-                target_pos = target_positions[0]
-                target_label = sample_labels[target_pos]
-                target_logits = predictions_logits[i][target_pos]
-                
-                print(f"Target position: {target_pos}")
-                print(f"Target label (token ID): {target_label}")
-                print(f"Target label (decoded): '{tokenizer.decode([target_label])}'")
-                
-                # Get logits for yes/no tokens
-                yes_logit = target_logits[yes_token_id]
-                no_logit = target_logits[no_token_id]
-                
-                print(f"Yes logit: {yes_logit:.4f}")
-                print(f"No logit: {no_logit:.4f}")
-                
-                # Convert to probabilities
-                import torch.nn.functional as F
-                yes_no_logits = torch.tensor([no_logit, yes_logit])
-                yes_no_probs = F.softmax(yes_no_logits, dim=0)
-                
-                print(f"No probability: {yes_no_probs[0]:.4f}")
-                print(f"Yes probability: {yes_no_probs[1]:.4f}")
-                
-                predicted_binary = 1 if yes_no_probs[1] > yes_no_probs[0] else 0
-                true_binary = 1 if target_label == yes_token_id else 0
-                
-                print(f"Predicted binary: {predicted_binary} ({'Yes' if predicted_binary == 1 else 'No'})")
-                print(f"True binary: {true_binary} ({'Yes' if true_binary == 1 else 'No'})")
-                print(f"Correct: {predicted_binary == true_binary}")
-    
-    trainer.args.prediction_loss_only = True
-    print("="*60)
-
-class CustomTrainerForBinaryClassification(Trainer):
-    """Custom trainer that focuses loss calculation on yes/no token probabilities"""
-    
-    def __init__(self, tokenizer, class_weights=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.tokenizer = tokenizer
-        self.class_weights = class_weights
-        
-        # Get yes/no token IDs
-        yes_tokens = tokenizer(" yes", add_special_tokens=False)['input_ids']
-        no_tokens = tokenizer(" no", add_special_tokens=False)['input_ids']
-        
-        if len(yes_tokens) == 0 or len(no_tokens) == 0:
-            raise ValueError("Could not tokenize 'yes' or 'no' tokens")
-        
-        self.yes_token_id = yes_tokens[0]
-        self.no_token_id = no_tokens[0]
-        
-        print(f"Custom trainer using yes_token_id: {self.yes_token_id}, no_token_id: {self.no_token_id}")
-        if class_weights is not None:
-            print(f"Using class weights: {class_weights}")
-    
-    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
-        """
-        Custom loss computation that focuses on yes/no token probabilities
-        """
-        labels = inputs.get("labels")
-        # Forward pass
-        outputs = model(**inputs)
-        logits = outputs.get('logits')
-        
-        if labels is not None:
-            # Custom loss calculation
-            loss = self.calculate_binary_classification_loss(logits, labels)
-            
-            # Apply loss scaling to prevent vanishing gradients
-            if loss.item() < 1e-6:
-                loss = loss + 1e-4  # Add minimum loss to prevent complete vanishing
-                
-        else:
-            loss = outputs.loss
-        
-        return (loss, outputs) if return_outputs else loss
-    
-    def calculate_binary_classification_loss(self, logits, labels):
-        """
-        Calculate loss focusing on yes/no token probabilities at target positions
-        Enhanced with numerical stability and better loss calculation
-        """
-        import torch.nn.functional as F
-        
-        batch_size, seq_len, vocab_size = logits.shape
-        total_loss = 0.0
-        num_valid_samples = 0
-        
-        # Collect all valid samples for batch processing
-        binary_logits_list = []
-        binary_targets_list = []
-        
-        for i in range(batch_size):
-            sample_labels = labels[i]
-            sample_logits = logits[i]
-            
-            # Find positions where labels are not -100 (target positions)
-            target_positions = (sample_labels != -100).nonzero(as_tuple=True)[0]
-            
-            if len(target_positions) > 0:
-                # Take the first target position (should be the yes/no token)
-                target_pos = target_positions[0]
-                target_label = sample_labels[target_pos]
-                target_logits = sample_logits[target_pos]  # [vocab_size]
-                
-                # Extract logits for yes and no tokens only
-                yes_logit = target_logits[self.yes_token_id]
-                no_logit = target_logits[self.no_token_id]
-                
-                # Create binary classification setup with numerical stability
-                binary_logits = torch.stack([no_logit, yes_logit])  # [no, yes]
-                
-                # Create binary target (0 for no, 1 for yes)
-                if target_label == self.yes_token_id:
-                    binary_target = torch.tensor(1, device=logits.device, dtype=torch.long)
-                elif target_label == self.no_token_id:
-                    binary_target = torch.tensor(0, device=logits.device, dtype=torch.long)
-                else:
-                    continue  # Skip if target is neither yes nor no
-                
-                binary_logits_list.append(binary_logits)
-                binary_targets_list.append(binary_target)
-                num_valid_samples += 1
-        
-        if num_valid_samples > 0:
-            # Batch process all valid samples for better numerical stability
-            all_binary_logits = torch.stack(binary_logits_list)  # [num_valid_samples, 2]
-            all_binary_targets = torch.stack(binary_targets_list)  # [num_valid_samples]
-            
-            # Apply class weights if available
-            if self.class_weights is not None:
-                # Create weight tensor for cross entropy
-                weight_tensor = torch.tensor([
-                    self.class_weights.get(0, 1.0),  # Weight for class 0 (no)
-                    self.class_weights.get(1, 1.0)   # Weight for class 1 (yes)
-                ], device=all_binary_logits.device, dtype=all_binary_logits.dtype)
-                
-                # Calculate weighted cross-entropy loss
-                final_loss = F.cross_entropy(all_binary_logits, all_binary_targets, weight=weight_tensor)
-            else:
-                # Calculate standard cross-entropy loss
-                final_loss = F.cross_entropy(all_binary_logits, all_binary_targets)
-            
-            # Ensure loss is not too small (numerical stability)
-            final_loss = torch.clamp(final_loss, min=1e-6)
-            
-            # Occasional debugging output (every 50 steps approximately)
-            if hasattr(self, '_step_counter'):
-                self._step_counter += 1
-            else:
-                self._step_counter = 1
-            
-            if self._step_counter % 50 == 0:
-                # Calculate accuracy for debugging
-                predictions = torch.argmax(all_binary_logits, dim=1)
-                accuracy = (predictions == all_binary_targets).float().mean()
-                
-                # Calculate per-class distribution
-                pred_counts = torch.bincount(predictions, minlength=2)
-                target_counts = torch.bincount(all_binary_targets, minlength=2)
-                
-                print(f"Step {self._step_counter}: Binary loss = {final_loss:.6f}, Accuracy = {accuracy:.4f}")
-                print(f"  Predictions: No={pred_counts[0]}, Yes={pred_counts[1]} | Targets: No={target_counts[0]}, Yes={target_counts[1]}")
-                print(f"  Valid samples: {num_valid_samples}/{batch_size}")
-            
-            return final_loss
-        else:
-            # Fallback to a small positive loss to maintain gradient flow
-            return torch.tensor(1e-4, device=logits.device, requires_grad=True)
-
-class BinaryClassificationCallback(TrainerCallback):
-    """Callback to monitor binary classification training progress"""
-    
-    def __init__(self, tokenizer):
-        self.tokenizer = tokenizer
-        # Get yes/no token IDs
-        yes_tokens = tokenizer(" yes", add_special_tokens=False)['input_ids']
-        no_tokens = tokenizer(" no", add_special_tokens=False)['input_ids']
-        self.yes_token_id = yes_tokens[0] if yes_tokens else None
-        self.no_token_id = no_tokens[0] if no_tokens else None
-        self.step_count = 0
-        
-    def on_log(self, args, state, control, logs=None, **kwargs):
-        """Called when logging occurs"""
-        if logs and 'train_loss' in logs:
-            self.step_count += 1
-            if self.step_count % 50 == 0:  # Log every 50 steps
-                print(f"Step {self.step_count}: Binary classification loss = {logs['train_loss']:.4f}")
 
 def main():
     # Parse command line arguments
@@ -866,74 +624,51 @@ def main():
     
     # Only run training if not in evaluation mode
     if not args.eval:
-        # Calculate class weights for handling imbalanced data
-        from sklearn.utils.class_weight import compute_class_weight
-        
-        # Extract binary labels from the train dataset
-        train_binary_labels = [sample['binary_labels'] for sample in train_dataset]
-        unique_labels = np.unique(train_binary_labels)
-        class_weights = compute_class_weight('balanced', classes=unique_labels, y=train_binary_labels)
-        class_weights_dict = {label: weight for label, weight in zip(unique_labels, class_weights)}
-        
-        print(f"Calculated class weights: {class_weights_dict}")
-        print(f"Label distribution in training data: {np.bincount(train_binary_labels)}")
-        
         # Training arguments
         training_args = TrainingArguments(
             output_dir=OUTPUT_DIR,
             num_train_epochs=5,
-            per_device_train_batch_size=1,  # Increased from 1 for better stability
-            per_device_eval_batch_size=1,   # Increased from 1
-            gradient_accumulation_steps=8,  # Reduced since batch size increased
-            learning_rate=5e-6,  # Reduced learning rate for more stable training
-            warmup_steps=100,  # More warmup steps for stability
-            warmup_ratio=0.1,  # Add warmup ratio for better learning rate scheduling
-            weight_decay=0.01,  # Increased weight decay to prevent overfitting
+            per_device_train_batch_size=1,
+            per_device_eval_batch_size=1,
+            gradient_accumulation_steps=8,  # Increased to maintain effective batch size
+            learning_rate=1e-5,  # Even smaller learning rate
+            warmup_steps=20,
+            weight_decay=0.001,
             logging_dir=f"{OUTPUT_DIR}/logs",
-            logging_steps=10,
+            logging_steps=10,  # Reduce logging frequency
             eval_strategy="steps",
-            eval_steps=100,
+            eval_steps=100,  # Increase evaluation frequency to save memory
             save_steps=200,
-            save_total_limit=3,  # Keep more checkpoints
-            load_best_model_at_end=True,  # Enable to prevent overfitting
+            save_total_limit=2,
+            load_best_model_at_end=False,  # Disable to save memory
             metric_for_best_model="eval_loss",
             greater_is_better=False,
-            bf16=True,
+            bf16=True,  # Enable bf16 for memory efficiency
             dataloader_pin_memory=False,
             remove_unused_columns=False,
             label_names=["labels"],
-            max_grad_norm=0.5,  # Reduced gradient clipping for better stability
+            max_grad_norm=1.0,  # Much stricter gradient clipping
             adam_epsilon=1e-8,
-            adam_beta1=0.9,  # Add explicit Adam beta parameters
-            adam_beta2=0.999,
-            lr_scheduler_type="cosine_with_restarts",  # Better scheduler for convergence
+            lr_scheduler_type="linear",
             optim="adamw_torch",
-            eval_accumulation_steps=4,
-            dataloader_num_workers=0,
-            ddp_find_unused_parameters=False,
-            deepspeed=None,
-            prediction_loss_only=True,
-            skip_memory_metrics=True,
-            report_to=None,
-            label_smoothing_factor=0.1,  # Add label smoothing to prevent overconfidence
-            save_safetensors=True,  # Use safetensors for better model saving
+            eval_accumulation_steps=4,  # Process eval in smaller chunks
+            dataloader_num_workers=0,  # Disable multiprocessing to save memory
+            ddp_find_unused_parameters=False,  # Optimize for model parallelism
+            deepspeed=None,  # Can be configured for ZeRO if needed
+            prediction_loss_only=True,  # Only compute loss during periodic evaluation
+            skip_memory_metrics=True,  # Skip memory metrics to save memory
         )
         
-        # Initialize custom trainer for binary classification
-        trainer = CustomTrainerForBinaryClassification(
-            tokenizer=tokenizer,
-            class_weights=class_weights_dict,
+        # Initialize trainer
+        trainer = Trainer(
             model=model,
             args=training_args,
             train_dataset=train_dataset,
             eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
+            tokenizer=tokenizer,
             data_collator=data_collator,
-            compute_metrics=compute_metrics,
+            compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer),
         )
-        
-        # Add custom callback for monitoring binary classification progress
-        binary_callback = BinaryClassificationCallback(tokenizer)
-        trainer.add_callback(binary_callback)
         
         # Prepare everything with accelerator for model parallelism
         model, trainer.optimizer, train_dataset, eval_dataset = accelerator.prepare(
@@ -987,9 +722,6 @@ def main():
             data_collator=data_collator,
             compute_metrics=compute_metrics,
         )
-    
-    # Debug: Inspect a few samples to understand the evaluation logic
-    debug_evaluation_sample(trainer, eval_dataset, tokenizer, num_samples=3)
     
     # Use batched evaluation to prevent OOM
     eval_results = batched_accuracy_evaluation(

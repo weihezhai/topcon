@@ -520,7 +520,7 @@ class CustomTrainerForBinaryClassification(Trainer):
         if class_weights is not None:
             print(f"Using class weights: {class_weights}")
     
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         """
         Custom loss computation that focuses on yes/no token probabilities
         """

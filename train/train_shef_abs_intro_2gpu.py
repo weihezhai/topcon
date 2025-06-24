@@ -882,9 +882,9 @@ def main():
         training_args = TrainingArguments(
             output_dir=OUTPUT_DIR,
             num_train_epochs=5,
-            per_device_train_batch_size=2,  # Increased from 1 for better stability
-            per_device_eval_batch_size=2,   # Increased from 1
-            gradient_accumulation_steps=4,  # Reduced since batch size increased
+            per_device_train_batch_size=1,  # Increased from 1 for better stability
+            per_device_eval_batch_size=1,   # Increased from 1
+            gradient_accumulation_steps=8,  # Reduced since batch size increased
             learning_rate=5e-6,  # Reduced learning rate for more stable training
             warmup_steps=100,  # More warmup steps for stability
             warmup_ratio=0.1,  # Add warmup ratio for better learning rate scheduling

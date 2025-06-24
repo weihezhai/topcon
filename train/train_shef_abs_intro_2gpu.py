@@ -501,9 +501,10 @@ def debug_evaluation_sample(trainer, eval_dataset, tokenizer, num_samples=3):
 class CustomTrainerForBinaryClassification(Trainer):
     """Custom trainer that focuses loss calculation on yes/no token probabilities"""
     
-    def __init__(self, tokenizer, *args, **kwargs):
+    def __init__(self, tokenizer, class_weights=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.tokenizer = tokenizer
+        self.class_weights = class_weights
         
         # Get yes/no token IDs
         yes_tokens = tokenizer(" yes", add_special_tokens=False)['input_ids']
@@ -516,8 +517,10 @@ class CustomTrainerForBinaryClassification(Trainer):
         self.no_token_id = no_tokens[0]
         
         print(f"Custom trainer using yes_token_id: {self.yes_token_id}, no_token_id: {self.no_token_id}")
+        if class_weights is not None:
+            print(f"Using class weights: {class_weights}")
     
-    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
+    def compute_loss(self, model, inputs, return_outputs=False):
         """
         Custom loss computation that focuses on yes/no token probabilities
         """
@@ -529,6 +532,11 @@ class CustomTrainerForBinaryClassification(Trainer):
         if labels is not None:
             # Custom loss calculation
             loss = self.calculate_binary_classification_loss(logits, labels)
+            
+            # Apply loss scaling to prevent vanishing gradients
+            if loss.item() < 1e-6:
+                loss = loss + 1e-4  # Add minimum loss to prevent complete vanishing
+                
         else:
             loss = outputs.loss
         
@@ -537,12 +545,17 @@ class CustomTrainerForBinaryClassification(Trainer):
     def calculate_binary_classification_loss(self, logits, labels):
         """
         Calculate loss focusing on yes/no token probabilities at target positions
+        Enhanced with numerical stability and better loss calculation
         """
         import torch.nn.functional as F
         
         batch_size, seq_len, vocab_size = logits.shape
         total_loss = 0.0
         num_valid_samples = 0
+        
+        # Collect all valid samples for batch processing
+        binary_logits_list = []
+        binary_targets_list = []
         
         for i in range(batch_size):
             sample_labels = labels[i]
@@ -561,37 +574,66 @@ class CustomTrainerForBinaryClassification(Trainer):
                 yes_logit = target_logits[self.yes_token_id]
                 no_logit = target_logits[self.no_token_id]
                 
-                # Create binary classification setup
+                # Create binary classification setup with numerical stability
                 binary_logits = torch.stack([no_logit, yes_logit])  # [no, yes]
                 
                 # Create binary target (0 for no, 1 for yes)
                 if target_label == self.yes_token_id:
-                    binary_target = torch.tensor(1, device=logits.device)
+                    binary_target = torch.tensor(1, device=logits.device, dtype=torch.long)
                 elif target_label == self.no_token_id:
-                    binary_target = torch.tensor(0, device=logits.device)
+                    binary_target = torch.tensor(0, device=logits.device, dtype=torch.long)
                 else:
                     continue  # Skip if target is neither yes nor no
                 
-                # Calculate cross-entropy loss for binary classification
-                sample_loss = F.cross_entropy(binary_logits.unsqueeze(0), binary_target.unsqueeze(0))
-                total_loss += sample_loss
+                binary_logits_list.append(binary_logits)
+                binary_targets_list.append(binary_target)
                 num_valid_samples += 1
         
         if num_valid_samples > 0:
-            final_loss = total_loss / num_valid_samples
-            # Occasional debugging output (every 100 steps approximately)
+            # Batch process all valid samples for better numerical stability
+            all_binary_logits = torch.stack(binary_logits_list)  # [num_valid_samples, 2]
+            all_binary_targets = torch.stack(binary_targets_list)  # [num_valid_samples]
+            
+            # Apply class weights if available
+            if self.class_weights is not None:
+                # Create weight tensor for cross entropy
+                weight_tensor = torch.tensor([
+                    self.class_weights.get(0, 1.0),  # Weight for class 0 (no)
+                    self.class_weights.get(1, 1.0)   # Weight for class 1 (yes)
+                ], device=all_binary_logits.device, dtype=all_binary_logits.dtype)
+                
+                # Calculate weighted cross-entropy loss
+                final_loss = F.cross_entropy(all_binary_logits, all_binary_targets, weight=weight_tensor)
+            else:
+                # Calculate standard cross-entropy loss
+                final_loss = F.cross_entropy(all_binary_logits, all_binary_targets)
+            
+            # Ensure loss is not too small (numerical stability)
+            final_loss = torch.clamp(final_loss, min=1e-6)
+            
+            # Occasional debugging output (every 50 steps approximately)
             if hasattr(self, '_step_counter'):
                 self._step_counter += 1
             else:
                 self._step_counter = 1
             
-            if self._step_counter % 100 == 0:
-                print(f"Binary classification loss at step {self._step_counter}: {final_loss:.4f} (valid samples: {num_valid_samples}/{batch_size})")
+            if self._step_counter % 50 == 0:
+                # Calculate accuracy for debugging
+                predictions = torch.argmax(all_binary_logits, dim=1)
+                accuracy = (predictions == all_binary_targets).float().mean()
+                
+                # Calculate per-class distribution
+                pred_counts = torch.bincount(predictions, minlength=2)
+                target_counts = torch.bincount(all_binary_targets, minlength=2)
+                
+                print(f"Step {self._step_counter}: Binary loss = {final_loss:.6f}, Accuracy = {accuracy:.4f}")
+                print(f"  Predictions: No={pred_counts[0]}, Yes={pred_counts[1]} | Targets: No={target_counts[0]}, Yes={target_counts[1]}")
+                print(f"  Valid samples: {num_valid_samples}/{batch_size}")
             
             return final_loss
         else:
-            # Fallback to standard loss if no valid samples
-            return torch.tensor(0.0, device=logits.device, requires_grad=True)
+            # Fallback to a small positive loss to maintain gradient flow
+            return torch.tensor(1e-4, device=logits.device, requires_grad=True)
 
 class BinaryClassificationCallback(TrainerCallback):
     """Callback to monitor binary classification training progress"""
@@ -824,45 +866,63 @@ def main():
     
     # Only run training if not in evaluation mode
     if not args.eval:
+        # Calculate class weights for handling imbalanced data
+        from sklearn.utils.class_weight import compute_class_weight
+        
+        # Extract binary labels from the train dataset
+        train_binary_labels = [sample['binary_labels'] for sample in train_dataset]
+        unique_labels = np.unique(train_binary_labels)
+        class_weights = compute_class_weight('balanced', classes=unique_labels, y=train_binary_labels)
+        class_weights_dict = {label: weight for label, weight in zip(unique_labels, class_weights)}
+        
+        print(f"Calculated class weights: {class_weights_dict}")
+        print(f"Label distribution in training data: {np.bincount(train_binary_labels)}")
+        
         # Training arguments
         training_args = TrainingArguments(
             output_dir=OUTPUT_DIR,
             num_train_epochs=5,
-            per_device_train_batch_size=1,
-            per_device_eval_batch_size=1,
-            gradient_accumulation_steps=8,  # Increased to maintain effective batch size
-            learning_rate=2e-5,  # Slightly higher learning rate for binary classification
-            warmup_steps=50,  # More warmup steps for stability
-            weight_decay=0.001,
+            per_device_train_batch_size=2,  # Increased from 1 for better stability
+            per_device_eval_batch_size=2,   # Increased from 1
+            gradient_accumulation_steps=4,  # Reduced since batch size increased
+            learning_rate=5e-6,  # Reduced learning rate for more stable training
+            warmup_steps=100,  # More warmup steps for stability
+            warmup_ratio=0.1,  # Add warmup ratio for better learning rate scheduling
+            weight_decay=0.01,  # Increased weight decay to prevent overfitting
             logging_dir=f"{OUTPUT_DIR}/logs",
-            logging_steps=10,  # Reduce logging frequency
+            logging_steps=10,
             eval_strategy="steps",
-            eval_steps=100,  # Increase evaluation frequency to save memory
+            eval_steps=100,
             save_steps=200,
-            save_total_limit=2,
-            load_best_model_at_end=False,  # Disable to save memory
+            save_total_limit=3,  # Keep more checkpoints
+            load_best_model_at_end=True,  # Enable to prevent overfitting
             metric_for_best_model="eval_loss",
             greater_is_better=False,
-            bf16=True,  # Enable bf16 for memory efficiency
+            bf16=True,
             dataloader_pin_memory=False,
             remove_unused_columns=False,
             label_names=["labels"],
-            max_grad_norm=1.0,  # Gradient clipping for stability
+            max_grad_norm=0.5,  # Reduced gradient clipping for better stability
             adam_epsilon=1e-8,
-            lr_scheduler_type="cosine",  # Cosine scheduler for better convergence
+            adam_beta1=0.9,  # Add explicit Adam beta parameters
+            adam_beta2=0.999,
+            lr_scheduler_type="cosine_with_restarts",  # Better scheduler for convergence
             optim="adamw_torch",
-            eval_accumulation_steps=4,  # Process eval in smaller chunks
-            dataloader_num_workers=0,  # Disable multiprocessing to save memory
-            ddp_find_unused_parameters=False,  # Optimize for model parallelism
-            deepspeed=None,  # Can be configured for ZeRO if needed
-            prediction_loss_only=True,  # Only compute loss during periodic evaluation
-            skip_memory_metrics=True,  # Skip memory metrics to save memory
-            report_to=None,  # Disable wandb/tensorboard reporting
+            eval_accumulation_steps=4,
+            dataloader_num_workers=0,
+            ddp_find_unused_parameters=False,
+            deepspeed=None,
+            prediction_loss_only=True,
+            skip_memory_metrics=True,
+            report_to=None,
+            label_smoothing_factor=0.1,  # Add label smoothing to prevent overconfidence
+            save_safetensors=True,  # Use safetensors for better model saving
         )
         
         # Initialize custom trainer for binary classification
         trainer = CustomTrainerForBinaryClassification(
             tokenizer=tokenizer,
+            class_weights=class_weights_dict,
             model=model,
             args=training_args,
             train_dataset=train_dataset,

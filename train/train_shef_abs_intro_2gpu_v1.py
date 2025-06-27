@@ -287,8 +287,6 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     all_binary_labels = []
     total_loss = 0.0
     
-    model = trainer.model
-    
     # Process evaluation dataset in small batches
     for i in range(0, len(eval_dataset), batch_size):
         batch_end = min(i + batch_size, len(eval_dataset))
@@ -299,65 +297,27 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
         # Clear cache before each batch
         torch.cuda.empty_cache()
         
+        # Temporarily enable full prediction for this batch
+        trainer.args.prediction_loss_only = False
+        
         with torch.no_grad():
-            # Extract input portions and decision positions for efficient inference
-            batch_input_ids = []
-            batch_attention_masks = []
-            decision_positions = []
-            true_labels = []
+            # Use trainer.predict to get predictions (keep as logits)
+            eval_output = trainer.predict(batch_dataset)
+            logits = eval_output.predictions  # Keep as logits, don't take argmax
+            labels = eval_output.label_ids
             
-            for sample in batch_dataset:
-                input_ids = sample['input_ids']
-                attention_mask = sample['attention_mask']
-                labels = sample['labels']
-                
-                # Find decision position (first non-ignored label)
+            # Process each sample in the batch
+            for j in range(len(labels)):
+                # Find the decision position (first non-ignored label)
                 decision_pos = None
-                for k in range(len(labels)):
-                    if labels[k] != -100:
+                for k in range(len(labels[j])):
+                    if labels[j][k] != -100:
                         decision_pos = k
                         break
                 
                 if decision_pos is not None:
-                    # Only keep input up to decision position (exclude target tokens)
-                    input_portion = input_ids[:decision_pos]
-                    mask_portion = attention_mask[:decision_pos]
-                    
-                    batch_input_ids.append(input_portion)
-                    batch_attention_masks.append(mask_portion)
-                    decision_positions.append(len(input_portion))  # Next position is where we predict
-                    
-                    # Get ground truth
-                    true_token_id = labels[decision_pos]
-                    true_label = 1 if true_token_id == yes_token_id else 0
-                    true_labels.append(true_label)
-            
-            if len(batch_input_ids) > 0:
-                # Pad batch to same length
-                max_len = max(len(ids) for ids in batch_input_ids)
-                padded_input_ids = []
-                padded_attention_masks = []
-                
-                for j, (input_ids, attention_mask) in enumerate(zip(batch_input_ids, batch_attention_masks)):
-                    pad_length = max_len - len(input_ids)
-                    padded_ids = input_ids + [tokenizer.pad_token_id] * pad_length
-                    padded_mask = attention_mask + [0] * pad_length
-                    
-                    padded_input_ids.append(padded_ids)
-                    padded_attention_masks.append(padded_mask)
-                
-                # Convert to tensors and move to device
-                input_tensor = torch.tensor(padded_input_ids, device=model.device)
-                mask_tensor = torch.tensor(padded_attention_masks, device=model.device)
-                
-                # Get logits from model - only forward pass, no need for full sequence
-                outputs = model(input_ids=input_tensor, attention_mask=mask_tensor)
-                logits = outputs.logits
-                
-                # Extract logits at decision positions for each sample
-                for j, (decision_pos, true_label) in enumerate(zip(decision_positions, true_labels)):
-                    # Get logits at the position where we need to predict the next token
-                    logits_at_pos = logits[j, decision_pos - 1]  # -1 because we predict the next token
+                    # Get logits at decision position
+                    logits_at_pos = logits[j][decision_pos]
                     
                     # Compare yes vs no logits
                     yes_logit = logits_at_pos[yes_token_id]
@@ -366,12 +326,19 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                     # Predict based on higher logit
                     predicted_label = 1 if yes_logit > no_logit else 0
                     
+                    # Get ground truth
+                    true_token_id = labels[j][decision_pos]
+                    true_label = 1 if true_token_id == yes_token_id else 0
+                    
                     all_binary_predictions.append(predicted_label)
                     all_binary_labels.append(true_label)
             
-            # Get loss from evaluation using original method for loss calculation
+            # Get loss from evaluation
             eval_results = trainer.evaluate(eval_dataset=batch_dataset)
             total_loss += eval_results['eval_loss'] * (batch_end - i)
+        
+        # Reset to loss-only mode
+        trainer.args.prediction_loss_only = True
         
         # Clear cache after each batch
         torch.cuda.empty_cache()

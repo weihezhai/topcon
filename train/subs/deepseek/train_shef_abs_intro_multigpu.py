@@ -31,7 +31,6 @@ import argparse
 # Import the dataset builder
 from dataset_builder_abs_intro import TextDatasetBuilder
 from datasets import load_from_disk
-from accelerate import Accelerator
 
 class CustomDataCollator:
     """Custom data collator that handles variable-length sequences"""
@@ -474,9 +473,6 @@ def main():
     else:
         gpu_ids = None
     
-    # Initialize accelerator for distributed training
-    accelerator = Accelerator()
-    
     # Configuration
     MODEL_NAME = args.model_name
     DATA_FOLDER = args.data_folder
@@ -611,28 +607,39 @@ def main():
     print(f"Sample labels type: {type(sample['labels'])}")
     print(f"Sample labels value: {sample['labels']}")
     
-    # Load model from appropriate path (now using CausalLM)
+    # Load model from appropriate path (now using CausalLM with proper device mapping)
     from transformers import AutoModelForCausalLM
+    
+    # Create device map for model parallelism
+    if torch.cuda.device_count() > 1:
+        # For multi-GPU setup, use model parallelism
+        device_map = "auto"  # Let transformers automatically distribute layers
+        print(f"Using model parallelism across {torch.cuda.device_count()} GPUs")
+    else:
+        device_map = None
+        print("Using single GPU")
     
     # Determine device mapping strategy
     if args.eval:
-        # For evaluation, use simpler device mapping
-        device_map = "auto" if torch.cuda.device_count() > 1 else None
         model = AutoModelForCausalLM.from_pretrained(
             OUTPUT_DIR,  # Load from fine-tuned model directory
             torch_dtype=torch.bfloat16,
-            device_map=device_map
+            device_map=device_map,
+            low_cpu_mem_usage=True,  # Enable for large models
+            max_memory={i: "76GiB" for i in range(torch.cuda.device_count())}  # Reserve some memory per GPU
         )
         print("Loaded fine-tuned model for evaluation")
     else:
-        # For training with Accelerator, don't use device_map to avoid conflicts
         model = AutoModelForCausalLM.from_pretrained(
             BASE_MODEL_CACHE,
             torch_dtype=torch.bfloat16,
-            device_map=None  # Let Accelerator handle device placement
+            device_map=device_map,
+            low_cpu_mem_usage=True,  # Enable for large models
+            max_memory={i: "76GiB" for i in range(torch.cuda.device_count())}  # Reserve some memory per GPU
         )
 
     print(model)
+    print(f"Model device map: {model.hf_device_map}")
     
     # Data collator for language modeling
     data_collator = CustomDataCollator(
@@ -642,21 +649,21 @@ def main():
     
     # Only run training if not in evaluation mode
     if not args.eval:
-        # Training arguments
+        # Training arguments - adjusted for model parallelism
         training_args = TrainingArguments(
             output_dir=OUTPUT_DIR,
             num_train_epochs=5,
-            per_device_train_batch_size=1,
+            per_device_train_batch_size=1,  # Keep small due to long sequences
             per_device_eval_batch_size=1,
-            gradient_accumulation_steps=8,  # Increased to maintain effective batch size
-            learning_rate=1e-5,  # Even smaller learning rate
-            warmup_steps=20,
+            gradient_accumulation_steps=16,  # Increase to maintain effective batch size
+            learning_rate=5e-6,  # Smaller learning rate for stability
+            warmup_steps=50,
             weight_decay=0.001,
             logging_dir=f"{OUTPUT_DIR}/logs",
-            logging_steps=10,  # Reduce logging frequency
+            logging_steps=10,
             eval_strategy="steps",
-            eval_steps=100,  # Increase evaluation frequency to save memory
-            save_steps=200,
+            eval_steps=200,  # Less frequent evaluation
+            save_steps=400,
             save_total_limit=2,
             load_best_model_at_end=False,  # Disable to save memory
             metric_for_best_model="eval_loss",
@@ -665,16 +672,18 @@ def main():
             dataloader_pin_memory=False,
             remove_unused_columns=False,
             label_names=["labels"],
-            max_grad_norm=1.0,  # Much stricter gradient clipping
+            max_grad_norm=1.0,
             adam_epsilon=1e-8,
             lr_scheduler_type="linear",
             optim="adamw_torch",
-            eval_accumulation_steps=4,  # Process eval in smaller chunks
+            eval_accumulation_steps=8,  # Process eval in smaller chunks
             dataloader_num_workers=0,  # Disable multiprocessing to save memory
-            ddp_find_unused_parameters=False,  # Optimize for model parallelism
-            deepspeed=None,  # Can be configured for ZeRO if needed
-            prediction_loss_only=True,  # Only compute loss during periodic evaluation
-            skip_memory_metrics=True,  # Skip memory metrics to save memory
+            ddp_find_unused_parameters=False,
+            prediction_loss_only=True,
+            skip_memory_metrics=True,
+            # Model parallelism specific settings
+            ddp_backend=None,  # Disable DDP for model parallelism
+            local_rank=-1,  # Disable distributed training
         )
         
         # Initialize trainer
@@ -682,17 +691,11 @@ def main():
             model=model,
             args=training_args,
             train_dataset=train_dataset,
-            eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
+            eval_dataset=small_eval_dataset,
             tokenizer=tokenizer,
             data_collator=data_collator,
             compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer),
         )
-        
-        # Prepare everything with accelerator - do this BEFORE training
-        # Don't prepare the datasets again as they're already processed
-        trainer.model = accelerator.prepare(trainer.model)
-        if trainer.optimizer is not None:
-            trainer.optimizer = accelerator.prepare(trainer.optimizer)
         
         # Train the model
         print("Starting training...")
@@ -711,9 +714,8 @@ def main():
         
         # Save the fine-tuned model
         print(f"Saving fine-tuned model to {OUTPUT_DIR}")
-        # Use accelerator's unwrap_model for saving
-        unwrapped_model = accelerator.unwrap_model(trainer.model)
-        unwrapped_model.save_pretrained(OUTPUT_DIR)
+        # Don't use accelerator's unwrap_model since we're not using accelerator
+        model.save_pretrained(OUTPUT_DIR)
         tokenizer.save_pretrained(OUTPUT_DIR)
         
         print(f"Fine-tuned model saved to: {OUTPUT_DIR}")

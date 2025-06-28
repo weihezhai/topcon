@@ -6,8 +6,8 @@
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --job-name=iclr_2025_llm_paper_qwen3_4b
-#SBATCH --output=./logs/iclr_2025_llm_paper_qwen3_4b.%j.out
+#SBATCH --job-name=iclr_2025_llm_paper_DeepSeek-R1-0528-Qwen3-8B
+#SBATCH --output=./logs/iclr_2025_llm_paper_DeepSeek-R1-0528-Qwen3-8B.%j.out
 #SBATCH --time=0-12:00:00
 
 # Load necessary modules

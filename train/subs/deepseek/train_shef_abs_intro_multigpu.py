@@ -499,8 +499,6 @@ def main():
         MODEL_PATH = BASE_MODEL_CACHE
         print(f"Running training mode using base model from {MODEL_PATH}")
     
-    # MAX_LENGTH = 10000 # Further reduced to save memory
-    
     # Print GPU information
     if torch.cuda.is_available():
         print(f"Number of GPUs available: {torch.cuda.device_count()}")
@@ -616,17 +614,10 @@ def main():
     # Load model from appropriate path (now using CausalLM)
     from transformers import AutoModelForCausalLM
     
-    # Create device map based on GPU selection
-    device_map = "auto"  # Default to auto
-    if gpu_ids is not None and len(gpu_ids) == 1:
-        # Single GPU case - place model on specific GPU
-        device_map = f"cuda:{gpu_ids[0]}"
-    elif gpu_ids is not None and len(gpu_ids) > 1:
-        # Multi-GPU case - let transformers handle automatic mapping
-        device_map = "auto"
-    
+    # Determine device mapping strategy
     if args.eval:
-        # Load the fine-tuned model for evaluation
+        # For evaluation, use simpler device mapping
+        device_map = "auto" if torch.cuda.device_count() > 1 else None
         model = AutoModelForCausalLM.from_pretrained(
             OUTPUT_DIR,  # Load from fine-tuned model directory
             torch_dtype=torch.bfloat16,
@@ -634,20 +625,14 @@ def main():
         )
         print("Loaded fine-tuned model for evaluation")
     else:
-        # Load base model for training
+        # For training with Accelerator, don't use device_map to avoid conflicts
         model = AutoModelForCausalLM.from_pretrained(
             BASE_MODEL_CACHE,
             torch_dtype=torch.bfloat16,
-            device_map=device_map
+            device_map=None  # Let Accelerator handle device placement
         )
 
     print(model)
-    
-    # Check if model is distributed across multiple GPUs
-    if hasattr(model, 'hf_device_map'):
-        print(f"Model device map: {model.hf_device_map}")
-    
-    print(f"Model parameters (full fine-tuning):")
     
     # Data collator for language modeling
     data_collator = CustomDataCollator(
@@ -703,10 +688,11 @@ def main():
             compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer),
         )
         
-        # Prepare everything with accelerator for model parallelism
-        model, trainer.optimizer, train_dataset, eval_dataset = accelerator.prepare(
-            model, trainer.optimizer, train_dataset, eval_dataset
-        )
+        # Prepare everything with accelerator - do this BEFORE training
+        # Don't prepare the datasets again as they're already processed
+        trainer.model = accelerator.prepare(trainer.model)
+        if trainer.optimizer is not None:
+            trainer.optimizer = accelerator.prepare(trainer.optimizer)
         
         # Train the model
         print("Starting training...")
@@ -725,7 +711,9 @@ def main():
         
         # Save the fine-tuned model
         print(f"Saving fine-tuned model to {OUTPUT_DIR}")
-        trainer.save_model()
+        # Use accelerator's unwrap_model for saving
+        unwrapped_model = accelerator.unwrap_model(trainer.model)
+        unwrapped_model.save_pretrained(OUTPUT_DIR)
         tokenizer.save_pretrained(OUTPUT_DIR)
         
         print(f"Fine-tuned model saved to: {OUTPUT_DIR}")

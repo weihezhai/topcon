@@ -737,33 +737,33 @@ def main():
         torch.cuda.empty_cache()
         print("Cleared trainer and optimizer from memory after training.")
 
+    # Create trainer for final evaluation (needed for both train and eval modes)
+    print("Setting up trainer for final evaluation...")
+    training_args_eval = TrainingArguments(
+        output_dir=OUTPUT_DIR,
+        per_device_eval_batch_size=1,
+        bf16=True,
+        dataloader_pin_memory=False,
+        remove_unused_columns=False,
+        label_names=["labels"],
+        eval_accumulation_steps=4,
+        dataloader_num_workers=0,
+        prediction_loss_only=True,
+        skip_memory_metrics=True,
+    )
+    
+    trainer = Trainer(
+        model=model,
+        args=training_args_eval,
+        tokenizer=tokenizer,
+        data_collator=data_collator,
+        compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer),
+    )
+
     # Always run final evaluation (in both train and eval modes)
     print("Running final evaluation with accuracy computation...")
     torch.cuda.empty_cache()  # Ensure cache is cleared before evaluation
 
-    # For evaluation mode, we need to create a trainer for evaluation
-    if args.eval:
-        training_args = TrainingArguments(
-            output_dir=OUTPUT_DIR,
-            per_device_eval_batch_size=1,
-            bf16=True,
-            dataloader_pin_memory=False,
-            remove_unused_columns=False,
-            label_names=["labels"],
-            eval_accumulation_steps=4,
-            dataloader_num_workers=0,
-            prediction_loss_only=True,
-            skip_memory_metrics=True,
-        )
-        
-        trainer = Trainer(
-            model=model,
-            args=training_args,
-            tokenizer=tokenizer,
-            data_collator=data_collator,
-            compute_metrics=compute_metrics,
-        )
-    
     # Use batched evaluation to prevent OOM
     eval_results = batched_accuracy_evaluation(
         trainer, eval_dataset, batch_size=100, 

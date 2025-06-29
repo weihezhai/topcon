@@ -35,10 +35,11 @@ from accelerate import Accelerator
 
 class CustomDataCollator:
     """Custom data collator that handles variable-length sequences"""
-    def __init__(self, tokenizer, max_length=2048, device=None):
+    def __init__(self, tokenizer, max_length=2048, device=None, use_model_parallel=False):
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.device = device
+        self.use_model_parallel = use_model_parallel
     
     def __call__(self, features):
         # Find the maximum length in this batch
@@ -70,8 +71,9 @@ class CustomDataCollator:
         # Convert to tensors
         batch = {k: torch.tensor(v) for k, v in batch.items()}
         
-        # Move to device if specified (for model parallelism)
-        if self.device is not None:
+        # Only move to device for data parallelism, not model parallelism
+        # Model parallelism handles device placement automatically
+        if self.device is not None and not self.use_model_parallel:
             batch = {k: v.to(self.device) for k, v in batch.items()}
         
         return batch
@@ -686,7 +688,8 @@ def main():
     data_collator = CustomDataCollator(
         tokenizer=tokenizer,
         max_length=MAX_LENGTH,
-        device=first_param_device if args.use_model_parallel else None
+        device=first_param_device if args.use_model_parallel else None,
+        use_model_parallel=args.use_model_parallel
     )
     
     # Only run training if not in evaluation mode
@@ -697,7 +700,7 @@ def main():
             num_train_epochs=5,
             per_device_train_batch_size=1,
             per_device_eval_batch_size=1,
-            gradient_accumulation_steps=8 if not args.use_model_parallel else 4,  # Reduce for model parallel
+            gradient_accumulation_steps=8 if not args.use_model_parallel else 4,
             learning_rate=1e-5,
             warmup_steps=20,
             weight_decay=0.001,
@@ -725,7 +728,7 @@ def main():
             prediction_loss_only=True,
             skip_memory_metrics=True,
             # Disable DDP if using model parallelism
-            ddp_backend="nccl" if not args.use_model_parallel else None,
+            ddp_backend=None if args.use_model_parallel else "nccl",
         )
         
         # Initialize trainer
@@ -754,6 +757,7 @@ def main():
             print("Model prepared with Accelerator for data parallelism")
         else:
             print("Skipping Accelerator preparation - using model parallelism")
+            print("Model parallelism will handle device placement automatically")
         
         # Train the model
         print("Starting training...")
@@ -794,7 +798,8 @@ def main():
         eval_data_collator = CustomDataCollator(
             tokenizer=tokenizer,
             max_length=MAX_LENGTH,
-            device=eval_model_device
+            device=eval_model_device,
+            use_model_parallel=args.use_model_parallel
         )
         
         training_args = TrainingArguments(

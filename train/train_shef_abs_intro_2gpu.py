@@ -729,10 +729,18 @@ def main():
         tokenizer.save_pretrained(OUTPUT_DIR)
         
         print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
-    
+
+        # Explicitly delete trainer and optimizer to free memory
+        del trainer
+        if hasattr(model, 'optimizer'):
+            del model.optimizer
+        torch.cuda.empty_cache()
+        print("Cleared trainer and optimizer from memory after training.")
+
     # Always run final evaluation (in both train and eval modes)
     print("Running final evaluation with accuracy computation...")
-    
+    torch.cuda.empty_cache()  # Ensure cache is cleared before evaluation
+
     # For evaluation mode, we need to create a trainer for evaluation
     if args.eval:
         training_args = TrainingArguments(
@@ -758,7 +766,7 @@ def main():
     
     # Use batched evaluation to prevent OOM
     eval_results = batched_accuracy_evaluation(
-        trainer, eval_dataset, batch_size=20, 
+        trainer, eval_dataset, batch_size=100, 
         detailed_eval=args.detailed_eval, tokenizer=tokenizer
     )
     

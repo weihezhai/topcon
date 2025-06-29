@@ -68,7 +68,7 @@ class CustomDataCollator:
             batch['attention_mask'].append(attention_mask)
             batch['labels'].append(labels)
         
-        # Convert to tensors
+        # Convert to tensors - keep on CPU for model parallelism
         batch = {k: torch.tensor(v) for k, v in batch.items()}
         
         # Only move to device for data parallelism, not model parallelism
@@ -674,30 +674,6 @@ def main():
 
     print(model)
     
-    # --- Bug Fix for Model Parallelism ---
-    # Patch the model's forward method to move labels to the correct device
-    if args.use_model_parallel:
-        original_forward = model.forward
-        
-        def patched_forward(*args, **kwargs):
-            # If 'labels' are in kwargs, move them to the same device as the input_ids
-            if 'labels' in kwargs and kwargs['labels'] is not None:
-                if 'input_ids' in kwargs and kwargs['input_ids'] is not None:
-                    # Move labels to the device of the lm_head, which is where logits are computed.
-                    # A proxy for this is the device of the last parameter.
-                    lm_head_device = model.lm_head.weight.device
-                    kwargs['labels'] = kwargs['labels'].to(lm_head_device)
-                elif len(args) > 0 and args[0] is not None: # input_ids as positional arg
-                    lm_head_device = model.lm_head.weight.device
-                    kwargs['labels'] = kwargs['labels'].to(lm_head_device)
-
-            return original_forward(*args, **kwargs)
-        
-        model.forward = patched_forward
-        print("Patched model's forward method for model parallelism label device handling.")
-    # --- End Bug Fix ---
-
-    # Get the device where the first layer of the model is located
     # This ensures data collator moves tensors to the right device
     if args.use_model_parallel:
         # For model parallel, get the device of the first parameter
@@ -752,6 +728,8 @@ def main():
             skip_memory_metrics=True,
             # Disable DDP if using model parallelism
             ddp_backend=None if args.use_model_parallel else "nccl",
+            # For model parallelism, we need to ensure all processes use the same device for loss calculation
+            device='cuda' if args.use_model_parallel else None,
         )
         
         # Initialize trainer

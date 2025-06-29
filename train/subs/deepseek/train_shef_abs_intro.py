@@ -618,6 +618,7 @@ def main():
         model = AutoModelForCausalLM.from_pretrained(
             OUTPUT_DIR,  # Load from fine-tuned model directory
             torch_dtype=torch.bfloat16,
+            device_map="auto"
             # Remove device_map - let Accelerate handle this
         )
         accelerator.print("Loaded fine-tuned model for evaluation")
@@ -626,6 +627,7 @@ def main():
         model = AutoModelForCausalLM.from_pretrained(
             BASE_MODEL_CACHE,
             torch_dtype=torch.bfloat16,
+            device_map="auto"
             # Remove device_map - let Accelerate handle this
         )
 

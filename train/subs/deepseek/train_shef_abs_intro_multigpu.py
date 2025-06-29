@@ -687,7 +687,7 @@ def main():
     data_collator = CustomDataCollator(
         tokenizer=tokenizer,
         max_length=MAX_LENGTH,
-        device=next(model.parameters()).device
+        device=next(model.parameters()).device,
         use_model_parallel=args.use_model_parallel
     )
     

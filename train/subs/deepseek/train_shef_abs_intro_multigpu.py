@@ -687,7 +687,7 @@ def main():
     data_collator = CustomDataCollator(
         tokenizer=tokenizer,
         max_length=MAX_LENGTH,
-        device=first_param_device if args.use_model_parallel else None,
+        device=None,  # Always None for model parallelism to avoid device conflicts
         use_model_parallel=args.use_model_parallel
     )
     
@@ -728,8 +728,6 @@ def main():
             skip_memory_metrics=True,
             # Disable DDP if using model parallelism
             ddp_backend=None if args.use_model_parallel else "nccl",
-            # For model parallelism, we need to ensure all processes use the same device for loss calculation
-            device='cuda' if args.use_model_parallel else None,
         )
         
         # Initialize trainer
@@ -793,8 +791,8 @@ def main():
     
     # For evaluation mode, we need to create a trainer for evaluation
     if args.eval:
-        # Get model device for evaluation data collator
-        eval_model_device = next(model.parameters()).device if args.use_model_parallel else None
+        # Get model device for evaluation data collator - always None for model parallelism
+        eval_model_device = None if args.use_model_parallel else (next(model.parameters()).device if hasattr(model, 'parameters') else None)
         
         eval_data_collator = CustomDataCollator(
             tokenizer=tokenizer,

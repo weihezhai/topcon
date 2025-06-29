@@ -10,9 +10,6 @@
     └── tokenizer files
 '''
 import os
-# Set PyTorch memory allocation strategy before any CUDA operations
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
-
 import torch
 import pandas as pd
 from datasets import Dataset
@@ -34,12 +31,14 @@ import argparse
 # Import the dataset builder
 from dataset_builder_abs_intro import TextDatasetBuilder
 from datasets import load_from_disk
+from accelerate import Accelerator
 
 class CustomDataCollator:
     """Custom data collator that handles variable-length sequences"""
-    def __init__(self, tokenizer, max_length=2048):
+    def __init__(self, tokenizer, max_length=2048, device=None):
         self.tokenizer = tokenizer
         self.max_length = max_length
+        self.device = device
     
     def __call__(self, features):
         # Find the maximum length in this batch
@@ -70,6 +69,11 @@ class CustomDataCollator:
         
         # Convert to tensors
         batch = {k: torch.tensor(v) for k, v in batch.items()}
+        
+        # Move to device if specified (for model parallelism)
+        if self.device is not None:
+            batch = {k: v.to(self.device) for k, v in batch.items()}
+        
         return batch
 
 def compute_metrics(eval_pred, tokenizer=None):
@@ -348,9 +352,10 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                     padded_input_ids.append(padded_ids)
                     padded_attention_masks.append(padded_mask)
                 
-                # Convert to tensors and move to device
-                input_tensor = torch.tensor(padded_input_ids, device=model.device)
-                mask_tensor = torch.tensor(padded_attention_masks, device=model.device)
+                # Convert to tensors and move to device - fix device handling
+                device = next(model.parameters()).device  # Get model's actual device
+                input_tensor = torch.tensor(padded_input_ids, device=device)
+                mask_tensor = torch.tensor(padded_attention_masks, device=device)
                 
                 # Get logits from model - only forward pass, no need for full sequence
                 outputs = model(input_ids=input_tensor, attention_mask=mask_tensor)
@@ -456,10 +461,10 @@ def main():
     parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/", help="Path to the folder containing training data")
     parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/llm_paper/label_simple.json", help="Path to the file containing labels")
     parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/DeepSeek-R1-0528-Qwen3-8B/finetuned_model", help="Directory to save/load the fine-tuned model")
-    parser.add_argument("--max_length", type=int, default=8192, help="Maximum sequence length for training")  # Reduced from 10000
-    parser.add_argument("--gpu_ids", type=str, default=None, help="Comma-separated list of GPU IDs to use (e.g., '0,1' or '2'). If not specified, uses all available GPUs")
+    parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
+    parser.add_argument("--gpu_ids", type=str, default=None, help="Comma-separated list of GPU IDs to use (e.g., '0,1,2' or '1,2,3'). If not specified, uses all available GPUs")
     parser.add_argument("--cuda_visible_devices", type=str, default=None, help="Set CUDA_VISIBLE_DEVICES environment variable (alternative to --gpu_ids)")
-    parser.add_argument("--use_deepspeed", action="store_true", help="Use DeepSpeed for training instead of model parallelism")
+    parser.add_argument("--use_model_parallel", action="store_true", help="Use model parallelism instead of data parallelism for large models")
     args = parser.parse_args()
     
     # Set GPU visibility before any CUDA operations
@@ -476,6 +481,14 @@ def main():
         print(f"Using GPU IDs: {gpu_ids}")
     else:
         gpu_ids = None
+    
+    # Initialize accelerator for distributed training
+    # Only use accelerator for data parallel, not model parallel
+    if not args.use_model_parallel:
+        accelerator = Accelerator()
+    else:
+        accelerator = None
+        print("Using model parallelism")
     
     # Configuration
     MODEL_NAME = args.model_name
@@ -505,6 +518,13 @@ def main():
         for i in range(torch.cuda.device_count()):
             gpu_memory = torch.cuda.get_device_properties(i).total_memory / 1024**3
             print(f"GPU {i}: {torch.cuda.get_device_name(i)} - {gpu_memory:.1f} GB")
+        
+        # Determine parallelism strategy
+        num_gpus = torch.cuda.device_count()
+        if args.use_model_parallel:
+            print(f"Using model parallelism across {num_gpus} GPUs")
+        else:
+            print(f"Using data parallelism across {num_gpus} GPUs")
     
     # Create base model cache directory if it doesn't exist
     os.makedirs(BASE_MODEL_CACHE, exist_ok=True)
@@ -611,98 +631,81 @@ def main():
     print(f"Sample labels type: {type(sample['labels'])}")
     print(f"Sample labels value: {sample['labels']}")
     
-    # Load model from appropriate path (now using CausalLM with proper device mapping)
+    # Load model from appropriate path (now using CausalLM)
     from transformers import AutoModelForCausalLM
     
-    # Choose strategy based on argument
-    if args.use_deepspeed:
-        # For DeepSpeed, don't use device_map
-        device_map = None
-        print("Using DeepSpeed for distributed training")
-    elif torch.cuda.device_count() > 1:
-        # For model parallelism, be more conservative with memory allocation
-        device_map = "auto"
-        print(f"Using model parallelism across {torch.cuda.device_count()} GPUs")
-    else:
-        device_map = None
-        print("Using single GPU")
-    
-    # Load model with more conservative memory settings
+    # Determine device mapping strategy based on parallelism choice
     if args.eval:
+        # For evaluation, use model parallel if requested or if many GPUs
+        if args.use_model_parallel:
+            device_map = "auto"
+            print("Using model parallelism for evaluation")
+        else:
+            device_map = None
+            print("Using single GPU for evaluation")
+        
         model = AutoModelForCausalLM.from_pretrained(
-            OUTPUT_DIR,
+            OUTPUT_DIR,  # Load from fine-tuned model directory
             torch_dtype=torch.bfloat16,
-            device_map=device_map,
-            low_cpu_mem_usage=True,
-            # Use more conservative memory allocation
-            max_memory={i: "70GiB" for i in range(torch.cuda.device_count())} if device_map else None,
-            offload_folder="./offload" if device_map else None,  # Offload to disk if needed
-            offload_state_dict=True if device_map else False
+            device_map=device_map
         )
         print("Loaded fine-tuned model for evaluation")
     else:
-        model = AutoModelForCausalLM.from_pretrained(
-            BASE_MODEL_CACHE,
-            torch_dtype=torch.bfloat16,
-            device_map=device_map,
-            low_cpu_mem_usage=True,
-            # Use more conservative memory allocation
-            max_memory={i: "70GiB" for i in range(torch.cuda.device_count())} if device_map else None,
-            offload_folder="./offload" if device_map else None,  # Offload to disk if needed
-            offload_state_dict=True if device_map else False
-        )
+        # For training, choose parallelism strategy
+        if args.use_model_parallel:
+            # Model parallel - let transformers handle device placement
+            device_map = "auto"
+            model = AutoModelForCausalLM.from_pretrained(
+                BASE_MODEL_CACHE,
+                torch_dtype=torch.bfloat16,
+                device_map=device_map
+            )
+            print("Loaded model with model parallelism for training")
+        else:
+            # Data parallel - let Accelerator handle device placement
+            model = AutoModelForCausalLM.from_pretrained(
+                BASE_MODEL_CACHE,
+                torch_dtype=torch.bfloat16,
+                device_map=None  # Let Accelerator handle device placement
+            )
+            print("Loaded model for data parallel training")
 
     print(model)
-    if hasattr(model, 'hf_device_map'):
-        print(f"Model device map: {model.hf_device_map}")
+    
+    # Get the device where the first layer of the model is located
+    # This ensures data collator moves tensors to the right device
+    if args.use_model_parallel:
+        # For model parallel, get the device of the first parameter
+        first_param_device = next(model.parameters()).device
+        print(f"Model first parameter is on device: {first_param_device}")
+    else:
+        # For data parallel, device will be handled by Accelerator
+        first_param_device = None
     
     # Data collator for language modeling
     data_collator = CustomDataCollator(
         tokenizer=tokenizer,
-        max_length=MAX_LENGTH
+        max_length=MAX_LENGTH,
+        device=first_param_device if args.use_model_parallel else None
     )
     
     # Only run training if not in evaluation mode
     if not args.eval:
-        # Create DeepSpeed config if using DeepSpeed
-        deepspeed_config = None
-        if args.use_deepspeed:
-            deepspeed_config = {
-                "zero_optimization": {
-                    "stage": 2,  # Use ZeRO stage 2
-                    "allgather_partitions": True,
-                    "allgather_bucket_size": 5e8,
-                    "overlap_comm": True,
-                    "reduce_scatter": True,
-                    "reduce_bucket_size": 5e8,
-                    "contiguous_gradients": True,
-                    "cpu_offload": False
-                },
-                "bf16": {
-                    "enabled": True
-                },
-                "train_batch_size": 16,  # Total batch size across all GPUs
-                "train_micro_batch_size_per_gpu": 1,
-                "gradient_accumulation_steps": 4,
-                "steps_per_print": 10,
-                "wall_clock_breakdown": False
-            }
-        
-        # Training arguments - adjusted based on strategy
+        # Training arguments - adjust based on parallelism strategy
         training_args = TrainingArguments(
             output_dir=OUTPUT_DIR,
-            num_train_epochs=3,  # Reduced epochs
+            num_train_epochs=5,
             per_device_train_batch_size=1,
             per_device_eval_batch_size=1,
-            gradient_accumulation_steps=16 if not args.use_deepspeed else 4,
-            learning_rate=5e-6,
-            warmup_steps=50,
+            gradient_accumulation_steps=8 if not args.use_model_parallel else 4,  # Reduce for model parallel
+            learning_rate=1e-5,
+            warmup_steps=20,
             weight_decay=0.001,
             logging_dir=f"{OUTPUT_DIR}/logs",
             logging_steps=10,
             eval_strategy="steps",
-            eval_steps=300,  # Less frequent evaluation
-            save_steps=600,
+            eval_steps=100,
+            save_steps=200,
             save_total_limit=2,
             load_best_model_at_end=False,
             metric_for_best_model="eval_loss",
@@ -715,15 +718,14 @@ def main():
             adam_epsilon=1e-8,
             lr_scheduler_type="linear",
             optim="adamw_torch",
-            eval_accumulation_steps=8,
+            eval_accumulation_steps=4,
             dataloader_num_workers=0,
+            ddp_find_unused_parameters=False if not args.use_model_parallel else None,
+            deepspeed=None,
             prediction_loss_only=True,
             skip_memory_metrics=True,
-            # DeepSpeed or model parallelism specific settings
-            deepspeed=deepspeed_config if args.use_deepspeed else None,
-            ddp_backend=None if not args.use_deepspeed else "nccl",
-            local_rank=-1 if not args.use_deepspeed else int(os.environ.get("LOCAL_RANK", -1)),
-            gradient_checkpointing=True,  # Enable gradient checkpointing to save memory
+            # Disable DDP if using model parallelism
+            ddp_backend="nccl" if not args.use_model_parallel else None,
         )
         
         # Initialize trainer
@@ -736,6 +738,22 @@ def main():
             data_collator=data_collator,
             compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer),
         )
+        
+        # Prepare everything with accelerator - only for data parallel
+        if not args.use_model_parallel and accelerator is not None:
+            # For data parallel, prepare model and update data collator device
+            trainer.model = accelerator.prepare(trainer.model)
+            
+            # Update data collator device after model is prepared
+            model_device = next(trainer.model.parameters()).device
+            trainer.data_collator.device = model_device
+            print(f"Updated data collator device to: {model_device}")
+            
+            if trainer.optimizer is not None:
+                trainer.optimizer = accelerator.prepare(trainer.optimizer)
+            print("Model prepared with Accelerator for data parallelism")
+        else:
+            print("Skipping Accelerator preparation - using model parallelism")
         
         # Train the model
         print("Starting training...")
@@ -750,19 +768,17 @@ def main():
             return result
         trainer.evaluate = memory_safe_evaluate
         
-        try:
-            trainer.train()
-        except RuntimeError as e:
-            if "Expected all tensors to be on the same device" in str(e):
-                print("\nDevice mismatch error detected. Trying with DeepSpeed instead...")
-                print("Restart the script with --use_deepspeed flag for better multi-GPU support")
-                return
-            else:
-                raise e
+        trainer.train()
         
         # Save the fine-tuned model
         print(f"Saving fine-tuned model to {OUTPUT_DIR}")
-        model.save_pretrained(OUTPUT_DIR)
+        if not args.use_model_parallel and accelerator is not None:
+            # Use accelerator's unwrap_model for saving (data parallel)
+            unwrapped_model = accelerator.unwrap_model(trainer.model)
+            unwrapped_model.save_pretrained(OUTPUT_DIR)
+        else:
+            # Direct save for model parallel
+            trainer.model.save_pretrained(OUTPUT_DIR)
         tokenizer.save_pretrained(OUTPUT_DIR)
         
         print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
@@ -772,6 +788,15 @@ def main():
     
     # For evaluation mode, we need to create a trainer for evaluation
     if args.eval:
+        # Get model device for evaluation data collator
+        eval_model_device = next(model.parameters()).device if args.use_model_parallel else None
+        
+        eval_data_collator = CustomDataCollator(
+            tokenizer=tokenizer,
+            max_length=MAX_LENGTH,
+            device=eval_model_device
+        )
+        
         training_args = TrainingArguments(
             output_dir=OUTPUT_DIR,
             per_device_eval_batch_size=1,
@@ -789,7 +814,7 @@ def main():
             model=model,
             args=training_args,
             tokenizer=tokenizer,
-            data_collator=data_collator,
+            data_collator=eval_data_collator,
             compute_metrics=compute_metrics,
         )
     

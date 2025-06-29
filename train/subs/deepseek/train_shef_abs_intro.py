@@ -721,7 +721,6 @@ def main():
         torch.cuda.empty_cache()
         accelerator.print("Cleared trainer from memory after training.")
 
-
         # Explicitly delete trainer and optimizer to free memory
         del trainer
         if hasattr(model, 'optimizer'):

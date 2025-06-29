@@ -690,14 +690,7 @@ def main():
             compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer),
         )
         
-        # Prepare everything with accelerator for model parallelism
-        model, optimizer, train_dataloader, eval_dataloader = accelerator.prepare(
-            model, trainer.optimizer, trainer.get_train_dataloader(), trainer.get_eval_dataloader()
-        )
-        
-        # Update trainer with prepared components
-        trainer.model = model
-        trainer.optimizer = optimizer
+        # Remove manual accelerator.prepare() - let Trainer handle it
         
         # Train the model
         accelerator.print("Starting training...")
@@ -717,9 +710,16 @@ def main():
         # Save the fine-tuned model (only on main process)
         if accelerator.is_main_process:
             print(f"Saving fine-tuned model to {OUTPUT_DIR}")
-            # Unwrap model before saving
-            unwrapped_model = accelerator.unwrap_model(model)
-            unwrapped_model.save_pretrained(OUTPUT_DIR)
+            # Save model directly without unwrapping since we didn't manually prepare it
+            trainer.save_model(OUTPUT_DIR)
+            tokenizer.save_pretrained(OUTPUT_DIR)
+            print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
+
+        # Explicitly delete trainer to free memory
+        del trainer
+        # Remove optimizer deletion since we didn't manually create it
+        torch.cuda.empty_cache()
+        accelerator.print("Cleared trainer from memory after training.")
             tokenizer.save_pretrained(OUTPUT_DIR)
             print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
 

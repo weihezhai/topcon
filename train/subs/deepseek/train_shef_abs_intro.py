@@ -720,8 +720,7 @@ def main():
         # Remove optimizer deletion since we didn't manually create it
         torch.cuda.empty_cache()
         accelerator.print("Cleared trainer from memory after training.")
-            tokenizer.save_pretrained(OUTPUT_DIR)
-            print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
+
 
         # Explicitly delete trainer and optimizer to free memory
         del trainer

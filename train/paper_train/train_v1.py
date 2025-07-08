@@ -1,14 +1,3 @@
-'''
-./models/
-├── base_model/          # Original Llama model cache
-│   ├── config.json
-│   ├── tokenizer.json
-│   └── pytorch_model.bin
-└── finetuned_model/     # Fine-tuned model with LoRA
-    ├── adapter_config.json
-    ├── adapter_model.bin
-    └── tokenizer files
-'''
 import os
 import torch
 import pandas as pd
@@ -21,7 +10,7 @@ from transformers import (
     DataCollatorForLanguageModeling,  # Changed for causal LM
     default_data_collator
 )
-# Removed LoRA - using full fine-tuning
+
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix, classification_report
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -35,11 +24,9 @@ from accelerate import Accelerator
 
 class CustomDataCollator:
     """Custom data collator that handles variable-length sequences"""
-    def __init__(self, tokenizer, max_length=2048, device=None, use_model_parallel=False):
+    def __init__(self, tokenizer, max_length=2048):
         self.tokenizer = tokenizer
         self.max_length = max_length
-        self.device = device
-        self.use_model_parallel = use_model_parallel
     
     def __call__(self, features):
         # Find the maximum length in this batch
@@ -68,14 +55,8 @@ class CustomDataCollator:
             batch['attention_mask'].append(attention_mask)
             batch['labels'].append(labels)
         
-        # Convert to tensors - keep on CPU for model parallelism
+        # Convert to tensors
         batch = {k: torch.tensor(v) for k, v in batch.items()}
-        
-        # Only move to device for data parallelism, not model parallelism
-        # Model parallelism handles device placement automatically
-        if self.device is not None and not self.use_model_parallel:
-            batch = {k: v.to(self.device) for k, v in batch.items()}
-        
         return batch
 
 def compute_metrics(eval_pred, tokenizer=None):
@@ -295,8 +276,6 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     all_binary_labels = []
     total_loss = 0.0
     
-    model = trainer.model
-    
     # Process evaluation dataset in small batches
     for i in range(0, len(eval_dataset), batch_size):
         batch_end = min(i + batch_size, len(eval_dataset))
@@ -307,66 +286,27 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
         # Clear cache before each batch
         torch.cuda.empty_cache()
         
+        # Temporarily enable full prediction for this batch
+        trainer.args.prediction_loss_only = False
+        
         with torch.no_grad():
-            # Extract input portions and decision positions for efficient inference
-            batch_input_ids = []
-            batch_attention_masks = []
-            decision_positions = []
-            true_labels = []
+            # Use trainer.predict to get predictions (keep as logits)
+            eval_output = trainer.predict(batch_dataset)
+            logits = eval_output.predictions  # Keep as logits, don't take argmax
+            labels = eval_output.label_ids
             
-            for sample in batch_dataset:
-                input_ids = sample['input_ids']
-                attention_mask = sample['attention_mask']
-                labels = sample['labels']
-                
-                # Find decision position (first non-ignored label)
+            # Process each sample in the batch
+            for j in range(len(labels)):
+                # Find the decision position (first non-ignored label)
                 decision_pos = None
-                for k in range(len(labels)):
-                    if labels[k] != -100:
+                for k in range(len(labels[j])):
+                    if labels[j][k] != -100:
                         decision_pos = k
                         break
                 
                 if decision_pos is not None:
-                    # Only keep input up to decision position (exclude target tokens)
-                    input_portion = input_ids[:decision_pos]
-                    mask_portion = attention_mask[:decision_pos]
-                    
-                    batch_input_ids.append(input_portion)
-                    batch_attention_masks.append(mask_portion)
-                    decision_positions.append(len(input_portion))  # Next position is where we predict
-                    
-                    # Get ground truth
-                    true_token_id = labels[decision_pos]
-                    true_label = 1 if true_token_id == yes_token_id else 0
-                    true_labels.append(true_label)
-            
-            if len(batch_input_ids) > 0:
-                # Pad batch to same length
-                max_len = max(len(ids) for ids in batch_input_ids)
-                padded_input_ids = []
-                padded_attention_masks = []
-                
-                for j, (input_ids, attention_mask) in enumerate(zip(batch_input_ids, batch_attention_masks)):
-                    pad_length = max_len - len(input_ids)
-                    padded_ids = input_ids + [tokenizer.pad_token_id] * pad_length
-                    padded_mask = attention_mask + [0] * pad_length
-                    
-                    padded_input_ids.append(padded_ids)
-                    padded_attention_masks.append(padded_mask)
-                
-                # Convert to tensors and move to device - fix device handling
-                device = next(model.parameters()).device  # Get model's actual device
-                input_tensor = torch.tensor(padded_input_ids, device=device)
-                mask_tensor = torch.tensor(padded_attention_masks, device=device)
-                
-                # Get logits from model - only forward pass, no need for full sequence
-                outputs = model(input_ids=input_tensor, attention_mask=mask_tensor)
-                logits = outputs.logits
-                
-                # Extract logits at decision positions for each sample
-                for j, (decision_pos, true_label) in enumerate(zip(decision_positions, true_labels)):
-                    # Get logits at the position where we need to predict the next token
-                    logits_at_pos = logits[j, decision_pos - 1]  # -1 because we predict the next token
+                    # Get logits at decision position
+                    logits_at_pos = logits[j][decision_pos]
                     
                     # Compare yes vs no logits
                     yes_logit = logits_at_pos[yes_token_id]
@@ -375,12 +315,19 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                     # Predict based on higher logit
                     predicted_label = 1 if yes_logit > no_logit else 0
                     
+                    # Get ground truth
+                    true_token_id = labels[j][decision_pos]
+                    true_label = 1 if true_token_id == yes_token_id else 0
+                    
                     all_binary_predictions.append(predicted_label)
                     all_binary_labels.append(true_label)
             
-            # Get loss from evaluation using original method for loss calculation
+            # Get loss from evaluation
             eval_results = trainer.evaluate(eval_dataset=batch_dataset)
             total_loss += eval_results['eval_loss'] * (batch_end - i)
+        
+        # Reset to loss-only mode
+        trainer.args.prediction_loss_only = True
         
         # Clear cache after each batch
         torch.cuda.empty_cache()
@@ -456,17 +403,18 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
 
 def main():
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Fine-tune a language model")
+    parser = argparse.ArgumentParser(description="Fine-tune a language model with LoRA")
     parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
     parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
-    parser.add_argument("--model_name", type=str, default="deepseek-ai/DeepSeek-R1-0528-Qwen3-8B", help="Pre-trained model name or path")
-    parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/", help="Path to the folder containing training data")
-    parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/llm_paper/label_simple.json", help="Path to the file containing labels")
-    parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/DeepSeek-R1-0528-Qwen3-8B/finetuned_model", help="Directory to save/load the fine-tuned model")
+    parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
+    parser.add_argument("--data_folder", type=str, default=os.getenv("DATA_FOLDER", "./data/training_data"), help="Path to the folder containing training data")
+    parser.add_argument("--labels_file", type=str, default=os.getenv("LABELS_FILE", "./data/labels.json"), help="Path to the file containing labels")
+    parser.add_argument("--output_dir", type=str, default=os.getenv("OUTPUT_DIR", "./models/finetuned_model"), help="Directory to save/load the fine-tuned model")
+    parser.add_argument("--base_model_cache", type=str, default=os.getenv("BASE_MODEL_CACHE", "./models/base_model_cache"), help="Directory to cache the base model")
+    parser.add_argument("--processed_dataset_cache", type=str, default=os.getenv("PROCESSED_DATASET_CACHE", "./cache/processed_dataset"), help="Directory to cache processed datasets")
     parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
-    parser.add_argument("--gpu_ids", type=str, default=None, help="Comma-separated list of GPU IDs to use (e.g., '0,1,2' or '1,2,3'). If not specified, uses all available GPUs")
+    parser.add_argument("--gpu_ids", type=str, default=None, help="Comma-separated list of GPU IDs to use (e.g., '0,1' or '2'). If not specified, uses all available GPUs")
     parser.add_argument("--cuda_visible_devices", type=str, default=None, help="Set CUDA_VISIBLE_DEVICES environment variable (alternative to --gpu_ids)")
-    parser.add_argument("--use_model_parallel", action="store_true", help="Use model parallelism instead of data parallelism for large models")
     args = parser.parse_args()
     
     # Set GPU visibility before any CUDA operations
@@ -485,12 +433,7 @@ def main():
         gpu_ids = None
     
     # Initialize accelerator for distributed training
-    # Only use accelerator for data parallel, not model parallel
-    if not args.use_model_parallel:
-        accelerator = Accelerator()
-    else:
-        accelerator = None
-        print("Using model parallelism")
+    accelerator = Accelerator()
     
     # Configuration
     MODEL_NAME = args.model_name
@@ -500,7 +443,8 @@ def main():
     MAX_LENGTH = args.max_length
     
     # Model directories
-    BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/DeepSeek-R1-0528-Qwen3-8B"  # Where to cache the downloaded model
+    BASE_MODEL_CACHE = args.base_model_cache  # Configurable base model cache
+    PROCESSED_DATASET_CACHE = args.processed_dataset_cache  # Configurable processed dataset cache
     
     # If in evaluation mode, use the fine-tuned model directory
     if args.eval:
@@ -514,19 +458,14 @@ def main():
         MODEL_PATH = BASE_MODEL_CACHE
         print(f"Running training mode using base model from {MODEL_PATH}")
     
+    # MAX_LENGTH = 10000 # Further reduced to save memory
+    
     # Print GPU information
     if torch.cuda.is_available():
         print(f"Number of GPUs available: {torch.cuda.device_count()}")
         for i in range(torch.cuda.device_count()):
             gpu_memory = torch.cuda.get_device_properties(i).total_memory / 1024**3
             print(f"GPU {i}: {torch.cuda.get_device_name(i)} - {gpu_memory:.1f} GB")
-        
-        # Determine parallelism strategy
-        num_gpus = torch.cuda.device_count()
-        if args.use_model_parallel:
-            print(f"Using model parallelism across {num_gpus} GPUs")
-        else:
-            print(f"Using data parallelism across {num_gpus} GPUs")
     
     # Create base model cache directory if it doesn't exist
     os.makedirs(BASE_MODEL_CACHE, exist_ok=True)
@@ -552,8 +491,7 @@ def main():
     # Load and prepare dataset
     print("Loading dataset...")
     
-    # Define processed dataset cache path
-    PROCESSED_DATASET_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset"
+    # Create cache directories
     os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
     
     # Check if processed dataset exists
@@ -636,16 +574,17 @@ def main():
     # Load model from appropriate path (now using CausalLM)
     from transformers import AutoModelForCausalLM
     
-    # Determine device mapping strategy based on parallelism choice
+    # Create device map based on GPU selection
+    device_map = "auto"  # Default to auto
+    if gpu_ids is not None and len(gpu_ids) == 1:
+        # Single GPU case - place model on specific GPU
+        device_map = f"cuda:{gpu_ids[0]}"
+    elif gpu_ids is not None and len(gpu_ids) > 1:
+        # Multi-GPU case - let transformers handle automatic mapping
+        device_map = "auto"
+    
     if args.eval:
-        # For evaluation, use model parallel if requested or if many GPUs
-        if args.use_model_parallel:
-            device_map = "auto"
-            print("Using model parallelism for evaluation")
-        else:
-            device_map = None
-            print("Using single GPU for evaluation")
-        
+        # Load the fine-tuned model for evaluation
         model = AutoModelForCausalLM.from_pretrained(
             OUTPUT_DIR,  # Load from fine-tuned model directory
             torch_dtype=torch.bfloat16,
@@ -653,81 +592,62 @@ def main():
         )
         print("Loaded fine-tuned model for evaluation")
     else:
-        # For training, choose parallelism strategy
-        if args.use_model_parallel:
-            # Model parallel - let transformers handle device placement
-            device_map = "auto"
-            model = AutoModelForCausalLM.from_pretrained(
-                BASE_MODEL_CACHE,
-                torch_dtype=torch.bfloat16,
-                device_map=device_map
-            )
-            print("Loaded model with model parallelism for training")
-        else:
-            # Data parallel - let Accelerator handle device placement
-            model = AutoModelForCausalLM.from_pretrained(
-                BASE_MODEL_CACHE,
-                torch_dtype=torch.bfloat16,
-                device_map=None  # Let Accelerator handle device placement
-            )
-            print("Loaded model for data parallel training")
+        # Load base model for training
+        model = AutoModelForCausalLM.from_pretrained(
+            BASE_MODEL_CACHE,
+            torch_dtype=torch.bfloat16,
+            device_map=device_map
+        )
 
     print(model)
     
-    # This ensures data collator moves tensors to the right device
-    if args.use_model_parallel:
-        # For model parallel, get the device of the first parameter
-        first_param_device = next(model.parameters()).device
-        print(f"Model first parameter is on device: {first_param_device}")
-    else:
-        # For data parallel, device will be handled by Accelerator
-        first_param_device = None
+    # Check if model is distributed across multiple GPUs
+    if hasattr(model, 'hf_device_map'):
+        print(f"Model device map: {model.hf_device_map}")
+    
+    print(f"Model parameters (full fine-tuning):")
     
     # Data collator for language modeling
     data_collator = CustomDataCollator(
         tokenizer=tokenizer,
-        max_length=MAX_LENGTH,
-        device=next(model.parameters()).device,
-        use_model_parallel=args.use_model_parallel
+        max_length=MAX_LENGTH
     )
     
     # Only run training if not in evaluation mode
     if not args.eval:
-        # Training arguments - adjust based on parallelism strategy
+        # Training arguments
         training_args = TrainingArguments(
             output_dir=OUTPUT_DIR,
             num_train_epochs=5,
             per_device_train_batch_size=1,
-            per_device_eval_batch_size=1,
-            gradient_accumulation_steps=8 if not args.use_model_parallel else 4,
-            learning_rate=1e-5,
+            per_device_eval_batch_size=2,
+            gradient_accumulation_steps=8,  # Increased to maintain effective batch size
+            learning_rate=1e-5,  # Even smaller learning rate
             warmup_steps=20,
             weight_decay=0.001,
             logging_dir=f"{OUTPUT_DIR}/logs",
-            logging_steps=10,
+            logging_steps=10,  # Reduce logging frequency
             eval_strategy="steps",
-            eval_steps=100,
+            eval_steps=100,  # Increase evaluation frequency to save memory
             save_steps=200,
             save_total_limit=2,
-            load_best_model_at_end=False,
+            load_best_model_at_end=False,  # Disable to save memory
             metric_for_best_model="eval_loss",
             greater_is_better=False,
-            bf16=True,
+            bf16=True,  # Enable bf16 for memory efficiency
             dataloader_pin_memory=False,
             remove_unused_columns=False,
             label_names=["labels"],
-            max_grad_norm=1.0,
+            max_grad_norm=1.0,  # Much stricter gradient clipping
             adam_epsilon=1e-8,
             lr_scheduler_type="linear",
             optim="adamw_torch",
-            eval_accumulation_steps=4,
-            dataloader_num_workers=0,
-            ddp_find_unused_parameters=False if not args.use_model_parallel else None,
-            deepspeed=None,
-            prediction_loss_only=True,
-            skip_memory_metrics=True,
-            # Disable DDP if using model parallelism
-            ddp_backend=None if args.use_model_parallel else "nccl",
+            eval_accumulation_steps=4,  # Process eval in smaller chunks
+            dataloader_num_workers=0,  # Disable multiprocessing to save memory
+            ddp_find_unused_parameters=False,  # Optimize for model parallelism
+            deepspeed=None,  # Can be configured for ZeRO if needed
+            prediction_loss_only=True,  # Only compute loss during periodic evaluation
+            skip_memory_metrics=True,  # Skip memory metrics to save memory
         )
         
         # Initialize trainer
@@ -735,28 +655,16 @@ def main():
             model=model,
             args=training_args,
             train_dataset=train_dataset,
-            eval_dataset=small_eval_dataset,
+            eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
             tokenizer=tokenizer,
             data_collator=data_collator,
             compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer),
         )
         
-        # Prepare everything with accelerator - only for data parallel
-        if not args.use_model_parallel and accelerator is not None:
-            # For data parallel, prepare model and update data collator device
-            trainer.model = accelerator.prepare(trainer.model)
-            
-            # Update data collator device after model is prepared
-            model_device = next(trainer.model.parameters()).device
-            trainer.data_collator.device = model_device
-            print(f"Updated data collator device to: {model_device}")
-            
-            if trainer.optimizer is not None:
-                trainer.optimizer = accelerator.prepare(trainer.optimizer)
-            print("Model prepared with Accelerator for data parallelism")
-        else:
-            print("Skipping Accelerator preparation - using model parallelism")
-            print("Model parallelism will handle device placement automatically")
+        # Prepare everything with accelerator for model parallelism
+        model, trainer.optimizer, train_dataset, eval_dataset = accelerator.prepare(
+            model, trainer.optimizer, train_dataset, eval_dataset
+        )
         
         # Train the model
         print("Starting training...")
@@ -775,13 +683,7 @@ def main():
         
         # Save the fine-tuned model
         print(f"Saving fine-tuned model to {OUTPUT_DIR}")
-        if not args.use_model_parallel and accelerator is not None:
-            # Use accelerator's unwrap_model for saving (data parallel)
-            unwrapped_model = accelerator.unwrap_model(trainer.model)
-            unwrapped_model.save_pretrained(OUTPUT_DIR)
-        else:
-            # Direct save for model parallel
-            trainer.model.save_pretrained(OUTPUT_DIR)
+        trainer.save_model()
         tokenizer.save_pretrained(OUTPUT_DIR)
         
         print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
@@ -791,16 +693,6 @@ def main():
     
     # For evaluation mode, we need to create a trainer for evaluation
     if args.eval:
-        # Get model device for evaluation data collator - always None for model parallelism
-        eval_model_device = None if args.use_model_parallel else (next(model.parameters()).device if hasattr(model, 'parameters') else None)
-        
-        eval_data_collator = CustomDataCollator(
-            tokenizer=tokenizer,
-            max_length=MAX_LENGTH,
-            device=eval_model_device,
-            use_model_parallel=args.use_model_parallel
-        )
-        
         training_args = TrainingArguments(
             output_dir=OUTPUT_DIR,
             per_device_eval_batch_size=1,
@@ -818,7 +710,7 @@ def main():
             model=model,
             args=training_args,
             tokenizer=tokenizer,
-            data_collator=eval_data_collator,
+            data_collator=data_collator,
             compute_metrics=compute_metrics,
         )
     

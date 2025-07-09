@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configuration
-OUTPUT_DIR="/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_paperss/"
-FILTER_SCRIPT="/data/scratch/mpx602/topcon-1/train/batch_filter.py"
+OUTPUT_DIR="/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/"
+FILTER_SCRIPT="/data/scratch/mpx602/topcon-1/preprocess/batch_filter.py"
 
 # Create output directory if it doesn't exist
 mkdir -p "$OUTPUT_DIR"

@@ -193,15 +193,16 @@ def batch_filter_papers(input_dir, output_file, candidates):
 
 if __name__ == "__main__":
     # Configuration
-    candidates = ["LLM", "language model", "RAG", "hallucination", "jailbreaking", "agents", "agent", "agentic"]
+    # llm_candidates = ["LLM", "language model", "RAG", "hallucination", "jailbreaking", "agents", "agent", "agentic"]
+    candidates = ["computer vision", "CV", "vision", "image", "video", '3D', 'diffusion', 'gaussian splatting']
     input_directory = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/"
-    output_file = "/data/scratch/mpx602/topcon-1/batch_filtered_results.json"
+    output_file = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/batch_filtered_results.json"
     
     # Run batch processing
     matched_ids = batch_filter_papers(input_directory, output_file, candidates)
     
     # Also save just the IDs list for convenience
-    ids_only_file = "/data/scratch/mpx602/topcon-1/matched_paper_ids.json"
+    ids_only_file = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/matched_paper_ids.json"
     with open(ids_only_file, 'w', encoding='utf-8') as f:
         json.dump(matched_ids, f, indent=2)
     

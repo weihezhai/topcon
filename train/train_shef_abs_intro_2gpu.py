@@ -15,7 +15,7 @@ import pandas as pd
 from datasets import Dataset
 from transformers import (
     AutoTokenizer, 
-    AutoModelForSequenceClassification,
+    AutoModelForCausalLM,
     TrainingArguments, 
     Trainer,
     DataCollatorForLanguageModeling,  # Changed for causal LM
@@ -450,10 +450,10 @@ def main():
     parser = argparse.ArgumentParser(description="Fine-tune a language model with LoRA")
     parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
     parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
-    parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
+    parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-1.7B", help="Pre-trained model name or path")
     parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/", help="Path to the folder containing training data")
     parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/llm_paper/label_simple.json", help="Path to the file containing labels")
-    parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model", help="Directory to save/load the fine-tuned model")
+    parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model", help="Directory to save/load the fine-tuned model")
     parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
     parser.add_argument("--gpu_ids", type=str, default=None, help="Comma-separated list of GPU IDs to use (e.g., '0,1' or '2'). If not specified, uses all available GPUs")
     parser.add_argument("--cuda_visible_devices", type=str, default=None, help="Set CUDA_VISIBLE_DEVICES environment variable (alternative to --gpu_ids)")
@@ -485,7 +485,7 @@ def main():
     MAX_LENGTH = args.max_length
     
     # Model directories
-    BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B"  # Where to cache the downloaded model
+    BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B"  # Where to cache the downloaded model
     
     # If in evaluation mode, use the fine-tuned model directory
     if args.eval:
@@ -613,9 +613,6 @@ def main():
     print(f"Sample labels type: {type(sample['labels'])}")
     print(f"Sample labels value: {sample['labels']}")
     
-    # Load model from appropriate path (now using CausalLM)
-    from transformers import AutoModelForCausalLM
-    
     # Create device map based on GPU selection
     device_map = "auto"  # Default to auto
     if gpu_ids is not None and len(gpu_ids) == 1:
@@ -734,8 +731,41 @@ def main():
         del trainer
         if hasattr(model, 'optimizer'):
             del model.optimizer
-        torch.cuda.empty_cache()
-        print("Cleared trainer and optimizer from memory after training.")
+        
+        # More thorough cleanup
+        # Clear all references to the model
+        model_to_delete = model
+        model = None  # Set to None first
+        del model_to_delete
+        
+        # Force garbage collection
+        import gc
+        gc.collect()
+        
+        # Clear CUDA cache multiple times to ensure cleanup
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()  # Wait for all CUDA operations to complete
+            torch.cuda.empty_cache()  # Clear again after synchronization
+        
+        print("Cleared trainer, optimizer, and model from memory after training.")
+
+        print("Reloading model for final evaluation to reduce memory usage...")
+        
+        # Small delay to ensure memory is fully released
+        import time
+        time.sleep(2)
+        
+        # Reload the model fresh
+        model = AutoModelForCausalLM.from_pretrained(
+            OUTPUT_DIR,  # Load the fine-tuned model
+            torch_dtype=torch.bfloat16,
+            device_map=device_map,  # Use the same device mapping
+        )
+        
+        # Clear cache again after loading
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     # Create trainer for final evaluation (needed for both train and eval modes)
     print("Setting up trainer for final evaluation...")
@@ -762,7 +792,6 @@ def main():
 
     # Always run final evaluation (in both train and eval modes)
     print("Running final evaluation with accuracy computation...")
-    torch.cuda.empty_cache()  # Ensure cache is cleared before evaluation
 
     # Use batched evaluation to prevent OOM
     eval_results = batched_accuracy_evaluation(

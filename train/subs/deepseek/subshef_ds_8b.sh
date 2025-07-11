@@ -24,4 +24,5 @@ source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed
-python train_shef_abs_intro_multigpu.py --detailed_eval --use_model_parallel
+# python train_shef_abs_intro_multigpu.py --detailed_eval --use_model_parallel
+bash launch_training.sh

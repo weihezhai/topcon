@@ -455,11 +455,10 @@ def main():
     parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/llm_paper/label_simple.json", help="Path to the file containing labels")
     parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/DeepSeek-R1-0528-Qwen3-8B/finetuned_model", help="Directory to save/load the fine-tuned model")
     parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
-    # Remove GPU selection arguments - let accelerate handle this
     args = parser.parse_args()
     
-    # Initialize accelerator for distributed training
-    accelerator = Accelerator()
+    # Remove the Accelerator initialization - let Trainer handle it
+    # accelerator = Accelerator()
     
     # Configuration
     MODEL_NAME = args.model_name
@@ -469,125 +468,106 @@ def main():
     MAX_LENGTH = args.max_length
     
     # Model directories
-    BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/DeepSeek-R1-0528-Qwen3-8B"  # Where to cache the downloaded model
+    BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/DeepSeek-R1-0528-Qwen3-8B"
     
     # If in evaluation mode, use the fine-tuned model directory
     if args.eval:
         if not os.path.exists(OUTPUT_DIR):
-            accelerator.print(f"Error: Fine-tuned model not found at {OUTPUT_DIR}")
-            accelerator.print("Please run training first without --eval flag")
+            print(f"Error: Fine-tuned model not found at {OUTPUT_DIR}")
+            print("Please run training first without --eval flag")
             return
         MODEL_PATH = OUTPUT_DIR
-        accelerator.print(f"Running evaluation mode using model from {MODEL_PATH}")
+        print(f"Running evaluation mode using model from {MODEL_PATH}")
     else:
         MODEL_PATH = BASE_MODEL_CACHE
-        accelerator.print(f"Running training mode using base model from {MODEL_PATH}")
+        print(f"Running training mode using base model from {MODEL_PATH}")
     
-    # Print GPU information only on main process
-    if accelerator.is_main_process:
-        if torch.cuda.is_available():
-            print(f"Number of GPUs available: {torch.cuda.device_count()}")
-            for i in range(torch.cuda.device_count()):
-                gpu_memory = torch.cuda.get_device_properties(i).total_memory / 1024**3
-                print(f"GPU {i}: {torch.cuda.get_device_name(i)} - {gpu_memory:.1f} GB")
+    # Print GPU information
+    if torch.cuda.is_available():
+        print(f"Number of GPUs available: {torch.cuda.device_count()}")
+        for i in range(torch.cuda.device_count()):
+            gpu_memory = torch.cuda.get_device_properties(i).total_memory / 1024**3
+            print(f"GPU {i}: {torch.cuda.get_device_name(i)} - {gpu_memory:.1f} GB")
     
-    # Create base model cache directory if it doesn't exist
-    if accelerator.is_main_process:
-        os.makedirs(BASE_MODEL_CACHE, exist_ok=True)
-        os.makedirs(OUTPUT_DIR, exist_ok=True)
+    # Create directories
+    os.makedirs(BASE_MODEL_CACHE, exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     # Download and cache the base model if not already cached (only for training mode)
-    if not args.eval and accelerator.is_main_process:
+    if not args.eval:
         config_file = os.path.join(BASE_MODEL_CACHE, "config.json")
         if not os.path.exists(config_file):
             download_and_save_model(MODEL_NAME, BASE_MODEL_CACHE)
         else:
             print(f"Using cached model from {BASE_MODEL_CACHE}")
     
-    # Wait for main process to finish downloading
-    accelerator.wait_for_everyone()
-    
     # Load tokenizer from appropriate model path
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-    # Ensure pad_token_id is set
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
     
     # Load and prepare dataset
-    accelerator.print("Loading dataset...")
+    print("Loading dataset...")
     
     # Define processed dataset cache path
     PROCESSED_DATASET_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset"
-    if accelerator.is_main_process:
-        os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
-    
-    # Wait for main process to create directory
-    accelerator.wait_for_everyone()
+    os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
     
     # Check if processed dataset exists
     if os.path.exists(os.path.join(PROCESSED_DATASET_CACHE, "dataset_dict.json")):
-        accelerator.print("Loading cached processed dataset...")
+        print("Loading cached processed dataset...")
         dataset = load_from_disk(PROCESSED_DATASET_CACHE)
-        # Still need to create dataset_builder for stats
         dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
     else:
-        accelerator.print("Processing dataset for the first time...")
+        print("Processing dataset for the first time...")
         dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
         dataset = dataset_builder.load_dataset()
-        
-        # Save processed dataset to cache (only main process)
-        if accelerator.is_main_process:
-            print(f"Saving processed dataset to {PROCESSED_DATASET_CACHE}")
-            dataset.save_to_disk(PROCESSED_DATASET_CACHE)
+        print(f"Saving processed dataset to {PROCESSED_DATASET_CACHE}")
+        dataset.save_to_disk(PROCESSED_DATASET_CACHE)
     
-    # Wait for dataset processing to complete
-    accelerator.wait_for_everyone()
-    
-    # Print dataset statistics only on main process
-    if accelerator.is_main_process:
-        stats = dataset_builder.get_dataset_stats(dataset)
-        print(f"Dataset Statistics:")
-        print(f"Total samples: {stats['total_samples']}")
-        print(f"Label distribution: {stats['label_distribution']}")
-        print(f"Average text length: {stats['text_stats']['avg_length_words']:.2f} words")
+    # Print dataset statistics
+    stats = dataset_builder.get_dataset_stats(dataset)
+    print(f"Dataset Statistics:")
+    print(f"Total samples: {stats['total_samples']}")
+    print(f"Label distribution: {stats['label_distribution']}")
+    print(f"Average text length: {stats['text_stats']['avg_length_words']:.2f} words")
     
     # Split dataset using sklearn for proper stratification
-    accelerator.print("Splitting dataset...")
+    print("Splitting dataset...")
     train_test_split_result = split_dataset_stratified(dataset, test_size=0.2, seed=42)
     train_dataset = train_test_split_result['train']
     eval_dataset = train_test_split_result['test']
 
     # Create a smaller subset for faster evaluation during training
-    small_eval_dataset = eval_dataset.select(range(min(50, len(eval_dataset))))  # Even smaller for faster eval
+    small_eval_dataset = eval_dataset.select(range(min(50, len(eval_dataset))))
     
-    accelerator.print(f"Train set: {len(train_dataset)} samples")
-    accelerator.print(f"Test set: {len(eval_dataset)} samples ({len(small_eval_dataset)} used for periodic eval)")
+    print(f"Train set: {len(train_dataset)} samples")
+    print(f"Test set: {len(eval_dataset)} samples ({len(small_eval_dataset)} used for periodic eval)")
     
-    # Debug: Check data types and first few samples (only on main process)
-    if accelerator.is_main_process:
-        print(f"Sample train data: {train_dataset[0]}")
-        print(f"Type of text: {type(train_dataset[0]['text'])}")
-        print(f"Type of labels: {type(train_dataset[0]['labels'])}")
-        print(f"First text sample length: {len(train_dataset[0]['text'])}")
-        print(f"Text preview: {train_dataset[0]['text'][:100]}...")
+    # Debug: Check data types and first few samples
+    print(f"Sample train data: {train_dataset[0]}")
+    print(f"Type of text: {type(train_dataset[0]['text'])}")
+    print(f"Type of labels: {type(train_dataset[0]['labels'])}")
+    print(f"First text sample length: {len(train_dataset[0]['text'])}")
+    print(f"Text preview: {train_dataset[0]['text'][:100]}...")
     
     # Tokenize datasets using the new approach
-    accelerator.print("Tokenizing datasets...")
+    print("Tokenizing datasets...")
     
     train_dataset = train_dataset.map(
         lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
         batched=True,
-        batch_size=100,  # Process in smaller batches
-        remove_columns=['text', 'labels']  # Remove original columns
+        batch_size=100,
+        remove_columns=['text', 'labels']
     )
     
     eval_dataset = eval_dataset.map(
         lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
         batched=True,
-        batch_size=100,  # Process in smaller batches
-        remove_columns=['text', 'labels']  # Remove original columns
+        batch_size=100,
+        remove_columns=['text', 'labels']
     )
     
     # Also tokenize the small eval dataset for periodic evaluation
@@ -598,43 +578,38 @@ def main():
         remove_columns=['text', 'labels']
     )
     
-    accelerator.print("Tokenization complete")
-    if accelerator.is_main_process:
-        print(f"Train dataset columns: {train_dataset.column_names}")
-        print(f"Train dataset sample: {train_dataset[0]}")
-        
-        # Debug tensor shapes
-        sample = train_dataset[0]
-        print(f"Sample input_ids type: {type(sample['input_ids'])}")
-        print(f"Sample input_ids length: {len(sample['input_ids'])}")
-        print(f"Sample labels type: {type(sample['labels'])}")
-        print(f"Sample labels value: {sample['labels']}")
+    print("Tokenization complete")
+    print(f"Train dataset columns: {train_dataset.column_names}")
+    print(f"Train dataset sample: {train_dataset[0]}")
     
-    # Load model - let Accelerate handle device placement
+    # Debug tensor shapes
+    sample = train_dataset[0]
+    print(f"Sample input_ids type: {type(sample['input_ids'])}")
+    print(f"Sample input_ids length: {len(sample['input_ids'])}")
+    print(f"Sample labels type: {type(sample['labels'])}")
+    print(f"Sample labels value: {sample['labels']}")
+    
+    # Load model
     from transformers import AutoModelForCausalLM
     
     if args.eval:
         # Load the fine-tuned model for evaluation
         model = AutoModelForCausalLM.from_pretrained(
-            OUTPUT_DIR,  # Load from fine-tuned model directory
+            OUTPUT_DIR,
             torch_dtype=torch.bfloat16,
-            device_map="auto"
-            # Remove device_map - let Accelerate handle this
+            # Let Trainer handle device placement
         )
-        accelerator.print("Loaded fine-tuned model for evaluation")
+        print("Loaded fine-tuned model for evaluation")
     else:
         # Load base model for training
         model = AutoModelForCausalLM.from_pretrained(
             BASE_MODEL_CACHE,
             torch_dtype=torch.bfloat16,
-            device_map="auto"
-            # Remove device_map - let Accelerate handle this
+            # Let Trainer handle device placement
         )
 
-    if accelerator.is_main_process:
-        print(model)
-    
-    accelerator.print(f"Model parameters (full fine-tuning):")
+    print(model)
+    print(f"Model parameters (full fine-tuning):")
     
     # Data collator for language modeling
     data_collator = CustomDataCollator(
@@ -650,33 +625,33 @@ def main():
             num_train_epochs=5,
             per_device_train_batch_size=1,
             per_device_eval_batch_size=2,
-            gradient_accumulation_steps=4,  # Increased to maintain effective batch size
-            learning_rate=1e-5,  # Even smaller learning rate
+            gradient_accumulation_steps=4,
+            learning_rate=1e-5,
             warmup_steps=20,
             weight_decay=0.001,
             logging_dir=f"{OUTPUT_DIR}/logs",
-            logging_steps=10,  # Reduce logging frequency
+            logging_steps=10,
             eval_strategy="steps",
-            eval_steps=100,  # Increase evaluation frequency to save memory
+            eval_steps=100,
             save_steps=200,
             save_total_limit=2,
-            load_best_model_at_end=False,  # Disable to save memory
+            load_best_model_at_end=False,
             metric_for_best_model="eval_loss",
             greater_is_better=False,
-            bf16=True,  # Enable bf16 for memory efficiency
+            bf16=True,
             dataloader_pin_memory=False,
             remove_unused_columns=False,
             label_names=["labels"],
-            max_grad_norm=1.0,  # Much stricter gradient clipping
+            max_grad_norm=1.0,
             adam_epsilon=1e-8,
             lr_scheduler_type="linear",
             optim="adamw_torch",
-            eval_accumulation_steps=4,  # Process eval in smaller chunks
-            dataloader_num_workers=0,  # Disable multiprocessing to save memory
-            ddp_find_unused_parameters=False,  # Optimize for model parallelism
-            deepspeed=None,  # Can be configured for ZeRO if needed
-            prediction_loss_only=True,  # Only compute loss during periodic evaluation
-            skip_memory_metrics=True,  # Skip memory metrics to save memory
+            eval_accumulation_steps=4,
+            dataloader_num_workers=0,
+            ddp_find_unused_parameters=False,
+            deepspeed=None,
+            prediction_loss_only=True,
+            skip_memory_metrics=True,
         )
         
         # Initialize trainer
@@ -684,16 +659,18 @@ def main():
             model=model,
             args=training_args,
             train_dataset=train_dataset,
-            eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
+            eval_dataset=small_eval_dataset,
             tokenizer=tokenizer,
             data_collator=data_collator,
             compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer),
         )
         
-        # Remove manual accelerator.prepare() - let Trainer handle it
+        # DO NOT manually prepare with accelerator - Trainer handles this
+        # Remove these lines:
+        # model, optimizer, train_dataloader, eval_dataloader = accelerator.prepare(...)
         
         # Train the model
-        accelerator.print("Starting training...")
+        print("Starting training...")
         
         # Override evaluation to use memory cleanup
         original_evaluate = trainer.evaluate
@@ -707,27 +684,19 @@ def main():
         
         trainer.train()
         
-        # Save the fine-tuned model (only on main process)
-        if accelerator.is_main_process:
-            print(f"Saving fine-tuned model to {OUTPUT_DIR}")
-            # Save model directly without unwrapping since we didn't manually prepare it
-            trainer.save_model(OUTPUT_DIR)
-            tokenizer.save_pretrained(OUTPUT_DIR)
-            print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
+        # Save the fine-tuned model
+        print(f"Saving fine-tuned model to {OUTPUT_DIR}")
+        trainer.save_model(OUTPUT_DIR)
+        tokenizer.save_pretrained(OUTPUT_DIR)
+        print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
 
-
-        # Explicitly delete trainer and optimizer to free memory
+        # Explicitly delete trainer to free memory
         del trainer
-        if hasattr(model, 'optimizer'):
-            del optimizer
         torch.cuda.empty_cache()
-        accelerator.print("Cleared trainer and optimizer from memory after training.")
+        print("Cleared trainer from memory after training.")
 
-    # Wait for training to complete across all processes
-    accelerator.wait_for_everyone()
-
-    # Create trainer for final evaluation (needed for both train and eval modes)
-    accelerator.print("Setting up trainer for final evaluation...")
+    # Create trainer for final evaluation
+    print("Setting up trainer for final evaluation...")
     training_args_eval = TrainingArguments(
         output_dir=OUTPUT_DIR,
         per_device_eval_batch_size=1,
@@ -741,9 +710,7 @@ def main():
         skip_memory_metrics=True,
     )
     
-    # Prepare model with accelerator if not already prepared
-    if args.eval:
-        model = accelerator.prepare(model)
+    # DO NOT prepare model with accelerator for evaluation
     
     trainer = Trainer(
         model=model,
@@ -753,9 +720,9 @@ def main():
         compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer),
     )
 
-    # Always run final evaluation (in both train and eval modes)
-    accelerator.print("Running final evaluation with accuracy computation...")
-    torch.cuda.empty_cache()  # Ensure cache is cleared before evaluation
+    # Always run final evaluation
+    print("Running final evaluation with accuracy computation...")
+    torch.cuda.empty_cache()
 
     # Use batched evaluation to prevent OOM
     eval_results = batched_accuracy_evaluation(
@@ -763,10 +730,8 @@ def main():
         detailed_eval=args.detailed_eval, tokenizer=tokenizer
     )
     
-    if accelerator.is_main_process:
-        print(f"Final evaluation results: {eval_results}")
+    print(f"Final evaluation results: {eval_results}")
 
-if __name__ == "__main__":
-    main()
+
 if __name__ == "__main__":
     main()

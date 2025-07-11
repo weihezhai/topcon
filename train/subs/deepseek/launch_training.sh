@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the specific GPU IDs you want to use
-export CUDA_VISIBLE_DEVICES="0,1,3"
+export CUDA_VISIBLE_DEVICES="0,1,2"
 
 # Launch training with accelerate
 accelerate launch \

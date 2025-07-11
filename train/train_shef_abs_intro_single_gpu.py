@@ -611,15 +611,7 @@ def main():
     print(f"Sample labels type: {type(sample['labels'])}")
     print(f"Sample labels value: {sample['labels']}")
     
-    # Create device map based on GPU selection
-    device_map = "auto"  # Default to auto
-    if args.gpu_id is not None and len(args.gpu_id) == 1:
-        # Single GPU case - place model on specific GPU
-        device_map = f"cuda:{args.gpu_id}"
-    elif args.gpu_id is not None and len(args.gpu_id) > 1:
-        # Multi-GPU case - let transformers handle automatic mapping
-        device_map = "auto"
-    
+    # Load model directly to the specified device (no need for device_map logic)
     if args.eval:
         # Load the fine-tuned model for evaluation
         model = AutoModelForCausalLM.from_pretrained(

@@ -31,7 +31,6 @@ import argparse
 # Import the dataset builder
 from dataset_builder_abs_intro import TextDatasetBuilder
 from datasets import load_from_disk
-from accelerate import Accelerator
 
 class CustomDataCollator:
     """Custom data collator that handles variable-length sequences"""
@@ -455,27 +454,15 @@ def main():
     parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
     parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model", help="Directory to save/load the fine-tuned model")
     parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
-    parser.add_argument("--gpu_ids", type=str, default=None, help="Comma-separated list of GPU IDs to use (e.g., '0,1' or '2'). If not specified, uses all available GPUs")
-    parser.add_argument("--cuda_visible_devices", type=str, default=None, help="Set CUDA_VISIBLE_DEVICES environment variable (alternative to --gpu_ids)")
+    parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use for training/evaluation")
     args = parser.parse_args()
     
-    # Set GPU visibility before any CUDA operations
-    if args.cuda_visible_devices is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda_visible_devices
-        print(f"Set CUDA_VISIBLE_DEVICES to: {args.cuda_visible_devices}")
-    elif args.gpu_ids is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_ids
-        print(f"Set CUDA_VISIBLE_DEVICES to: {args.gpu_ids}")
+    # Set CUDA_VISIBLE_DEVICES to only use the specified GPU
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
+    print(f"Using GPU ID: {args.gpu_id}")
     
-    # Parse GPU IDs for device mapping
-    if args.gpu_ids is not None:
-        gpu_ids = [int(x.strip()) for x in args.gpu_ids.split(',')]
-        print(f"Using GPU IDs: {gpu_ids}")
-    else:
-        gpu_ids = None
-    
-    # Initialize accelerator for distributed training
-    accelerator = Accelerator()
+    # After setting CUDA_VISIBLE_DEVICES, the GPU will appear as cuda:0
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
     # Configuration
     MODEL_NAME = args.model_name
@@ -499,14 +486,13 @@ def main():
         MODEL_PATH = BASE_MODEL_CACHE
         print(f"Running training mode using base model from {MODEL_PATH}")
     
-    # MAX_LENGTH = 10000 # Further reduced to save memory
-    
     # Print GPU information
     if torch.cuda.is_available():
-        print(f"Number of GPUs available: {torch.cuda.device_count()}")
-        for i in range(torch.cuda.device_count()):
-            gpu_memory = torch.cuda.get_device_properties(i).total_memory / 1024**3
-            print(f"GPU {i}: {torch.cuda.get_device_name(i)} - {gpu_memory:.1f} GB")
+        print(f"GPU available: {torch.cuda.get_device_name(0)}")
+        gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1024**3
+        print(f"GPU memory: {gpu_memory:.1f} GB")
+    else:
+        print("Warning: No GPU available, using CPU")
     
     # Create base model cache directory if it doesn't exist
     os.makedirs(BASE_MODEL_CACHE, exist_ok=True)
@@ -627,10 +613,10 @@ def main():
     
     # Create device map based on GPU selection
     device_map = "auto"  # Default to auto
-    if gpu_ids is not None and len(gpu_ids) == 1:
+    if args.gpu_id is not None and len(args.gpu_id) == 1:
         # Single GPU case - place model on specific GPU
-        device_map = f"cuda:{gpu_ids[0]}"
-    elif gpu_ids is not None and len(gpu_ids) > 1:
+        device_map = f"cuda:{args.gpu_id}"
+    elif args.gpu_id is not None and len(args.gpu_id) > 1:
         # Multi-GPU case - let transformers handle automatic mapping
         device_map = "auto"
     
@@ -639,7 +625,7 @@ def main():
         model = AutoModelForCausalLM.from_pretrained(
             OUTPUT_DIR,  # Load from fine-tuned model directory
             torch_dtype=torch.bfloat16,
-            device_map=device_map
+            device_map={"": device}  # Map entire model to single device
         )
         print("Loaded fine-tuned model for evaluation")
     else:
@@ -647,16 +633,12 @@ def main():
         model = AutoModelForCausalLM.from_pretrained(
             BASE_MODEL_CACHE,
             torch_dtype=torch.bfloat16,
-            device_map=device_map
+            device_map={"": device}  # Map entire model to single device
         )
 
     print(model)
     
-    # Check if model is distributed across multiple GPUs
-    if hasattr(model, 'hf_device_map'):
-        print(f"Model device map: {model.hf_device_map}")
-    
-    print(f"Model parameters (full fine-tuning):")
+    print(f"Model loaded on device: {next(model.parameters()).device}")
     
     # Data collator for language modeling
     data_collator = CustomDataCollator(
@@ -695,8 +677,6 @@ def main():
             optim="adamw_torch",
             eval_accumulation_steps=4,  # Process eval in smaller chunks
             dataloader_num_workers=0,  # Disable multiprocessing to save memory
-            ddp_find_unused_parameters=False,  # Optimize for model parallelism
-            deepspeed=None,  # Can be configured for ZeRO if needed
             prediction_loss_only=True,  # Only compute loss during periodic evaluation
             skip_memory_metrics=True,  # Skip memory metrics to save memory
         )
@@ -712,12 +692,7 @@ def main():
             compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer)
         )
         
-        # Prepare everything with accelerator for model parallelism
-        model, trainer.optimizer, train_dataset, eval_dataset = accelerator.prepare(
-            model, trainer.optimizer, train_dataset, eval_dataset
-        )
-        
-        # Train the model
+        # Train the model (no accelerator needed for single GPU)
         print("Starting training...")
         
         # Override evaluation to use memory cleanup
@@ -772,7 +747,7 @@ def main():
         model = AutoModelForCausalLM.from_pretrained(
             OUTPUT_DIR,  # Load the fine-tuned model
             torch_dtype=torch.bfloat16,
-            device_map=device_map,  # Use the same device mapping
+            device_map={"": device},  # Use single device mapping
         )
         
         # Clear cache again after loading

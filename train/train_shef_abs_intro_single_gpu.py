@@ -143,7 +143,7 @@ def preprocess_function(examples, tokenizer, max_length=1024):
     # Create prompts that ask for accept/reject decision
     prompts = []
     for text in examples['text']:
-        prompt = f"Based on this research paper's abstract and introduction, should this paper be accepted?\n\nPaper content:\n{text}\n\nDecision:"
+        prompt = f"Paper content:\n{text}\n\nBased on this research paper's abstract and introduction, should this paper be accepted?\n\nDecision:"
         prompts.append(prompt)
     
     # First, tokenize target tokens to know their length
@@ -774,7 +774,7 @@ def main():
 
     # Use batched evaluation to prevent OOM
     eval_results = batched_accuracy_evaluation(
-        trainer, eval_dataset, batch_size=10, 
+        trainer, eval_dataset, batch_size=1, 
         detailed_eval=args.detailed_eval, tokenizer=tokenizer
     )
     

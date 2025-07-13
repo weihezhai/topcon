@@ -774,7 +774,7 @@ def main():
 
     # Use batched evaluation to prevent OOM
     eval_results = batched_accuracy_evaluation(
-        trainer, eval_dataset, batch_size=1, 
+        trainer, eval_dataset, batch_size=2, 
         detailed_eval=args.detailed_eval, tokenizer=tokenizer
     )
     

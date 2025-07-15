@@ -755,11 +755,11 @@ def main():
                 compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer)
             )
             
-            # Prepare everything with accelerator for model parallelism (only if multi-GPU)
-            if len(gpu_ids) > 1:
-                model, trainer.optimizer, train_dataset, eval_dataset = accelerator.prepare(
-                    model, trainer.optimizer, train_dataset, eval_dataset
-                )
+            # # Prepare everything with accelerator for model parallelism (only if multi-GPU)
+            # if len(gpu_ids) > 1:
+            #     model, trainer.optimizer, train_dataset, eval_dataset = accelerator.prepare(
+            #         model, trainer.optimizer, train_dataset, eval_dataset
+            #     )
             
             # Train the model
             print("Starting training...")

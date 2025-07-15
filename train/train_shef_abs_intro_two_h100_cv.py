@@ -730,7 +730,7 @@ def main():
                 label_names=["labels"],
                 max_grad_norm=1.0,
                 adam_epsilon=1e-8,
-                lr_scheduler_type="consine",
+                lr_scheduler_type="cosine",
                 optim="adamw_torch",
                 eval_accumulation_steps=4,
                 dataloader_num_workers=0,  # Disable multiprocessing for multi-GPU setup

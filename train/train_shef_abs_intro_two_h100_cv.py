@@ -675,7 +675,7 @@ def main():
                 OUTPUT_DIR,  # Load from fine-tuned model directory
                 torch_dtype=torch.float32,
                 device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
+                max_memory={i: "79GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
                 offload_folder="./offload",  # Offload to disk if needed
             )
             print("Loaded fine-tuned model for evaluation")
@@ -685,7 +685,7 @@ def main():
                 BASE_MODEL_CACHE,
                 torch_dtype=torch.float32,
                 device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
+                max_memory={i: "79GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
                 offload_folder="./offload",  # Offload to disk if needed
             )
 
@@ -714,7 +714,7 @@ def main():
                 gradient_accumulation_steps=8,  # Maintain effective batch size
                 learning_rate=1e-5,
                 warmup_steps=20,
-                weight_decay=0.001,
+                weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=10,
                 eval_strategy="steps",
@@ -724,13 +724,13 @@ def main():
                 load_best_model_at_end=False,  # Disable to save memory
                 metric_for_best_model="eval_loss",
                 greater_is_better=False,
-                bf16=True,  # Enable bf16 for memory efficiency
+                bf16=False,  # Enable bf16 for memory efficiency
                 dataloader_pin_memory=False,
                 remove_unused_columns=False,
                 label_names=["labels"],
                 max_grad_norm=1.0,
                 adam_epsilon=1e-8,
-                lr_scheduler_type="linear",
+                lr_scheduler_type="consine",
                 optim="adamw_torch",
                 eval_accumulation_steps=4,
                 dataloader_num_workers=0,  # Disable multiprocessing for multi-GPU setup
@@ -807,7 +807,7 @@ def main():
                 OUTPUT_DIR,  # Load the fine-tuned model
                 torch_dtype=torch.float32,
                 device_map="auto",
-                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
+                max_memory={i: "79GiB" for i in range(len(args.gpu_ids))},
                 offload_folder="./offload",
             )
             
@@ -820,7 +820,7 @@ def main():
         training_args_eval = TrainingArguments(
             output_dir=OUTPUT_DIR,
             per_device_eval_batch_size=1,
-            bf16=True,
+            bf16=False,
             dataloader_pin_memory=False,
             remove_unused_columns=False,
             label_names=["labels"],

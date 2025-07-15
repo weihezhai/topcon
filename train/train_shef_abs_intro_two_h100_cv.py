@@ -13,6 +13,9 @@ import os
 import sys
 from datetime import datetime
 import torch
+torch.backends.cuda.enable_flash_sdp(False)
+torch.backends.cuda.enable_mem_efficient_sdp(False)
+torch.backends.cuda.enable_math_sdp(True)
 import pandas as pd
 from datasets import Dataset
 from transformers import (
@@ -33,10 +36,6 @@ import argparse
 # Import the dataset builder
 from dataset_builder_abs_intro import TextDatasetBuilder
 from datasets import load_from_disk
-
-torch.backends.cuda.enable_flash_sdp(False)
-torch.backends.cuda.enable_mem_efficient_sdp(False)
-torch.backends.cuda.enable_math_sdp(True)
 
 class TeeOutput:
     """Class to duplicate stdout to both console and log file"""
@@ -250,7 +249,6 @@ def download_and_save_model(model_name, cache_dir):
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         torch_dtype=torch.bfloat16,
-        attn_implementation="sdpa",
         cache_dir=cache_dir
     )
     model.save_pretrained(cache_dir)
@@ -680,7 +678,7 @@ def main():
                 OUTPUT_DIR,  # Load from fine-tuned model directory
                 torch_dtype=torch.bfloat16,
                 attn_implementation="sdpa",
-                device_map="auto"  # Automatically distribute across available GPUs
+                device_map="None"  # Automatically distribute across available GPUs
             )
             print("Loaded fine-tuned model for evaluation")
         else:
@@ -689,7 +687,7 @@ def main():
                 BASE_MODEL_CACHE,
                 torch_dtype=torch.bfloat16,
                 attn_implementation="sdpa",
-                device_map="auto"  # Automatically distribute across available GPUs
+                device_map="None"
             )
 
         print(model)
@@ -810,7 +808,7 @@ def main():
                 OUTPUT_DIR,  # Load the fine-tuned model
                 torch_dtype=torch.bfloat16,
                 attn_implementation="sdpa",
-                device_map="auto"
+                device_map="None"
             )
             
             # Clear cache again after loading

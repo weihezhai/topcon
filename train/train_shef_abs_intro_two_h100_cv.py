@@ -34,9 +34,9 @@ import argparse
 from dataset_builder_abs_intro import TextDatasetBuilder
 from datasets import load_from_disk
 
-# torch.backends.cuda.enable_flash_sdp(False)
-# torch.backends.cuda.enable_mem_efficient_sdp(False)
-# torch.backends.cuda.enable_math_sdp(True)
+torch.backends.cuda.enable_flash_sdp(False)
+torch.backends.cuda.enable_mem_efficient_sdp(False)
+torch.backends.cuda.enable_math_sdp(True)
 
 class TeeOutput:
     """Class to duplicate stdout to both console and log file"""
@@ -727,7 +727,7 @@ def main():
                 load_best_model_at_end=False,  # Disable to save memory
                 metric_for_best_model="eval_loss",
                 greater_is_better=False,
-                bf16=False,  # Enable bf16 for memory efficiency
+                bf16=True,  # Enable bf16 for memory efficiency
                 dataloader_pin_memory=False,
                 remove_unused_columns=False,
                 label_names=["labels"],
@@ -822,7 +822,7 @@ def main():
         training_args_eval = TrainingArguments(
             output_dir=OUTPUT_DIR,
             per_device_eval_batch_size=1,
-            bf16=False,
+            bf16=True,
             dataloader_pin_memory=False,
             remove_unused_columns=False,
             label_names=["labels"],

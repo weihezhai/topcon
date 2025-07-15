@@ -34,6 +34,10 @@ import argparse
 from dataset_builder_abs_intro import TextDatasetBuilder
 from datasets import load_from_disk
 
+# torch.backends.cuda.enable_flash_sdp(False)
+# torch.backends.cuda.enable_mem_efficient_sdp(False)
+# torch.backends.cuda.enable_math_sdp(True)
+
 class TeeOutput:
     """Class to duplicate stdout to both console and log file"""
     def __init__(self, log_file):
@@ -245,7 +249,8 @@ def download_and_save_model(model_name, cache_dir):
     from transformers import AutoModelForCausalLM
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float32,
+        torch_dtype=torch.bfloat16,
+        attn_implementation="sdpa",
         cache_dir=cache_dir
     )
     model.save_pretrained(cache_dir)
@@ -502,7 +507,7 @@ def main():
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/cv_papers_text/", help="Path to the folder containing training data")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
         parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/cv", help="Directory to save/load the fine-tuned model")
-        parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
+        parser.add_argument("--max_length", type=int, default=8192, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=[0, 1], help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         args = parser.parse_args()
         
@@ -673,20 +678,18 @@ def main():
             # Load the fine-tuned model for evaluation
             model = AutoModelForCausalLM.from_pretrained(
                 OUTPUT_DIR,  # Load from fine-tuned model directory
-                torch_dtype=torch.float32,
-                device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "79GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
-                offload_folder="./offload",  # Offload to disk if needed
+                torch_dtype=torch.bfloat16,
+                attn_implementation="sdpa",
+                device_map="auto"  # Automatically distribute across available GPUs
             )
             print("Loaded fine-tuned model for evaluation")
         else:
             # Load base model for training
             model = AutoModelForCausalLM.from_pretrained(
                 BASE_MODEL_CACHE,
-                torch_dtype=torch.float32,
-                device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "79GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
-                offload_folder="./offload",  # Offload to disk if needed
+                torch_dtype=torch.bfloat16,
+                attn_implementation="sdpa",
+                device_map="auto"  # Automatically distribute across available GPUs
             )
 
         print(model)
@@ -805,10 +808,9 @@ def main():
             # Reload the model fresh with device mapping
             model = AutoModelForCausalLM.from_pretrained(
                 OUTPUT_DIR,  # Load the fine-tuned model
-                torch_dtype=torch.float32,
-                device_map="auto",
-                max_memory={i: "79GiB" for i in range(len(args.gpu_ids))},
-                offload_folder="./offload",
+                torch_dtype=torch.bfloat16,
+                attn_implementation="sdpa",
+                device_map="auto"
             )
             
             # Clear cache again after loading

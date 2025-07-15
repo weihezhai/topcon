@@ -15,7 +15,7 @@ def analyze_candidate_matches(papers_data, candidates):
         dict: Dictionary with matching statistics for each candidate
     """
     candidates_lower = [candidate.lower() for candidate in candidates]
-    match_stats = {candidate: {"title_matches": 0, "keyword_matches": 0, "total_matches": 0} for candidate in candidates}
+    match_stats = {candidate: {"title_matches": 0, "keyword_matches": 0, "primary_area_matches": 0, "total_matches": 0} for candidate in candidates}
     
     for paper_entry in papers_data:
         paper = paper_entry.get('paper', {})
@@ -24,6 +24,7 @@ def analyze_candidate_matches(papers_data, candidates):
         title = content.get('title', {}).get('value', '').lower()
         keywords = content.get('keywords', {}).get('value', [])
         keywords_lower = [keyword.lower() for keyword in keywords]
+        primary_area = content.get('primary_area', {}).get('value', '').lower()
         
         # Track which candidates match this paper to avoid double counting
         paper_matches = set()
@@ -36,8 +37,16 @@ def analyze_candidate_matches(papers_data, candidates):
                 match_stats[candidates[i]]["title_matches"] += 1
                 paper_matches.add(candidates[i])
             
-            # Check keywords (only if not already matched in title)
-            if not title_match:
+            # Check primary area
+            primary_area_match = False
+            if not title_match and primary_area:
+                if candidate in primary_area:
+                    primary_area_match = True
+                    match_stats[candidates[i]]["primary_area_matches"] += 1
+                    paper_matches.add(candidates[i])
+            
+            # Check keywords (only if not already matched in title or primary_area)
+            if not title_match and not primary_area_match:
                 keyword_match = False
                 for keyword in keywords_lower:
                     if candidate in keyword or keyword in candidate:
@@ -84,7 +93,7 @@ def batch_filter_papers(input_dir, output_file, candidates):
     file_stats = []
     
     # Initialize candidate statistics
-    candidate_stats = {candidate: {"title_matches": 0, "keyword_matches": 0, "total_matches": 0} for candidate in candidates}
+    candidate_stats = {candidate: {"title_matches": 0, "keyword_matches": 0, "primary_area_matches": 0, "total_matches": 0} for candidate in candidates}
     
     for json_file in sorted(json_files):
         print(f"Processing: {os.path.basename(json_file)}")
@@ -104,6 +113,7 @@ def batch_filter_papers(input_dir, output_file, candidates):
             for candidate in candidates:
                 candidate_stats[candidate]["title_matches"] += file_candidate_stats[candidate]["title_matches"]
                 candidate_stats[candidate]["keyword_matches"] += file_candidate_stats[candidate]["keyword_matches"]
+                candidate_stats[candidate]["primary_area_matches"] += file_candidate_stats[candidate]["primary_area_matches"]
                 candidate_stats[candidate]["total_matches"] += file_candidate_stats[candidate]["total_matches"]
             
             # Extract paper IDs
@@ -170,13 +180,13 @@ def batch_filter_papers(input_dir, output_file, candidates):
     
     # Print candidate statistics
     print(f"\nCandidate Match Statistics:")
-    print(f"{'Candidate':<20} {'Title':<8} {'Keyword':<8} {'Total':<8} {'% of Matched':<12} {'% of All':<10}")
-    print("-" * 75)
+    print(f"{'Candidate':<20} {'Title':<8} {'Area':<8} {'Keyword':<8} {'Total':<8} {'% of Matched':<12} {'% of All':<10}")
+    print("-" * 85)
     for candidate in candidates:
         stats = candidate_stats[candidate]
         match_percentage = (stats["total_matches"] / total_matched * 100) if total_matched > 0 else 0
         all_percentage = (stats["total_matches"] / total_papers * 100) if total_papers > 0 else 0
-        print(f"{candidate:<20} {stats['title_matches']:<8} {stats['keyword_matches']:<8} {stats['total_matches']:<8} {match_percentage:<11.1f}% {all_percentage:<9.2f}%")
+        print(f"{candidate:<20} {stats['title_matches']:<8} {stats['primary_area_matches']:<8} {stats['keyword_matches']:<8} {stats['total_matches']:<8} {match_percentage:<11.1f}% {all_percentage:<9.2f}%")
     
     print(f"\nPer-file statistics:")
     print(f"{'File':<40} {'Papers':<8} {'Matched':<8} {'Rate':<8}")
@@ -194,15 +204,17 @@ def batch_filter_papers(input_dir, output_file, candidates):
 if __name__ == "__main__":
     # Configuration
     # llm_candidates = ["LLM", "language model", "RAG", "hallucination", "jailbreaking", "agents", "agent", "agentic"]
-    candidates = ["computer vision", "CV", "vision", "image", "video", '3D', 'diffusion', 'gaussian splatting']
+    # cv_candidates = ["computer vision", "CV", "vision", "image", "video", '3D', 'diffusion', 'gaussian splatting']
+    candidates = ['probabilistic methods (Bayesian methods, variational inference, sampling, UQ, etc.)', 'optimization', 'learning theory']
+    # candidates = ['reinforcement learning', 'game theory', 'applications to robotics, autonomy, planning', 'robotics']
     input_directory = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/"
-    output_file = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/batch_filtered_results.json"
+    output_file = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_theory_papers/batch_filtered_results.json"
     
     # Run batch processing
     matched_ids = batch_filter_papers(input_directory, output_file, candidates)
     
     # Also save just the IDs list for convenience
-    ids_only_file = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/matched_paper_ids.json"
+    ids_only_file = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_theory_papers/matched_paper_ids.json"
     with open(ids_only_file, 'w', encoding='utf-8') as f:
         json.dump(matched_ids, f, indent=2)
     

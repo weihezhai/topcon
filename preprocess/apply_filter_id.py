@@ -119,10 +119,10 @@ if __name__ == "__main__":
     import sys
     
     # Default configuration
-    paper_ids_file = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/matched_paper_ids.json"
+    paper_ids_file = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_theory_papers/matched_paper_ids.json"
     txt_source_dir = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/txt_outputs"
-    output_dir = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/cv_papers_text"
-    
+    output_dir = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_theory_papers/theory_papers_text"
+
     # Allow command line arguments
     if len(sys.argv) >= 2:
         paper_ids_file = sys.argv[1]

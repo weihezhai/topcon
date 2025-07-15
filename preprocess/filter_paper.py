@@ -3,56 +3,53 @@ import re
 
 def filter_papers_by_keywords(papers_data, candidates):
     """
-    Filter papers based on string overlap with candidate keywords.
+    Filter papers based on whether any of the candidate keywords appear in the title, keywords, or primary_area.
     
     Args:
-        papers_data (list): List of paper dictionaries in the specified format
+        papers_data (list): List of paper dictionaries
         candidates (list): List of candidate strings to match against
     
     Returns:
-        list: Filtered list of papers that match at least one candidate
+        list: Filtered list of papers that match any of the candidates
     """
-    # Convert candidates to lowercase for case-insensitive matching
+    filtered_papers = []
     candidates_lower = [candidate.lower() for candidate in candidates]
     
-    selected_papers = []
-    
     for paper_entry in papers_data:
-        # Extract paper content
         paper = paper_entry.get('paper', {})
         content = paper.get('content', {})
         
-        # Get title and keywords
         title = content.get('title', {}).get('value', '').lower()
         keywords = content.get('keywords', {}).get('value', [])
-        
-        # Convert keywords to lowercase
         keywords_lower = [keyword.lower() for keyword in keywords]
+        primary_area = content.get('primary_area', {}).get('value', '').lower()
         
-        # Check for overlap with any candidate
+        # Check if any candidate matches title, primary_area, or keywords
         match_found = False
-        
-        # Check title for overlap
         for candidate in candidates_lower:
+            # Check title
             if candidate in title:
                 match_found = True
                 break
-        
-        # If no match in title, check keywords
-        if not match_found:
+            
+            # Check primary area
+            if primary_area and candidate in primary_area:
+                match_found = True
+                break
+            
+            # Check keywords
             for keyword in keywords_lower:
-                for candidate in candidates_lower:
-                    if candidate in keyword or keyword in candidate:
-                        match_found = True
-                        break
-                if match_found:
+                if candidate in keyword or keyword in candidate:
+                    match_found = True
                     break
+            
+            if match_found:
+                break
         
-        # Add paper if match found
         if match_found:
-            selected_papers.append(paper_entry)
+            filtered_papers.append(paper_entry)
     
-    return selected_papers
+    return filtered_papers
 
 def load_and_filter_papers(file_path, candidates):
     """

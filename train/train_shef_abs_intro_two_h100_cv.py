@@ -245,7 +245,7 @@ def download_and_save_model(model_name, cache_dir):
     from transformers import AutoModelForCausalLM
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.bfloat16,
+        torch_dtype=torch.float32,
         cache_dir=cache_dir
     )
     model.save_pretrained(cache_dir)
@@ -673,9 +673,9 @@ def main():
             # Load the fine-tuned model for evaluation
             model = AutoModelForCausalLM.from_pretrained(
                 OUTPUT_DIR,  # Load from fine-tuned model directory
-                torch_dtype=torch.bfloat16,
+                torch_dtype=torch.float32,
                 device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "24GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
+                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
                 offload_folder="./offload",  # Offload to disk if needed
             )
             print("Loaded fine-tuned model for evaluation")
@@ -683,9 +683,9 @@ def main():
             # Load base model for training
             model = AutoModelForCausalLM.from_pretrained(
                 BASE_MODEL_CACHE,
-                torch_dtype=torch.bfloat16,
+                torch_dtype=torch.float32,
                 device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "24GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
+                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
                 offload_folder="./offload",  # Offload to disk if needed
             )
 
@@ -708,7 +708,7 @@ def main():
             # Training arguments - adjusted for multi-GPU
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
-                num_train_epochs=8,
+                num_train_epochs=5,
                 per_device_train_batch_size=1,  # Keep small for large model
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
@@ -805,9 +805,9 @@ def main():
             # Reload the model fresh with device mapping
             model = AutoModelForCausalLM.from_pretrained(
                 OUTPUT_DIR,  # Load the fine-tuned model
-                torch_dtype=torch.bfloat16,
+                torch_dtype=torch.float32,
                 device_map="auto",
-                max_memory={i: "24GiB" for i in range(len(args.gpu_ids))},
+                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
                 offload_folder="./offload",
             )
             

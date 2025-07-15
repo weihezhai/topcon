@@ -10,6 +10,8 @@
     └── tokenizer files
 '''
 import os
+import sys
+from datetime import datetime
 import torch
 import pandas as pd
 from datasets import Dataset
@@ -31,6 +33,23 @@ import argparse
 # Import the dataset builder
 from dataset_builder_abs_intro import TextDatasetBuilder
 from datasets import load_from_disk
+
+class TeeOutput:
+    """Class to duplicate stdout to both console and log file"""
+    def __init__(self, log_file):
+        self.terminal = sys.stdout
+        self.log = open(log_file, 'w', buffering=1)  # Line buffering
+        
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+        
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+        
+    def close(self):
+        self.log.close()
 
 class CustomDataCollator:
     """Custom data collator that handles variable-length sequences"""
@@ -445,340 +464,376 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     return results
 
 def main():
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Fine-tune a language model with LoRA")
-    parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
-    parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
-    parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-1.7B", help="Pre-trained model name or path")
-    parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/cv_papers_text/", help="Path to the folder containing training data")
-    parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
-    parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/cv", help="Directory to save/load the fine-tuned model")
-    parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
-    parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use for training/evaluation")
-    args = parser.parse_args()
+    # Set up logging
+    log_dir = "./log"
+    os.makedirs(log_dir, exist_ok=True)
     
-    # Set CUDA_VISIBLE_DEVICES to only use the specified GPU
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
-    print(f"Using GPU ID: {args.gpu_id}")
+    # Create log filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = os.path.join(log_dir, f"training_log_{timestamp}.log")
     
-    # After setting CUDA_VISIBLE_DEVICES, the GPU will appear as cuda:0
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # Redirect stdout and stderr to both console and log file
+    tee_stdout = TeeOutput(log_file)
+    tee_stderr = TeeOutput(log_file)
+    sys.stdout = tee_stdout
+    sys.stderr = tee_stderr
     
-    # Configuration
-    MODEL_NAME = args.model_name
-    DATA_FOLDER = args.data_folder
-    LABELS_FILE = args.labels_file
-    OUTPUT_DIR = args.output_dir
-    MAX_LENGTH = args.max_length
+    print(f"Logging to: {log_file}")
+    print(f"Start time: {datetime.now()}")
+    print("="*80)
     
-    # Model directories
-    BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B"  # Where to cache the downloaded model
-    
-    # If in evaluation mode, use the fine-tuned model directory
-    if args.eval:
-        if not os.path.exists(OUTPUT_DIR):
-            print(f"Error: Fine-tuned model not found at {OUTPUT_DIR}")
-            print("Please run training first without --eval flag")
-            return
-        MODEL_PATH = OUTPUT_DIR
-        print(f"Running evaluation mode using model from {MODEL_PATH}")
-    else:
-        MODEL_PATH = BASE_MODEL_CACHE
-        print(f"Running training mode using base model from {MODEL_PATH}")
-    
-    # Print GPU information
-    if torch.cuda.is_available():
-        print(f"GPU available: {torch.cuda.get_device_name(0)}")
-        gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1024**3
-        print(f"GPU memory: {gpu_memory:.1f} GB")
-    else:
-        print("Warning: No GPU available, using CPU")
-    
-    # Create base model cache directory if it doesn't exist
-    os.makedirs(BASE_MODEL_CACHE, exist_ok=True)
-    # Create output directory if it doesn't exist
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    # Download and cache the base model if not already cached (only for training mode)
-    if not args.eval:
-        config_file = os.path.join(BASE_MODEL_CACHE, "config.json")
-        if not os.path.exists(config_file):
-            download_and_save_model(MODEL_NAME, BASE_MODEL_CACHE)
+    try:
+        # Parse command line arguments
+        parser = argparse.ArgumentParser(description="Fine-tune a language model with LoRA")
+        parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
+        parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
+        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-1.7B", help="Pre-trained model name or path")
+        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/cv_papers_text/", help="Path to the folder containing training data")
+        parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/cv", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
+        parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use for training/evaluation")
+        args = parser.parse_args()
+        
+        # Set CUDA_VISIBLE_DEVICES to only use the specified GPU
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
+        print(f"Using GPU ID: {args.gpu_id}")
+        
+        # After setting CUDA_VISIBLE_DEVICES, the GPU will appear as cuda:0
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        
+        # Configuration
+        MODEL_NAME = args.model_name
+        DATA_FOLDER = args.data_folder
+        LABELS_FILE = args.labels_file
+        OUTPUT_DIR = args.output_dir
+        MAX_LENGTH = args.max_length
+        
+        # Model directories
+        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B"  # Where to cache the downloaded model
+        
+        # If in evaluation mode, use the fine-tuned model directory
+        if args.eval:
+            if not os.path.exists(OUTPUT_DIR):
+                print(f"Error: Fine-tuned model not found at {OUTPUT_DIR}")
+                print("Please run training first without --eval flag")
+                return
+            MODEL_PATH = OUTPUT_DIR
+            print(f"Running evaluation mode using model from {MODEL_PATH}")
         else:
-            print(f"Using cached model from {BASE_MODEL_CACHE}")
-    
-    # Load tokenizer from appropriate model path
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    # Ensure pad_token_id is set
-    if tokenizer.pad_token_id is None:
-        tokenizer.pad_token_id = tokenizer.eos_token_id
-    
-    # Load and prepare dataset
-    print("Loading dataset...")
-    
-    # Define processed dataset cache path
-    PROCESSED_DATASET_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cv"
-    os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
-    
-    # Check if processed dataset exists by looking for the dataset_info.json file
-    dataset_info_path = os.path.join(PROCESSED_DATASET_CACHE, "dataset_info.json")
-    if os.path.exists(dataset_info_path) and os.path.isdir(PROCESSED_DATASET_CACHE):
-        try:
-            print("Loading cached processed dataset...")
-            dataset = load_from_disk(PROCESSED_DATASET_CACHE)
-            # Still need to create dataset_builder for stats
-            dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
-            print("Successfully loaded cached dataset!")
-        except Exception as e:
-            print(f"Failed to load cached dataset: {e}")
-            print("Processing dataset from scratch...")
+            MODEL_PATH = BASE_MODEL_CACHE
+            print(f"Running training mode using base model from {MODEL_PATH}")
+        
+        # Print GPU information
+        if torch.cuda.is_available():
+            print(f"GPU available: {torch.cuda.get_device_name(0)}")
+            gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1024**3
+            print(f"GPU memory: {gpu_memory:.1f} GB")
+        else:
+            print("Warning: No GPU available, using CPU")
+        
+        # Create base model cache directory if it doesn't exist
+        os.makedirs(BASE_MODEL_CACHE, exist_ok=True)
+        # Create output directory if it doesn't exist
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+        # Download and cache the base model if not already cached (only for training mode)
+        if not args.eval:
+            config_file = os.path.join(BASE_MODEL_CACHE, "config.json")
+            if not os.path.exists(config_file):
+                download_and_save_model(MODEL_NAME, BASE_MODEL_CACHE)
+            else:
+                print(f"Using cached model from {BASE_MODEL_CACHE}")
+        
+        # Load tokenizer from appropriate model path
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        # Ensure pad_token_id is set
+        if tokenizer.pad_token_id is None:
+            tokenizer.pad_token_id = tokenizer.eos_token_id
+        
+        # Load and prepare dataset
+        print("Loading dataset...")
+        
+        # Define processed dataset cache path
+        PROCESSED_DATASET_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cv"
+        os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
+        
+        # Check if processed dataset exists by looking for the dataset_info.json file
+        dataset_info_path = os.path.join(PROCESSED_DATASET_CACHE, "dataset_info.json")
+        if os.path.exists(dataset_info_path) and os.path.isdir(PROCESSED_DATASET_CACHE):
+            try:
+                print("Loading cached processed dataset...")
+                dataset = load_from_disk(PROCESSED_DATASET_CACHE)
+                # Still need to create dataset_builder for stats
+                dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
+                print("Successfully loaded cached dataset!")
+            except Exception as e:
+                print(f"Failed to load cached dataset: {e}")
+                print("Processing dataset from scratch...")
+                dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
+                dataset = dataset_builder.load_dataset()
+                
+                # Save processed dataset to cache
+                print(f"Saving processed dataset to {PROCESSED_DATASET_CACHE}")
+                dataset.save_to_disk(PROCESSED_DATASET_CACHE)
+        else:
+            print("No cached dataset found. Processing dataset for the first time...")
             dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
             dataset = dataset_builder.load_dataset()
             
             # Save processed dataset to cache
             print(f"Saving processed dataset to {PROCESSED_DATASET_CACHE}")
             dataset.save_to_disk(PROCESSED_DATASET_CACHE)
-    else:
-        print("No cached dataset found. Processing dataset for the first time...")
-        dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
-        dataset = dataset_builder.load_dataset()
         
-        # Save processed dataset to cache
-        print(f"Saving processed dataset to {PROCESSED_DATASET_CACHE}")
-        dataset.save_to_disk(PROCESSED_DATASET_CACHE)
-    
-    # Print dataset statistics
-    stats = dataset_builder.get_dataset_stats(dataset)
-    print(f"Dataset Statistics:")
-    print(f"Total samples: {stats['total_samples']}")
-    print(f"Label distribution: {stats['label_distribution']}")
-    print(f"Average text length: {stats['text_stats']['avg_length_words']:.2f} words")
-    
-    # Split dataset using sklearn for proper stratification
-    print("Splitting dataset...")
-    train_test_split_result = split_dataset_stratified(dataset, test_size=0.2, seed=42)
-    train_dataset = train_test_split_result['train']
-    eval_dataset = train_test_split_result['test']
+        # Print dataset statistics
+        stats = dataset_builder.get_dataset_stats(dataset)
+        print(f"Dataset Statistics:")
+        print(f"Total samples: {stats['total_samples']}")
+        print(f"Label distribution: {stats['label_distribution']}")
+        print(f"Average text length: {stats['text_stats']['avg_length_words']:.2f} words")
+        
+        # Split dataset using sklearn for proper stratification
+        print("Splitting dataset...")
+        train_test_split_result = split_dataset_stratified(dataset, test_size=0.2, seed=42)
+        train_dataset = train_test_split_result['train']
+        eval_dataset = train_test_split_result['test']
 
-    # Create a smaller subset for faster evaluation during training
-    small_eval_dataset = eval_dataset.select(range(min(50, len(eval_dataset))))  # Even smaller for faster eval
-    
-    print(f"Train set: {len(train_dataset)} samples")
-    print(f"Test set: {len(eval_dataset)} samples ({len(small_eval_dataset)} used for periodic eval)")
-    
-    # Debug: Check data types and first few samples
-    print(f"Sample train data: {train_dataset[0]}")
-    print(f"Type of text: {type(train_dataset[0]['text'])}")
-    print(f"Type of labels: {type(train_dataset[0]['labels'])}")
-    print(f"First text sample length: {len(train_dataset[0]['text'])}")
-    print(f"Text preview: {train_dataset[0]['text'][:100]}...")
-    
-    # Tokenize datasets using the new approach
-    print("Tokenizing datasets...")
-    
-    train_dataset = train_dataset.map(
-        lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
-        batched=True,
-        batch_size=100,  # Process in smaller batches
-        remove_columns=['text', 'labels']  # Remove original columns
-    )
-    
-    eval_dataset = eval_dataset.map(
-        lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
-        batched=True,
-        batch_size=100,  # Process in smaller batches
-        remove_columns=['text', 'labels']  # Remove original columns
-    )
-    
-    # Also tokenize the small eval dataset for periodic evaluation
-    small_eval_dataset = small_eval_dataset.map(
-        lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
-        batched=True,
-        batch_size=100,
-        remove_columns=['text', 'labels']
-    )
-    
-    print("Tokenization complete")
-    print(f"Train dataset columns: {train_dataset.column_names}")
-    print(f"Train dataset sample: {train_dataset[0]}")
-    
-    # Debug tensor shapes
-    sample = train_dataset[0]
-    print(f"Sample input_ids type: {type(sample['input_ids'])}")
-    print(f"Sample input_ids length: {len(sample['input_ids'])}")
-    print(f"Sample labels type: {type(sample['labels'])}")
-    print(f"Sample labels value: {sample['labels']}")
-    
-    # Load model directly to the specified device (no need for device_map logic)
-    if args.eval:
-        # Load the fine-tuned model for evaluation
-        model = AutoModelForCausalLM.from_pretrained(
-            OUTPUT_DIR,  # Load from fine-tuned model directory
-            torch_dtype=torch.bfloat16,
-            device_map={"": device}  # Map entire model to single device
+        # Create a smaller subset for faster evaluation during training
+        small_eval_dataset = eval_dataset.select(range(min(50, len(eval_dataset))))  # Even smaller for faster eval
+        
+        print(f"Train set: {len(train_dataset)} samples")
+        print(f"Test set: {len(eval_dataset)} samples ({len(small_eval_dataset)} used for periodic eval)")
+        
+        # Debug: Check data types and first few samples
+        print(f"Sample train data: {train_dataset[0]}")
+        print(f"Type of text: {type(train_dataset[0]['text'])}")
+        print(f"Type of labels: {type(train_dataset[0]['labels'])}")
+        print(f"First text sample length: {len(train_dataset[0]['text'])}")
+        print(f"Text preview: {train_dataset[0]['text'][:100]}...")
+        
+        # Tokenize datasets using the new approach
+        print("Tokenizing datasets...")
+        
+        train_dataset = train_dataset.map(
+            lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
+            batched=True,
+            batch_size=100,  # Process in smaller batches
+            remove_columns=['text', 'labels']  # Remove original columns
         )
-        print("Loaded fine-tuned model for evaluation")
-    else:
-        # Load base model for training
-        model = AutoModelForCausalLM.from_pretrained(
-            BASE_MODEL_CACHE,
-            torch_dtype=torch.bfloat16,
-            device_map={"": device}  # Map entire model to single device
+        
+        eval_dataset = eval_dataset.map(
+            lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
+            batched=True,
+            batch_size=100,  # Process in smaller batches
+            remove_columns=['text', 'labels']  # Remove original columns
         )
+        
+        # Also tokenize the small eval dataset for periodic evaluation
+        small_eval_dataset = small_eval_dataset.map(
+            lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
+            batched=True,
+            batch_size=100,
+            remove_columns=['text', 'labels']
+        )
+        
+        print("Tokenization complete")
+        print(f"Train dataset columns: {train_dataset.column_names}")
+        print(f"Train dataset sample: {train_dataset[0]}")
+        
+        # Debug tensor shapes
+        sample = train_dataset[0]
+        print(f"Sample input_ids type: {type(sample['input_ids'])}")
+        print(f"Sample input_ids length: {len(sample['input_ids'])}")
+        print(f"Sample labels type: {type(sample['labels'])}")
+        print(f"Sample labels value: {sample['labels']}")
+        
+        # Load model directly to the specified device (no need for device_map logic)
+        if args.eval:
+            # Load the fine-tuned model for evaluation
+            model = AutoModelForCausalLM.from_pretrained(
+                OUTPUT_DIR,  # Load from fine-tuned model directory
+                torch_dtype=torch.bfloat16,
+                device_map={"": device}  # Map entire model to single device
+            )
+            print("Loaded fine-tuned model for evaluation")
+        else:
+            # Load base model for training
+            model = AutoModelForCausalLM.from_pretrained(
+                BASE_MODEL_CACHE,
+                torch_dtype=torch.bfloat16,
+                device_map={"": device}  # Map entire model to single device
+            )
 
-    print(model)
-    
-    print(f"Model loaded on device: {next(model.parameters()).device}")
-    
-    # Data collator for language modeling
-    data_collator = CustomDataCollator(
-        tokenizer=tokenizer,
-        max_length=MAX_LENGTH
-    )
-    
-    # Only run training if not in evaluation mode
-    if not args.eval:
-        # Training arguments
-        training_args = TrainingArguments(
+        print(model)
+        
+        print(f"Model loaded on device: {next(model.parameters()).device}")
+        
+        # Data collator for language modeling
+        data_collator = CustomDataCollator(
+            tokenizer=tokenizer,
+            max_length=MAX_LENGTH
+        )
+        
+        # Only run training if not in evaluation mode
+        if not args.eval:
+            # Training arguments
+            training_args = TrainingArguments(
+                output_dir=OUTPUT_DIR,
+                num_train_epochs=8,
+                per_device_train_batch_size=1,
+                per_device_eval_batch_size=1,
+                gradient_accumulation_steps=8,  # Increased to maintain effective batch size
+                learning_rate=1e-5,  # Even smaller learning rate
+                warmup_steps=20,
+                weight_decay=0.001,
+                logging_dir=f"{OUTPUT_DIR}/logs",
+                logging_steps=10,  # Reduce logging frequency
+                eval_strategy="steps",
+                eval_steps=100,  # Increase evaluation frequency to save memory
+                save_steps=200,
+                save_total_limit=2,
+                load_best_model_at_end=False,  # Disable to save memory
+                metric_for_best_model="eval_loss",
+                greater_is_better=False,
+                bf16=True,  # Enable bf16 for memory efficiency
+                dataloader_pin_memory=False,
+                remove_unused_columns=False,
+                label_names=["labels"],
+                max_grad_norm=1.0,  # Much stricter gradient clipping
+                adam_epsilon=1e-8,
+                lr_scheduler_type="linear",
+                optim="adamw_torch",
+                eval_accumulation_steps=4,  # Process eval in smaller chunks
+                dataloader_num_workers=0,  # Disable multiprocessing to save memory
+                prediction_loss_only=True,  # Only compute loss during periodic evaluation
+                skip_memory_metrics=True,  # Skip memory metrics to save memory
+            )
+            
+            # Initialize trainer
+            trainer = Trainer(
+                model=model,
+                args=training_args,
+                train_dataset=train_dataset,
+                eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
+                tokenizer=tokenizer,
+                data_collator=data_collator,
+                compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer)
+            )
+            
+            # Train the model (no accelerator needed for single GPU)
+            print("Starting training...")
+            
+            # Override evaluation to use memory cleanup
+            original_evaluate = trainer.evaluate
+            def memory_safe_evaluate(*args, **kwargs):
+                torch.cuda.empty_cache()
+                with torch.no_grad():
+                    result = original_evaluate(*args, **kwargs)
+                torch.cuda.empty_cache()
+                return result
+            trainer.evaluate = memory_safe_evaluate
+            
+            trainer.train()
+            
+            # Save the fine-tuned model
+            print(f"Saving fine-tuned model to {OUTPUT_DIR}")
+            trainer.save_model()
+            tokenizer.save_pretrained(OUTPUT_DIR)
+            
+            print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
+
+            # Explicitly delete trainer and optimizer to free memory
+            del trainer
+            if hasattr(model, 'optimizer'):
+                del model.optimizer
+            
+            # More thorough cleanup
+            # Clear all references to the model
+            model_to_delete = model
+            model = None  # Set to None first
+            del model_to_delete
+            
+            # Force garbage collection
+            import gc
+            gc.collect()
+            
+            # Clear CUDA cache multiple times to ensure cleanup
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.synchronize()  # Wait for all CUDA operations to complete
+                torch.cuda.empty_cache()  # Clear again after synchronization
+            
+            print("Cleared trainer, optimizer, and model from memory after training.")
+
+            print("Reloading model for final evaluation to reduce memory usage...")
+            
+            # Small delay to ensure memory is fully released
+            import time
+            time.sleep(2)
+            
+            # Reload the model fresh
+            model = AutoModelForCausalLM.from_pretrained(
+                OUTPUT_DIR,  # Load the fine-tuned model
+                torch_dtype=torch.bfloat16,
+                device_map={"": device},  # Use single device mapping
+            )
+            
+            # Clear cache again after loading
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+        # Create trainer for final evaluation (needed for both train and eval modes)
+        print("Setting up trainer for final evaluation...")
+        training_args_eval = TrainingArguments(
             output_dir=OUTPUT_DIR,
-            num_train_epochs=5,
-            per_device_train_batch_size=1,
             per_device_eval_batch_size=1,
-            gradient_accumulation_steps=8,  # Increased to maintain effective batch size
-            learning_rate=1e-5,  # Even smaller learning rate
-            warmup_steps=20,
-            weight_decay=0.001,
-            logging_dir=f"{OUTPUT_DIR}/logs",
-            logging_steps=10,  # Reduce logging frequency
-            eval_strategy="steps",
-            eval_steps=100,  # Increase evaluation frequency to save memory
-            save_steps=200,
-            save_total_limit=2,
-            load_best_model_at_end=False,  # Disable to save memory
-            metric_for_best_model="eval_loss",
-            greater_is_better=False,
-            bf16=True,  # Enable bf16 for memory efficiency
+            bf16=True,
             dataloader_pin_memory=False,
             remove_unused_columns=False,
             label_names=["labels"],
-            max_grad_norm=1.0,  # Much stricter gradient clipping
-            adam_epsilon=1e-8,
-            lr_scheduler_type="linear",
-            optim="adamw_torch",
-            eval_accumulation_steps=4,  # Process eval in smaller chunks
-            dataloader_num_workers=0,  # Disable multiprocessing to save memory
-            prediction_loss_only=True,  # Only compute loss during periodic evaluation
-            skip_memory_metrics=True,  # Skip memory metrics to save memory
+            eval_accumulation_steps=4,
+            dataloader_num_workers=0,
+            prediction_loss_only=True,
+            skip_memory_metrics=True,
         )
         
-        # Initialize trainer
         trainer = Trainer(
             model=model,
-            args=training_args,
-            train_dataset=train_dataset,
-            eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
+            args=training_args_eval,
             tokenizer=tokenizer,
             data_collator=data_collator,
-            compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer)
+            compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer),
+        )
+
+        # Always run final evaluation (in both train and eval modes)
+        print("Running final evaluation with accuracy computation...")
+
+        # Use batched evaluation to prevent OOM
+        eval_results = batched_accuracy_evaluation(
+            trainer, eval_dataset, batch_size=2, 
+            detailed_eval=args.detailed_eval, tokenizer=tokenizer
         )
         
-        # Train the model (no accelerator needed for single GPU)
-        print("Starting training...")
+        print(f"Final evaluation results: {eval_results}")
         
-        # Override evaluation to use memory cleanup
-        original_evaluate = trainer.evaluate
-        def memory_safe_evaluate(*args, **kwargs):
-            torch.cuda.empty_cache()
-            with torch.no_grad():
-                result = original_evaluate(*args, **kwargs)
-            torch.cuda.empty_cache()
-            return result
-        trainer.evaluate = memory_safe_evaluate
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+    finally:
+        # Print end time and close logs
+        print("="*80)
+        print(f"End time: {datetime.now()}")
+        print(f"Log saved to: {log_file}")
         
-        trainer.train()
-        
-        # Save the fine-tuned model
-        print(f"Saving fine-tuned model to {OUTPUT_DIR}")
-        trainer.save_model()
-        tokenizer.save_pretrained(OUTPUT_DIR)
-        
-        print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
-
-        # Explicitly delete trainer and optimizer to free memory
-        del trainer
-        if hasattr(model, 'optimizer'):
-            del model.optimizer
-        
-        # More thorough cleanup
-        # Clear all references to the model
-        model_to_delete = model
-        model = None  # Set to None first
-        del model_to_delete
-        
-        # Force garbage collection
-        import gc
-        gc.collect()
-        
-        # Clear CUDA cache multiple times to ensure cleanup
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            torch.cuda.synchronize()  # Wait for all CUDA operations to complete
-            torch.cuda.empty_cache()  # Clear again after synchronization
-        
-        print("Cleared trainer, optimizer, and model from memory after training.")
-
-        print("Reloading model for final evaluation to reduce memory usage...")
-        
-        # Small delay to ensure memory is fully released
-        import time
-        time.sleep(2)
-        
-        # Reload the model fresh
-        model = AutoModelForCausalLM.from_pretrained(
-            OUTPUT_DIR,  # Load the fine-tuned model
-            torch_dtype=torch.bfloat16,
-            device_map={"": device},  # Use single device mapping
-        )
-        
-        # Clear cache again after loading
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-
-    # Create trainer for final evaluation (needed for both train and eval modes)
-    print("Setting up trainer for final evaluation...")
-    training_args_eval = TrainingArguments(
-        output_dir=OUTPUT_DIR,
-        per_device_eval_batch_size=1,
-        bf16=True,
-        dataloader_pin_memory=False,
-        remove_unused_columns=False,
-        label_names=["labels"],
-        eval_accumulation_steps=4,
-        dataloader_num_workers=0,
-        prediction_loss_only=True,
-        skip_memory_metrics=True,
-    )
-    
-    trainer = Trainer(
-        model=model,
-        args=training_args_eval,
-        tokenizer=tokenizer,
-        data_collator=data_collator,
-        compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer),
-    )
-
-    # Always run final evaluation (in both train and eval modes)
-    print("Running final evaluation with accuracy computation...")
-
-    # Use batched evaluation to prevent OOM
-    eval_results = batched_accuracy_evaluation(
-        trainer, eval_dataset, batch_size=2, 
-        detailed_eval=args.detailed_eval, tokenizer=tokenizer
-    )
-    
-    print(f"Final evaluation results: {eval_results}")
+        # Restore original stdout/stderr and close log files
+        sys.stdout = tee_stdout.terminal
+        sys.stderr = tee_stderr.terminal
+        tee_stdout.close()
+        tee_stderr.close()
 
 if __name__ == "__main__":
     main()

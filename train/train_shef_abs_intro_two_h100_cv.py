@@ -678,7 +678,7 @@ def main():
                 OUTPUT_DIR,  # Load from fine-tuned model directory
                 torch_dtype=torch.bfloat16,
                 attn_implementation="sdpa",
-                device_map="None"  # Automatically distribute across available GPUs
+                device_map=None  # Automatically distribute across available GPUs
             )
             print("Loaded fine-tuned model for evaluation")
         else:
@@ -687,7 +687,7 @@ def main():
                 BASE_MODEL_CACHE,
                 torch_dtype=torch.bfloat16,
                 attn_implementation="sdpa",
-                device_map="None"
+                device_map=None
             )
 
         print(model)
@@ -808,7 +808,7 @@ def main():
                 OUTPUT_DIR,  # Load the fine-tuned model
                 torch_dtype=torch.bfloat16,
                 attn_implementation="sdpa",
-                device_map="None"
+                device_map=None
             )
             
             # Clear cache again after loading

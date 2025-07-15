@@ -491,7 +491,7 @@ def main():
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/cv_papers_text/", help="Path to the folder containing training data")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/cv", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/cv/", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=str, default=None, help="Comma-separated list of GPU IDs to use (e.g., '0,1' or '2'). If not specified, uses GPU 0")
         parser.add_argument("--cuda_visible_devices", type=str, default=None, help="Set CUDA_VISIBLE_DEVICES environment variable (alternative to --gpu_ids)")
@@ -527,7 +527,7 @@ def main():
         MAX_LENGTH = args.max_length
         
         # Model directories
-        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B"  # Where to cache the downloaded model
+        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B"  # Where to cache the downloaded model
         
         # If in evaluation mode, use the fine-tuned model directory
         if args.eval:

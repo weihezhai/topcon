@@ -721,7 +721,7 @@ def main():
                 warmup_steps=20,
                 weight_decay=0.001,
                 logging_dir=f"{OUTPUT_DIR}/logs",
-                logging_steps=10,
+                logging_steps=1,
                 eval_strategy="steps",
                 eval_steps=100,
                 save_steps=200,

@@ -8,7 +8,7 @@
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --job-name=theory_4b
 #SBATCH --output=./logs/theory_4b.%j.out
-#SBATCH --time=0-12:00:00
+#SBATCH --time=0-6:00:00
 
 # Load necessary modules
 # module load Anaconda3/2024.02-1

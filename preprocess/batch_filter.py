@@ -203,7 +203,7 @@ def batch_filter_papers(input_dir, output_file, candidates):
 
 if __name__ == "__main__":
     # Configuration
-    # llm_candidates = ["LLM", "language model", "RAG", "hallucination", "jailbreaking", "agents", "agent", "agentic"]
+    # llm_candidates = ["LLM", "language model", "RAG", "hallucination", "jailbreaking", "agents", "agent", "agentic", 'alignment']
     # cv_candidates = ["computer vision", "CV", "vision", "image", "video", '3D', 'diffusion', 'gaussian splatting']
     candidates = ['probabilistic methods (Bayesian methods, variational inference, sampling, UQ, etc.)', 'optimization', 'learning theory']
     # candidates = ['reinforcement learning', 'game theory', 'applications to robotics, autonomy, planning', 'robotics']

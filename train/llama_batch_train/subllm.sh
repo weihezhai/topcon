@@ -6,8 +6,8 @@
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --job-name=llm_4b
-#SBATCH --output=./logs/llm_4b.%j.out
+#SBATCH --job-name=llm_Llama-3.2-3B
+#SBATCH --output=./logs/llm_Llama-3.2-3B.%j.out
 #SBATCH --time=0-6:00:00
 
 # Load necessary modules

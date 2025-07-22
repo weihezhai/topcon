@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --partition=gpu
 #SBATCH --qos=gpu
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:1
 #SBATCH --mem=85G
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --job-name=all_Llama-3.2-3B
-#SBATCH --output=./logs/all_Llama-3.2-3B.%j.out
+#SBATCH --job-name=rl_Llama-3.2-1B
+#SBATCH --output=./logs/rl_Llama-3.2-1B.%j.out
 #SBATCH --time=0-6:00:00
 
 # Load necessary modules
@@ -25,4 +25,4 @@ source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed
-python train_shef_abs_intro_two_a100_all.py --detailed_eval
+python train_shef_abs_intro_two_a100_rl.py --detailed_eval

@@ -59,10 +59,10 @@ def recover_ids(
 
 def main():
     # TODO: adjust these paths before running
-    data_folder = "/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_theory_papers/theory_papers_text/"
+    data_folder = "/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/all_four_domain/four_domain_text"
     labels_file = "/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json"
-    cache_dir = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/theory"
-    output_dir = '/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/theory/with_ids'
+    cache_dir = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/all_four_domain"
+    output_dir = '/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/all_four_domain/with_ids'
 
     recover_ids(data_folder, labels_file, cache_dir, output_dir)
 

@@ -129,7 +129,7 @@ class DatasetIDRecovery:
 # Usage example
 if __name__ == "__main__":
     # Update these paths to match your setup
-    data_folder = "/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/cv_papers_text/"
+    data_folder = "/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/"
     labels_file = "/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json"
     dataset_path = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/llm"
     

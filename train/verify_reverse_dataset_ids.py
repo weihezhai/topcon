@@ -28,7 +28,7 @@ def validate_recovered(
     builder = TextDatasetBuilder(
         data_folder=data_folder,
         labels_file=labels_file,
-        max_length=1024
+        max_length=10000
     )
     ds_with_ids = builder.load_dataset_with_ids()
 

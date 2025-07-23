@@ -679,13 +679,14 @@ def main():
             batch_size=100,  # Process in smaller batches
             remove_columns=['text', 'labels']  # Remove original columns
         )
-        
+        print("Before mapping, eval_dataset columns:", eval_dataset.column_names)
         eval_dataset = eval_dataset.map(
             lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
             batched=True,
             batch_size=100,  # Process in smaller batches
             remove_columns=['text', 'labels']  # Remove original columns
         )
+        print("After mapping, eval_dataset columns:", eval_dataset.column_names)
         
         # Also tokenize the small eval dataset for periodic evaluation
         small_eval_dataset = small_eval_dataset.map(

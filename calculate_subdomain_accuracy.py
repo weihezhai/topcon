@@ -151,4 +151,4 @@ if __name__ == "__main__":
     print_results(results)
     
     # Save results to file
-    save_results(results, "subdomain_accuracy_results.json")
+    save_results(results, "cv_1.7_subdomain_accuracy_results.json")

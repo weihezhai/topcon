@@ -29,6 +29,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import torch.nn as nn
 import argparse
+import json  # Add this import
 
 # Import the dataset builder
 from dataset_builder_abs_intro import TextDatasetBuilder
@@ -293,7 +294,7 @@ def custom_evaluate_with_memory_cleanup(trainer, eval_dataset=None):
     
     return eval_results
 
-def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None):
+def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None, save_predictions=False, output_dir=None):
     """Evaluate accuracy using probability-based comparison of yes/no tokens"""
     print(f"Running probability-based accuracy evaluation on {len(eval_dataset)} samples...")
     
@@ -304,6 +305,10 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     all_binary_predictions = []
     all_binary_labels = []
     total_loss = 0.0
+    
+    # Store individual prediction details
+    individual_predictions = {}
+    sample_index = 0
     
     model = trainer.model
     
@@ -364,20 +369,9 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                     padded_input_ids.append(padded_ids)
                     padded_attention_masks.append(padded_mask)
                 
-                # Convert to tensors - let the model handle device placement for multi-GPU
-                input_tensor = torch.tensor(padded_input_ids)
-                mask_tensor = torch.tensor(padded_attention_masks)
-                
-                # For multi-GPU models, we need to move tensors to the first device of the model
-                if hasattr(model, 'module'):
-                    # If wrapped in DataParallel/DistributedDataParallel
-                    first_device = next(model.module.parameters()).device
-                else:
-                    # For device_map models, find the first device
-                    first_device = next(model.parameters()).device
-                
-                input_tensor = input_tensor.to(first_device)
-                mask_tensor = mask_tensor.to(first_device)
+                # Convert to tensors and move to device
+                input_tensor = torch.tensor(padded_input_ids, device=model.device)
+                mask_tensor = torch.tensor(padded_attention_masks, device=model.device)
                 
                 # Get logits from model - only forward pass, no need for full sequence
                 outputs = model(input_ids=input_tensor, attention_mask=mask_tensor)
@@ -388,15 +382,35 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                     # Get logits at the position where we need to predict the next token
                     logits_at_pos = logits[j, decision_pos - 1]  # -1 because we predict the next token
                     
-                    # Compare yes vs no logits
-                    yes_logit = logits_at_pos[yes_token_id]
-                    no_logit = logits_at_pos[no_token_id]
+                    # Get yes and no logits
+                    yes_logit = logits_at_pos[yes_token_id].item()
+                    no_logit = logits_at_pos[no_token_id].item()
                     
-                    # Predict based on higher logit
-                    predicted_label = 1 if yes_logit > no_logit else 0
+                    # Calculate normalized probabilities over just yes and no
+                    # Using softmax over just these two logits
+                    yes_no_logits = torch.tensor([yes_logit, no_logit])
+                    yes_no_probs = torch.nn.functional.softmax(yes_no_logits, dim=0)
+                    yes_prob = yes_no_probs[0].item()
+                    no_prob = yes_no_probs[1].item()
+                    
+                    # Predict based on higher probability
+                    predicted_label = 1 if yes_prob > no_prob else 0
+                    prediction_text = "yes" if predicted_label == 1 else "no"
                     
                     all_binary_predictions.append(predicted_label)
                     all_binary_labels.append(true_label)
+                    
+                    # Store individual prediction details
+                    if save_predictions:
+                        individual_predictions[f"index{sample_index}"] = {
+                            "yes": yes_prob,
+                            "no": no_prob,
+                            "yes_no_diff": yes_prob - no_prob,
+                            "prediction": prediction_text,
+                            "label": true_label,
+                            "correctness": predicted_label == true_label
+                        }
+                    sample_index += 1
             
             # Get loss from evaluation using original method for loss calculation
             eval_results = trainer.evaluate(eval_dataset=batch_dataset)
@@ -404,6 +418,13 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
         
         # Clear cache after each batch
         torch.cuda.empty_cache()
+    
+    # Save individual predictions to JSON if requested
+    if save_predictions and output_dir:
+        predictions_file = os.path.join(output_dir, "individual_predictions.json")
+        with open(predictions_file, 'w') as f:
+            json.dump(individual_predictions, f, indent=2)
+        print(f"\nIndividual predictions saved to: {predictions_file}")
     
     # Calculate overall metrics
     avg_loss = total_loss / len(eval_dataset)
@@ -481,7 +502,7 @@ def main():
     
     # Create log filename with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = os.path.join(log_dir, f"training_log_rl_{timestamp}.log")
+    log_file = os.path.join(log_dir, f"training_log_{timestamp}.log")
     
     # Redirect stdout and stderr to both console and log file
     tee_stdout = TeeOutput(log_file)
@@ -495,28 +516,23 @@ def main():
     
     try:
         # Parse command line arguments
-        parser = argparse.ArgumentParser(description="Fine-tune a language model with multi-GPU support")
+        parser = argparse.ArgumentParser(description="Fine-tune a language model with LoRA")
         parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
-        parser.add_argument("--model_name", type=str, default="meta-llama/Llama-3.2-3B-Instruct", help="Pre-trained model name or path")
-        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_rl_papers/rl_papers_text/", help="Path to the folder containing training data")
+        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-1.7B", help="Pre-trained model name or path")
+        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_theory_papers/theory_papers_text/", help="Path to the folder containing training data")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-3B-Instruct/finetuned_model/rl", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/theory", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
-        parser.add_argument("--gpu_ids", type=int, nargs='+', default=[0, 1], help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
+        parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use for training/evaluation")
         args = parser.parse_args()
         
-        # Auto-detect available GPUs if none specified
-        if not hasattr(args, 'gpu_ids') or args.gpu_ids is None:
-            available_gpus = torch.cuda.device_count()
-            args.gpu_ids = list(range(available_gpus))
-            print(f"Auto-detected {available_gpus} GPUs: {args.gpu_ids}")
-
-        # Set CUDA_VISIBLE_DEVICES to only use the specified GPUs
-        gpu_ids_str = ','.join(map(str, args.gpu_ids))
-        os.environ["CUDA_VISIBLE_DEVICES"] = gpu_ids_str
-        print(f"Using GPU IDs: {args.gpu_ids}")
-        print(f"CUDA_VISIBLE_DEVICES set to: {gpu_ids_str}")
+        # Set CUDA_VISIBLE_DEVICES to only use the specified GPU
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
+        print(f"Using GPU ID: {args.gpu_id}")
+        
+        # After setting CUDA_VISIBLE_DEVICES, the GPU will appear as cuda:0
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         
         # Configuration
         MODEL_NAME = args.model_name
@@ -526,8 +542,8 @@ def main():
         MAX_LENGTH = args.max_length
         
         # Model directories
-        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-3B-Instruct"  # Where to cache the downloaded model
-
+        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B"  # Where to cache the downloaded model
+        
         # If in evaluation mode, use the fine-tuned model directory
         if args.eval:
             if not os.path.exists(OUTPUT_DIR):
@@ -542,19 +558,11 @@ def main():
         
         # Print GPU information
         if torch.cuda.is_available():
-            print(f"Number of available GPUs: {torch.cuda.device_count()}")
-            for i in range(torch.cuda.device_count()):
-                print(f"GPU {i}: {torch.cuda.get_device_name(i)}")
-                gpu_memory = torch.cuda.get_device_properties(i).total_memory / 1024**3
-                print(f"  Memory: {gpu_memory:.1f} GB")
+            print(f"GPU available: {torch.cuda.get_device_name(0)}")
+            gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1024**3
+            print(f"GPU memory: {gpu_memory:.1f} GB")
         else:
             print("Warning: No GPU available, using CPU")
-            return
-        
-        # Verify that we have enough GPUs
-        if len(args.gpu_ids) > torch.cuda.device_count():
-            print(f"Error: Requested {len(args.gpu_ids)} GPUs but only {torch.cuda.device_count()} available")
-            return
         
         # Create base model cache directory if it doesn't exist
         os.makedirs(BASE_MODEL_CACHE, exist_ok=True)
@@ -581,7 +589,7 @@ def main():
         print("Loading dataset...")
         
         # Define processed dataset cache path
-        PROCESSED_DATASET_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/rl"
+        PROCESSED_DATASET_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/theory"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
         
         # Check if processed dataset exists by looking for the dataset_info.json file
@@ -673,16 +681,13 @@ def main():
         print(f"Sample labels type: {type(sample['labels'])}")
         print(f"Sample labels value: {sample['labels']}")
         
-        # Load model with automatic device mapping for multi-GPU
-        print("Loading model with automatic device mapping across GPUs...")
+        # Load model directly to the specified device (no need for device_map logic)
         if args.eval:
             # Load the fine-tuned model for evaluation
             model = AutoModelForCausalLM.from_pretrained(
                 OUTPUT_DIR,  # Load from fine-tuned model directory
                 torch_dtype=torch.bfloat16,
-                device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
-                offload_folder="./offload",  # Offload to disk if needed
+                device_map={"": device}  # Map entire model to single device
             )
             print("Loaded fine-tuned model for evaluation")
         else:
@@ -690,18 +695,12 @@ def main():
             model = AutoModelForCausalLM.from_pretrained(
                 BASE_MODEL_CACHE,
                 torch_dtype=torch.bfloat16,
-                device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
-                offload_folder="./offload",  # Offload to disk if needed
+                device_map={"": device}  # Map entire model to single device
             )
 
         print(model)
         
-        # Print device mapping
-        if hasattr(model, 'hf_device_map'):
-            print("Model device mapping:")
-            for layer, device in model.hf_device_map.items():
-                print(f"  {layer}: {device}")
+        print(f"Model loaded on device: {next(model.parameters()).device}")
         
         # Data collator for language modeling
         data_collator = CustomDataCollator(
@@ -711,20 +710,20 @@ def main():
         
         # Only run training if not in evaluation mode
         if not args.eval:
-            # Training arguments - adjusted for multi-GPU
+            # Training arguments
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
-                num_train_epochs=5,
-                per_device_train_batch_size=1,  # Keep small for large model
+                num_train_epochs=8,
+                per_device_train_batch_size=1,
                 per_device_eval_batch_size=1,
-                gradient_accumulation_steps=8,  # Maintain effective batch size
-                learning_rate=1e-5,
+                gradient_accumulation_steps=8,  # Increased to maintain effective batch size
+                learning_rate=1e-5,  # Even smaller learning rate
                 warmup_steps=20,
                 weight_decay=0.001,
                 logging_dir=f"{OUTPUT_DIR}/logs",
-                logging_steps=1,
+                logging_steps=10,  # Reduce logging frequency
                 eval_strategy="steps",
-                eval_steps=100,
+                eval_steps=100,  # Increase evaluation frequency to save memory
                 save_steps=200,
                 save_total_limit=2,
                 load_best_model_at_end=False,  # Disable to save memory
@@ -734,17 +733,14 @@ def main():
                 dataloader_pin_memory=False,
                 remove_unused_columns=False,
                 label_names=["labels"],
-                max_grad_norm=1.0,
+                max_grad_norm=1.0,  # Much stricter gradient clipping
                 adam_epsilon=1e-8,
                 lr_scheduler_type="linear",
                 optim="adamw_torch",
-                eval_accumulation_steps=4,
-                dataloader_num_workers=0,  # Disable multiprocessing for multi-GPU setup
-                prediction_loss_only=True,
-                skip_memory_metrics=True,
-                # Multi-GPU specific settings
-                ddp_find_unused_parameters=False,  # For efficiency in DDP
-                dataloader_persistent_workers=False,  # Disable persistent workers
+                eval_accumulation_steps=4,  # Process eval in smaller chunks
+                dataloader_num_workers=0,  # Disable multiprocessing to save memory
+                prediction_loss_only=True,  # Only compute loss during periodic evaluation
+                skip_memory_metrics=True,  # Skip memory metrics to save memory
             )
             
             # Initialize trainer
@@ -758,7 +754,7 @@ def main():
                 compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer)
             )
             
-            # Train the model
+            # Train the model (no accelerator needed for single GPU)
             print("Starting training...")
             
             # Override evaluation to use memory cleanup
@@ -786,35 +782,34 @@ def main():
                 del model.optimizer
             
             # More thorough cleanup
+            # Clear all references to the model
             model_to_delete = model
-            model = None
+            model = None  # Set to None first
             del model_to_delete
             
             # Force garbage collection
             import gc
             gc.collect()
             
-            # Clear CUDA cache on all GPUs
+            # Clear CUDA cache multiple times to ensure cleanup
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-                torch.cuda.synchronize()
-                torch.cuda.empty_cache()
+                torch.cuda.synchronize()  # Wait for all CUDA operations to complete
+                torch.cuda.empty_cache()  # Clear again after synchronization
             
             print("Cleared trainer, optimizer, and model from memory after training.")
 
-            print("Reloading model for final evaluation...")
+            print("Reloading model for final evaluation to reduce memory usage...")
             
             # Small delay to ensure memory is fully released
             import time
             time.sleep(2)
             
-            # Reload the model fresh with device mapping
+            # Reload the model fresh
             model = AutoModelForCausalLM.from_pretrained(
                 OUTPUT_DIR,  # Load the fine-tuned model
                 torch_dtype=torch.bfloat16,
-                device_map="auto",
-                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
-                offload_folder="./offload",
+                device_map={"": device},  # Use single device mapping
             )
             
             # Clear cache again after loading
@@ -834,8 +829,6 @@ def main():
             dataloader_num_workers=0,
             prediction_loss_only=True,
             skip_memory_metrics=True,
-            ddp_find_unused_parameters=False,
-            dataloader_persistent_workers=False,
         )
         
         trainer = Trainer(
@@ -851,8 +844,11 @@ def main():
 
         # Use batched evaluation to prevent OOM
         eval_results = batched_accuracy_evaluation(
-            trainer, eval_dataset, batch_size=1,  # Smaller batch size for multi-GPU
-            detailed_eval=args.detailed_eval, tokenizer=tokenizer
+            trainer, eval_dataset, batch_size=2, 
+            detailed_eval=args.detailed_eval, 
+            tokenizer=tokenizer,
+            save_predictions=args.eval,  # Save predictions only in eval mode
+            output_dir=OUTPUT_DIR
         )
         
         print(f"Final evaluation results: {eval_results}")

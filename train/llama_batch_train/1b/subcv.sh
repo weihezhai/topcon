@@ -8,7 +8,7 @@
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --job-name=cv_Llama-3.2-1B
 #SBATCH --output=./logs/cv_Llama-3.2-1B.%j.out
-#SBATCH --time=0-6:00:00
+#SBATCH --time=0-2:00:00
 
 # Load necessary modules
 # module load Anaconda3/2024.02-1
@@ -25,4 +25,4 @@ source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed
-python train_shef_abs_intro_two_a100_cv.py --detailed_eval
+python train_shef_abs_intro_single_gpu_detailed_cv.py --detailed_eval

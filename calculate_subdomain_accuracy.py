@@ -138,7 +138,7 @@ if __name__ == "__main__":
     # Example usage
     predictions_path = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/cv/individual_predictions.json"  # Update with your actual path
     index_to_paper_id_path = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cv/cv_index_to_paper_id_mapping.json"  # Update with your actual path
-    subdomain_paper_ids_path = "/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/cv_papers_by_keywords.json"
+    subdomain_paper_ids_path = "/mnt/parscratch/users/acr24wz/topcon/subdomain_keywords/cv_papers_by_keywords.json"
     
     # Calculate accuracies
     results = calculate_subdomain_accuracy(

@@ -136,9 +136,9 @@ def save_results(results: Dict[str, Dict[str, float]], output_path: str):
 
 if __name__ == "__main__":
     # Example usage
-    predictions_path = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/llm/individual_predictions.json"  # Update with your actual path
-    index_to_paper_id_path = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/llm/llm_index_to_paper_id_mapping.json"  # Update with your actual path
-    subdomain_paper_ids_path = "/mnt/parscratch/users/acr24wz/topcon/subdomain_keywords/llm_papers_by_keywords.json"
+    predictions_path = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/rl/individual_predictions.json"  # Update with your actual path
+    index_to_paper_id_path = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/rl/rl_index_to_paper_id_mapping.json"  # Update with your actual path
+    subdomain_paper_ids_path = "/mnt/parscratch/users/acr24wz/topcon/subdomain_keywords/rl_papers_by_keywords.json"
 
     # Calculate accuracies
     results = calculate_subdomain_accuracy(
@@ -151,4 +151,4 @@ if __name__ == "__main__":
     print_results(results)
     
     # Save results to file
-    save_results(results, "cv_1.7_subdomain_accuracy_results.json")
+    save_results(results, "rl_1.7_subdomain_accuracy_results.json")

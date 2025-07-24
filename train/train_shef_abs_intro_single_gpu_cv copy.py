@@ -29,7 +29,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import torch.nn as nn
 import argparse
-import json
+import json  # Add this import
 
 # Import the dataset builder
 from dataset_builder_abs_intro import TextDatasetBuilder
@@ -225,20 +225,11 @@ def preprocess_function(examples, tokenizer, max_length=1024):
         combined_attention_mask.append(full_mask)
         labels_for_loss.append(label_ids)
     
-    # Preserve paper_id if it exists
-    result_with_paper_id = {
+    return {
         'input_ids': combined_input_ids,
         'attention_mask': combined_attention_mask,
         'labels': labels_for_loss
     }
-    
-    # Preserve paper_id if it exists in the examples
-    if 'paper_id' in examples:
-        result_with_paper_id['paper_id'] = examples['paper_id']
-    else:
-        print("Warning: 'paper_id' not found in examples")
-    
-    return result_with_paper_id
 
 def download_and_save_model(model_name, cache_dir):
     """Download and save the base model locally"""
@@ -303,7 +294,7 @@ def custom_evaluate_with_memory_cleanup(trainer, eval_dataset=None):
     
     return eval_results
 
-def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None, save_predictions=False, output_path=None):
+def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None, save_predictions=False, output_dir=None):
     """Evaluate accuracy using probability-based comparison of yes/no tokens"""
     print(f"Running probability-based accuracy evaluation on {len(eval_dataset)} samples...")
     
@@ -315,8 +306,9 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     all_binary_labels = []
     total_loss = 0.0
     
-    # Store individual predictions if requested
+    # Store individual prediction details
     individual_predictions = {}
+    sample_index = 0
     
     model = trainer.model
     
@@ -336,14 +328,11 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
             batch_attention_masks = []
             decision_positions = []
             true_labels = []
-            paper_ids = []
             
-            for j, sample in enumerate(batch_dataset):
+            for sample in batch_dataset:
                 input_ids = sample['input_ids']
                 attention_mask = sample['attention_mask']
                 labels = sample['labels']
-                
-                paper_ids.append(sample['paper_id'])
                 
                 # Find decision position (first non-ignored label)
                 decision_pos = None
@@ -389,54 +378,39 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                 logits = outputs.logits
                 
                 # Extract logits at decision positions for each sample
-                for j, (decision_pos, true_label, paper_id) in enumerate(zip(decision_positions, true_labels, paper_ids)):
+                for j, (decision_pos, true_label) in enumerate(zip(decision_positions, true_labels)):
                     # Get logits at the position where we need to predict the next token
                     logits_at_pos = logits[j, decision_pos - 1]  # -1 because we predict the next token
                     
-                    # Compare yes vs no logits
+                    # Get yes and no logits
                     yes_logit = logits_at_pos[yes_token_id].item()
                     no_logit = logits_at_pos[no_token_id].item()
                     
-                    # Convert logits to normalized probabilities (between yes and no only)
-                    # Method 1: Softmax over just yes/no logits
+                    # Calculate normalized probabilities over just yes and no
+                    # Using softmax over just these two logits
                     yes_no_logits = torch.tensor([yes_logit, no_logit])
                     yes_no_probs = torch.nn.functional.softmax(yes_no_logits, dim=0)
-                    yes_prob_normalized = yes_no_probs[0].item()
-                    no_prob_normalized = yes_no_probs[1].item()
+                    yes_prob = yes_no_probs[0].item()
+                    no_prob = yes_no_probs[1].item()
                     
-                    # Alternative Method 2: Get raw probabilities and normalize
-                    probs = torch.nn.functional.softmax(logits_at_pos, dim=-1)
-                    yes_prob_raw = probs[yes_token_id].item()
-                    no_prob_raw = probs[no_token_id].item()
-                    
-                    # Normalize so yes + no = 1
-                    total_prob = yes_prob_raw + no_prob_raw
-                    if total_prob > 0:
-                        yes_prob_normalized_v2 = yes_prob_raw / total_prob
-                        no_prob_normalized_v2 = no_prob_raw / total_prob
-                    else:
-                        yes_prob_normalized_v2 = 0.5
-                        no_prob_normalized_v2 = 0.5
-                    
-                    # Predict based on higher logit (unchanged)
-                    predicted_label = 1 if yes_logit > no_logit else 0
-                    prediction_str = "yes" if predicted_label == 1 else "no"
+                    # Predict based on higher probability
+                    predicted_label = 1 if yes_prob > no_prob else 0
+                    prediction_text = "yes" if predicted_label == 1 else "no"
                     
                     all_binary_predictions.append(predicted_label)
                     all_binary_labels.append(true_label)
                     
-                    # Store individual prediction details with normalized probabilities
+                    # Store individual prediction details
                     if save_predictions:
-                        individual_predictions[paper_id] = {
-                            "yes_prob": float(yes_prob_normalized),
-                            "no_prob": float(no_prob_normalized),
-                            "yes_no_diff": float(yes_prob_normalized - no_prob_normalized),
-                            "yes_prob_raw": float(yes_prob_raw),  # Keep raw for reference
-                            "no_prob_raw": float(no_prob_raw),
-                            "prediction": prediction_str,
-                            "label": int(true_label),
-                            "correctness": bool(predicted_label == true_label)
+                        individual_predictions[f"index{sample_index}"] = {
+                            "yes": yes_prob,
+                            "no": no_prob,
+                            "yes_no_diff": yes_prob - no_prob,
+                            "prediction": prediction_text,
+                            "label": true_label,
+                            "correctness": predicted_label == true_label
                         }
+                    sample_index += 1
             
             # Get loss from evaluation using original method for loss calculation
             eval_results = trainer.evaluate(eval_dataset=batch_dataset)
@@ -446,10 +420,11 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
         torch.cuda.empty_cache()
     
     # Save individual predictions to JSON if requested
-    if save_predictions and output_path:
-        with open(output_path, 'w') as f:
+    if save_predictions and output_dir:
+        predictions_file = os.path.join(output_dir, "individual_predictions.json")
+        with open(predictions_file, 'w') as f:
             json.dump(individual_predictions, f, indent=2)
-        print(f"Individual predictions saved to: {output_path}")
+        print(f"\nIndividual predictions saved to: {predictions_file}")
     
     # Calculate overall metrics
     avg_loss = total_loss / len(eval_dataset)
@@ -614,7 +589,7 @@ def main():
         print("Loading dataset...")
         
         # Define processed dataset cache path
-        PROCESSED_DATASET_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cv/with_ids"
+        PROCESSED_DATASET_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cv"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
         
         # Check if processed dataset exists by looking for the dataset_info.json file
@@ -679,14 +654,13 @@ def main():
             batch_size=100,  # Process in smaller batches
             remove_columns=['text', 'labels']  # Remove original columns
         )
-        print("Before mapping, eval_dataset columns:", eval_dataset.column_names)
+        
         eval_dataset = eval_dataset.map(
             lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
             batched=True,
             batch_size=100,  # Process in smaller batches
             remove_columns=['text', 'labels']  # Remove original columns
         )
-        print("After mapping, eval_dataset columns:", eval_dataset.column_names)
         
         # Also tokenize the small eval dataset for periodic evaluation
         small_eval_dataset = small_eval_dataset.map(
@@ -868,19 +842,13 @@ def main():
         # Always run final evaluation (in both train and eval modes)
         print("Running final evaluation with accuracy computation...")
 
-        # Determine output path for individual predictions
-        predictions_output_path = None
-        if args.eval:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            predictions_output_path = os.path.join(OUTPUT_DIR, f"individual_predictions_cv_single{timestamp}.json")
-
         # Use batched evaluation to prevent OOM
         eval_results = batched_accuracy_evaluation(
             trainer, eval_dataset, batch_size=2, 
             detailed_eval=args.detailed_eval, 
             tokenizer=tokenizer,
             save_predictions=args.eval,  # Save predictions only in eval mode
-            output_path=predictions_output_path
+            output_dir=OUTPUT_DIR
         )
         
         print(f"Final evaluation results: {eval_results}")

@@ -3,9 +3,9 @@ from sklearn.model_selection import train_test_split
 from dataset_builder_abs_intro import TextDatasetBuilder
 
 # Configuration
-DATA_FOLDER = "/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_theory_papers/theory_papers_text/"  # Adjust path as needed
+DATA_FOLDER = "/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/"  # Adjust path as needed
 LABELS_FILE = "/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json"  # Adjust path as needed
-EVAL_MAPPING_FILE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/theory/theory_index_to_paper_id_mapping.json"
+EVAL_MAPPING_FILE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/llm/llm_index_to_paper_id_mapping.json"
 
 # Initialize the dataset builder
 builder = TextDatasetBuilder(data_folder=DATA_FOLDER, labels_file=LABELS_FILE)

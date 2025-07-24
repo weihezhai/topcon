@@ -519,10 +519,10 @@ def main():
         parser = argparse.ArgumentParser(description="Fine-tune a language model with LoRA")
         parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
-        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-1.7B", help="Pre-trained model name or path")
+        parser.add_argument("--model_name", type=str, default="meta-llama/Llama-3.2-1B", help="Pre-trained model name or path")
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/", help="Path to the folder containing training data")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-1B/finetuned_model/llm", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use for training/evaluation")
         args = parser.parse_args()
@@ -542,8 +542,8 @@ def main():
         MAX_LENGTH = args.max_length
         
         # Model directories
-        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B"  # Where to cache the downloaded model
-        
+        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-1B"  # Where to cache the downloaded model
+
         # If in evaluation mode, use the fine-tuned model directory
         if args.eval:
             if not os.path.exists(OUTPUT_DIR):

@@ -188,49 +188,49 @@ class TextDatasetBuilder:
             'labels': labels
         })
     
-    # def load_dataset_with_ids(self):
-    #     """Load txt files and create dataset with labels and IDs"""
-    #     texts = []
-    #     labels = []
-    #     paper_ids = []
+    def load_dataset_with_ids(self):
+        """Load txt files and create dataset with labels and IDs"""
+        texts = []
+        labels = []
+        paper_ids = []
         
-    #     # Load labels dictionary
-    #     labels_dict = self.load_labels()
+        # Load labels dictionary
+        labels_dict = self.load_labels()
         
-    #     # Process files in sorted order for consistency
-    #     for filename in sorted(os.listdir(self.data_folder)):
-    #         if filename.endswith('.txt'):
-    #             filepath = os.path.join(self.data_folder, filename)
+        # Process files in sorted order for consistency
+        for filename in sorted(os.listdir(self.data_folder)):
+            if filename.endswith('.txt'):
+                filepath = os.path.join(self.data_folder, filename)
                 
-    #             # Extract paper ID from filename
-    #             paper_id = self.extract_paper_id(filename)
-    #             if paper_id is None:
-    #                 continue
+                # Extract paper ID from filename
+                paper_id = self.extract_paper_id(filename)
+                if paper_id is None:
+                    continue
                 
-    #             # Look up label in labels dictionary
-    #             if paper_id in labels_dict:
-    #                 status = labels_dict[paper_id]
-    #                 label = self.get_label_from_status(status)
+                # Look up label in labels dictionary
+                if paper_id in labels_dict:
+                    status = labels_dict[paper_id]
+                    label = self.get_label_from_status(status)
                     
-    #                 try:
-    #                     with open(filepath, 'r', encoding='utf-8') as f:
-    #                         text = f.read().strip()
-    #                         if text:  # Only add non-empty texts
-    #                             # Clean text to remove phrases that might leak review status
-    #                             text = self.clean_text(text)
-    #                             # Apply abs_intro to extract only text before </introduction>
-    #                             text = self.abs_intro(text)
-    #                             texts.append(text)
-    #                             labels.append(label)
-    #                             paper_ids.append(paper_id)
-    #                 except Exception as e:
-    #                     continue
+                    try:
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            text = f.read().strip()
+                            if text:  # Only add non-empty texts
+                                # Clean text to remove phrases that might leak review status
+                                text = self.clean_text(text)
+                                # Apply abs_intro to extract only text before </introduction>
+                                text = self.abs_intro(text)
+                                texts.append(text)
+                                labels.append(label)
+                                paper_ids.append(paper_id)
+                    except Exception as e:
+                        continue
         
-    #     return Dataset.from_dict({
-    #         'text': texts,
-    #         'labels': labels,
-    #         'paper_id': paper_ids
-    #     })
+        return Dataset.from_dict({
+            'text': texts,
+            'labels': labels,
+            'paper_id': paper_ids
+        })
     
     def get_dataset_stats(self, dataset):
         """Get dataset statistics"""

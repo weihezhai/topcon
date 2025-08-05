@@ -6,19 +6,19 @@ api = HfApi(token='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')
 folders_to_upload = [
     {
         "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/llm",
-        "repo_id": "weihezhai/PaperPrediction-All-4B"
+        "repo_id": "weihezhai/PaperPrediction-LLM-4B"
     },
     {
         "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/cv",
-        "repo_id": "weihezhai/PaperPrediction-All-4B"
+        "repo_id": "weihezhai/PaperPrediction-CV-4B"
     },
     {
         "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/rl",
-        "repo_id": "weihezhai/PaperPrediction-All-4B"
+        "repo_id": "weihezhai/PaperPrediction-RL-4B"
     },
     {
         "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/theory",
-        "repo_id": "weihezhai/PaperPrediction-All-4B"
+        "repo_id": "weihezhai/PaperPrediction-Th-4B"
     },
     # Add your 3 additional folder configurations here:
     # {

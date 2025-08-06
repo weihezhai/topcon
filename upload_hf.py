@@ -5,20 +5,20 @@ api = HfApi(token='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')
 # Define folder paths and their corresponding repo IDs
 folders_to_upload = [
     {
-        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/llm",
-        "repo_id": "weihezhai/PaperPrediction-LLM-4B"
+        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-1B/finetuned_model/llm",
+        "repo_id": "weihezhai/PaperPrediction-LLM-llama-1B"
     },
     {
-        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/cv",
-        "repo_id": "weihezhai/PaperPrediction-CV-4B"
+        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-1B/finetuned_model/cv",
+        "repo_id": "weihezhai/PaperPrediction-CV-llama-1B"
     },
     {
-        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/rl",
-        "repo_id": "weihezhai/PaperPrediction-RL-4B"
+        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-1B/finetuned_model/rl",
+        "repo_id": "weihezhai/PaperPrediction-RL-llama-1B"
     },
     {
-        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/theory",
-        "repo_id": "weihezhai/PaperPrediction-Th-4B"
+        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-1B/finetuned_model/theory",
+        "repo_id": "weihezhai/PaperPrediction-Th-llama-1B"
     },
     # Add your 3 additional folder configurations here:
     # {

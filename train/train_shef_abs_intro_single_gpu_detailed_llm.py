@@ -1,13 +1,5 @@
 '''
 ./models/
-├── base_model/          # Original Llama model cache
-│   ├── config.json
-│   ├── tokenizer.json
-│   └── pytorch_model.bin
-└── finetuned_model/     # Fine-tuned model with LoRA
-    ├── adapter_config.json
-    ├── adapter_model.bin
-    └── tokenizer files
 '''
 import os
 import sys

@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from datasets import Dataset
 
 class TextDatasetBuilder:
@@ -40,6 +41,9 @@ class TextDatasetBuilder:
     
     def clean_text(self, text):
         """Remove specific phrases that might leak review status information and title/author sections"""
+        # Remove all HTTP/HTTPS links
+        text = re.sub(r'https?://[^\s]+', '', text)
+        
         # Remove title and authors section between '# Title and Abstract' and 'ABSTRACT'
         title_start = "# Title and Abstract"
         abstract_start = "ABSTRACT"

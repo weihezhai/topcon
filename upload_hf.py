@@ -1,4 +1,5 @@
-from huggingface_hub import HfApi
+from huggingface_hub import HfApi, HfFolder
+from huggingface_hub.utils import RepositoryNotFoundError
 
 api = HfApi(token='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')
 
@@ -36,14 +37,25 @@ folders_to_upload = [
 ]
 
 for i, config in enumerate(folders_to_upload, 1):
-    print(f"Uploading folder {i}/{len(folders_to_upload)}: {config['folder_path']}")
+    print(f"\nProcessing {i}/{len(folders_to_upload)}: {config['repo_id']}")
+    
+    # Check if repo exists, create if it doesn't
+    try:
+        api.repo_info(repo_id=config["repo_id"], repo_type="model")
+        print(f"  Repository exists: {config['repo_id']}")
+    except RepositoryNotFoundError:
+        print(f"  Creating repository: {config['repo_id']}")
+        api.create_repo(repo_id=config["repo_id"], repo_type="model", private=False)
+    
+    # Upload folder
+    print(f"  Uploading folder: {config['folder_path']}")
     try:
         api.upload_folder(
             folder_path=config["folder_path"],
             repo_id=config["repo_id"],
             repo_type="model",
         )
-        print(f"✓ Successfully uploaded {config['repo_id']}")
+        print(f"  ✓ Successfully uploaded to {config['repo_id']}")
     except Exception as e:
-        print(f"✗ Error uploading {config['repo_id']}: {e}")
+        print(f"  ✗ Error uploading to {config['repo_id']}: {e}")
 

@@ -41,8 +41,48 @@ class TextDatasetBuilder:
     
     def clean_text(self, text):
         """Remove specific phrases that might leak review status information and title/author sections"""
-        # Remove all HTTP/HTTPS links
-        text = re.sub(r'https?://[^\s]+', '', text)
+        # Remove entire sentences containing HTTP/HTTPS links
+        # Use a more robust approach to avoid splitting at periods within URLs
+        
+        # First, temporarily replace URLs with a placeholder to avoid splitting issues
+        url_pattern = re.compile(r'https?://[^\s]+')
+        url_placeholder = "___URL_PLACEHOLDER___"
+        
+        # Find all URLs and their positions
+        urls_found = url_pattern.findall(text)
+        text_with_placeholders = url_pattern.sub(url_placeholder, text)
+        
+        # Now split into sentences (won't split at periods in URLs since they're replaced)
+        sentences = re.split(r'(?<=[.!?])\s+', text_with_placeholders)
+        
+        # Compile patterns for filtering
+        email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
+        correspondence_pattern = re.compile(r'\b(corresponding|correspondence)\b', re.IGNORECASE)
+        work_done_pattern = re.compile(r'\bwork\b.*\bdone\b', re.IGNORECASE)
+        
+        # Filter out sentences based on multiple criteria
+        filtered_sentences = []
+        for sentence in sentences:
+            # Skip if contains URL placeholder
+            if url_placeholder in sentence:
+                continue
+            # Skip if starts with * (after stripping whitespace)
+            if sentence.strip().startswith('*'):
+                continue
+            # Skip if contains email address
+            if email_pattern.search(sentence):
+                continue
+            # Skip if contains corresponding/correspondence
+            if correspondence_pattern.search(sentence):
+                continue
+            # Skip if contains "work ... done" pattern
+            if work_done_pattern.search(sentence):
+                continue
+            # Keep the sentence if it doesn't match any exclusion criteria
+            filtered_sentences.append(sentence)
+        
+        # Rejoin the filtered sentences
+        text = ' '.join(filtered_sentences)
         
         # Remove title and authors section between '# Title and Abstract' and 'ABSTRACT'
         title_start = "# Title and Abstract"

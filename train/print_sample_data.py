@@ -1,8 +1,14 @@
 import random
 from datasets import load_from_disk
+import sys
 
-def print_random_samples(dataset_path, num_samples=20):
+def print_random_samples(dataset_path, num_samples=20, output_file=None):
     """Load cached dataset and print random samples"""
+    
+    # Optionally redirect output to file for full text
+    if output_file:
+        original_stdout = sys.stdout
+        sys.stdout = open(output_file, 'w', encoding='utf-8')
     
     # Load the cached dataset
     print(f"Loading dataset from: {dataset_path}")
@@ -32,22 +38,32 @@ def print_random_samples(dataset_path, num_samples=20):
         if 'paper_id' in sample:
             print(f"Paper ID: {sample['paper_id']}")
         
-        # Print text (truncated for readability)
+        # Print text - FULL TEXT, NO TRUNCATION
         text = sample['text']
         word_count = len(text.split())
+        char_count = len(text)
         print(f"Word count: {word_count}")
+        print(f"Character count: {char_count}")
         
-        # Show first 500 characters of text
-        if len(text) > 500:
-            print(f"Text (first 500 chars):\n{text[:500]}...")
-        else:
-            print(f"Text:\n{text}")
+        # Print FULL text
+        print(f"\nFull Text:")
+        print("-" * 20)
+        print(text)  # Print entire text without truncation
+        print("-" * 20)
         
         print("\n" + "="*80 + "\n")
+    
+    if output_file:
+        sys.stdout.close()
+        sys.stdout = original_stdout
+        print(f"Full output saved to: {output_file}")
 
 if __name__ == "__main__":
     # Update this path to your cached dataset location
-    dataset_path = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/llm"  # or wherever your dataset is saved
+    dataset_path = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/llm"
     
-    # Print 20 random samples
+    # Option 1: Print to terminal (might be cut off by terminal buffer)
     print_random_samples(dataset_path, num_samples=20)
+    
+    # Option 2: Save to file to see complete text (uncomment to use)
+    # print_random_samples(dataset_path, num_samples=20, output_file="sample_output.txt")

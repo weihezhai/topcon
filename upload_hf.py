@@ -8,19 +8,23 @@ folders_to_upload = [
     {
         "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-1B/finetuned_model/llm",
         "repo_id": "weihezhai/PaperPrediction-LLM-llama-1B"
-    },
-    {
-        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-1B/finetuned_model/cv",
-        "repo_id": "weihezhai/PaperPrediction-CV-llama-1B"
-    },
-    {
-        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-1B/finetuned_model/rl",
-        "repo_id": "weihezhai/PaperPrediction-RL-llama-1B"
-    },
-    {
-        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-1B/finetuned_model/theory",
-        "repo_id": "weihezhai/PaperPrediction-Th-llama-1B"
-    },
+    }
+    # {
+    #     "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/llm",
+    #     "repo_id": "weihezhai/PaperPrediction-LLM-Qwen3-1D7B"
+    # },
+    # {
+    #     "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/cv",
+    #     "repo_id": "weihezhai/PaperPrediction-CV-Qwen3-1D7B"
+    # },
+    # {
+    #     "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/rl",
+    #     "repo_id": "weihezhai/PaperPrediction-RL-Qwen3-1D7B"
+    # },
+    # {
+    #     "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/theory",
+    #     "repo_id": "weihezhai/PaperPrediction-Th-Qwen3-1D7B"
+    # },
     # Add your 3 additional folder configurations here:
     # {
     #     "folder_path": "/path/to/second/folder",

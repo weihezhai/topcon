@@ -3,7 +3,7 @@
 #SBATCH --qos=gpu
 #SBATCH --gres=gpu:2
 #SBATCH --mem=100G
-#SBATCH --cpus-per-task=12
+#SBATCH --cpusmessage:%3C1250592303.6085056.1754531229205@ltx1-app52121.prod.linkedin.com%3E-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --job-name=llm_4b
@@ -21,7 +21,6 @@ source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 
 # Activate your conda environment
 # source activate etu
-
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed

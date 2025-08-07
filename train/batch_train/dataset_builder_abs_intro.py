@@ -270,6 +270,19 @@ class TextDatasetBuilder:
     
     def clean_text(self, text):
         """Remove specific phrases that might leak review status information and title/author sections"""
+        
+        # First, remove title and authors section between '# Title and Abstract' and 'ABSTRACT'
+        title_start = "# Title and Abstract"
+        abstract_start = "ABSTRACT"
+        
+        if title_start in text and abstract_start in text:
+            # Find the positions
+            start_pos = text.find(title_start)
+            end_pos = text.find(abstract_start, start_pos)
+            if start_pos != -1 and end_pos != -1:
+                # Remove everything between (including the title marker but keeping ABSTRACT)
+                text = text[:start_pos] + text[end_pos:]
+        
         # Remove entire sentences containing HTTP/HTTPS links
         # Use a more robust approach to avoid splitting at periods within URLs
         
@@ -313,19 +326,7 @@ class TextDatasetBuilder:
         # Rejoin the filtered sentences
         text = ' '.join(filtered_sentences)
         
-        # Remove title and authors section between '# Title and Abstract' and 'ABSTRACT'
-        title_start = "# Title and Abstract"
-        abstract_start = "ABSTRACT"
-        
-        if title_start in text and abstract_start in text:
-            # Find the positions
-            start_pos = text.find(title_start)
-            end_pos = text.find(abstract_start, start_pos)
-            if start_pos != -1 and end_pos != -1:
-                # Remove everything between (including the title marker but keeping ABSTRACT)
-                text = text[:start_pos] + text[end_pos:]
-        
-        # Remove specific phrases that might leak review status
+        # Remove specific phrases that might leak review status (case-insensitive)
         phrases_to_remove = [
             "Published as a conference paper at ICLR 2025",
             "Paper under double-blind review",
@@ -334,7 +335,8 @@ class TextDatasetBuilder:
         
         cleaned_text = text
         for phrase in phrases_to_remove:
-            cleaned_text = cleaned_text.replace(phrase, "")
+            # Use regex for case-insensitive replacement
+            cleaned_text = re.sub(re.escape(phrase), '', cleaned_text, flags=re.IGNORECASE)
         
         # Clean up extra whitespace that might be left after removal
         cleaned_text = " ".join(cleaned_text.split())

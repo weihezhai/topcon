@@ -435,9 +435,9 @@ class TextDatasetBuilder:
                             text = f.read().strip()
                             if text:  # Only add non-empty texts
                                 # Clean text to remove phrases that might leak review status
-                                text = self.clean_text(text)
                                 # Apply abs_intro to extract only text before </introduction>
                                 text = self.abs_intro(text)
+                                text = self.clean_text(text)
                                 texts.append(text)
                                 labels.append(label)
                                 processed_files += 1

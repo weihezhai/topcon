@@ -7,7 +7,7 @@ api = HfApi(token='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')
 folders_to_upload = [
     {
         "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-1B/finetuned_model/llm",
-        "repo_id": "weihezhai/PaperPrediction-LLM-llama-1B"
+        "repo_id": "PaperPred/PaperPrediction-LLM-llama-1B"
     }
     # {
     #     "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/llm",

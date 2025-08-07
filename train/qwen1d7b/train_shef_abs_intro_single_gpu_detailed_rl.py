@@ -29,6 +29,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import torch.nn as nn
 import argparse
+import json  # Add this import
 
 # Import the dataset builder
 from dataset_builder_abs_intro import TextDatasetBuilder
@@ -293,7 +294,7 @@ def custom_evaluate_with_memory_cleanup(trainer, eval_dataset=None):
     
     return eval_results
 
-def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None):
+def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None, save_predictions=False, output_dir=None):
     """Evaluate accuracy using probability-based comparison of yes/no tokens"""
     print(f"Running probability-based accuracy evaluation on {len(eval_dataset)} samples...")
     
@@ -304,6 +305,10 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     all_binary_predictions = []
     all_binary_labels = []
     total_loss = 0.0
+    
+    # Store individual prediction details
+    individual_predictions = {}
+    sample_index = 0
     
     model = trainer.model
     
@@ -377,15 +382,35 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                     # Get logits at the position where we need to predict the next token
                     logits_at_pos = logits[j, decision_pos - 1]  # -1 because we predict the next token
                     
-                    # Compare yes vs no logits
-                    yes_logit = logits_at_pos[yes_token_id]
-                    no_logit = logits_at_pos[no_token_id]
+                    # Get yes and no logits
+                    yes_logit = logits_at_pos[yes_token_id].item()
+                    no_logit = logits_at_pos[no_token_id].item()
                     
-                    # Predict based on higher logit
-                    predicted_label = 1 if yes_logit > no_logit else 0
+                    # Calculate normalized probabilities over just yes and no
+                    # Using softmax over just these two logits
+                    yes_no_logits = torch.tensor([yes_logit, no_logit])
+                    yes_no_probs = torch.nn.functional.softmax(yes_no_logits, dim=0)
+                    yes_prob = yes_no_probs[0].item()
+                    no_prob = yes_no_probs[1].item()
+                    
+                    # Predict based on higher probability
+                    predicted_label = 1 if yes_prob > no_prob else 0
+                    prediction_text = "yes" if predicted_label == 1 else "no"
                     
                     all_binary_predictions.append(predicted_label)
                     all_binary_labels.append(true_label)
+                    
+                    # Store individual prediction details
+                    if save_predictions:
+                        individual_predictions[f"index{sample_index}"] = {
+                            "yes": yes_prob,
+                            "no": no_prob,
+                            "yes_no_diff": yes_prob - no_prob,
+                            "prediction": prediction_text,
+                            "label": true_label,
+                            "correctness": predicted_label == true_label
+                        }
+                    sample_index += 1
             
             # Get loss from evaluation using original method for loss calculation
             eval_results = trainer.evaluate(eval_dataset=batch_dataset)
@@ -393,6 +418,13 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
         
         # Clear cache after each batch
         torch.cuda.empty_cache()
+    
+    # Save individual predictions to JSON if requested
+    if save_predictions and output_dir:
+        predictions_file = os.path.join(output_dir, "individual_predictions.json")
+        with open(predictions_file, 'w') as f:
+            json.dump(individual_predictions, f, indent=2)
+        print(f"\nIndividual predictions saved to: {predictions_file}")
     
     # Calculate overall metrics
     avg_loss = total_loss / len(eval_dataset)
@@ -470,7 +502,7 @@ def main():
     
     # Create log filename with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = os.path.join(log_dir, f"training_log_rl_{timestamp}.log")
+    log_file = os.path.join(log_dir, f"training_log_{timestamp}.log")
     
     # Redirect stdout and stderr to both console and log file
     tee_stdout = TeeOutput(log_file)
@@ -813,7 +845,10 @@ def main():
         # Use batched evaluation to prevent OOM
         eval_results = batched_accuracy_evaluation(
             trainer, eval_dataset, batch_size=2, 
-            detailed_eval=args.detailed_eval, tokenizer=tokenizer
+            detailed_eval=args.detailed_eval, 
+            tokenizer=tokenizer,
+            save_predictions=args.eval,  # Save predictions only in eval mode
+            output_dir=OUTPUT_DIR
         )
         
         print(f"Final evaluation results: {eval_results}")

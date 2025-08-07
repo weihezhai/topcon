@@ -1,13 +1,5 @@
 '''
 ./models/
-├── base_model/          # Original Llama model cache
-│   ├── config.json
-│   ├── tokenizer.json
-│   └── pytorch_model.bin
-└── finetuned_model/     # Fine-tuned model with LoRA
-    ├── adapter_config.json
-    ├── adapter_model.bin
-    └── tokenizer files
 '''
 import os
 import sys
@@ -29,6 +21,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import torch.nn as nn
 import argparse
+import json  # Add this import
 
 # Import the dataset builder
 from dataset_builder_abs_intro import TextDatasetBuilder
@@ -293,7 +286,7 @@ def custom_evaluate_with_memory_cleanup(trainer, eval_dataset=None):
     
     return eval_results
 
-def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None):
+def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None, save_predictions=False, output_dir=None):
     """Evaluate accuracy using probability-based comparison of yes/no tokens"""
     print(f"Running probability-based accuracy evaluation on {len(eval_dataset)} samples...")
     
@@ -304,6 +297,10 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     all_binary_predictions = []
     all_binary_labels = []
     total_loss = 0.0
+    
+    # Store individual prediction details
+    individual_predictions = {}
+    sample_index = 0
     
     model = trainer.model
     
@@ -377,15 +374,35 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                     # Get logits at the position where we need to predict the next token
                     logits_at_pos = logits[j, decision_pos - 1]  # -1 because we predict the next token
                     
-                    # Compare yes vs no logits
-                    yes_logit = logits_at_pos[yes_token_id]
-                    no_logit = logits_at_pos[no_token_id]
+                    # Get yes and no logits
+                    yes_logit = logits_at_pos[yes_token_id].item()
+                    no_logit = logits_at_pos[no_token_id].item()
                     
-                    # Predict based on higher logit
-                    predicted_label = 1 if yes_logit > no_logit else 0
+                    # Calculate normalized probabilities over just yes and no
+                    # Using softmax over just these two logits
+                    yes_no_logits = torch.tensor([yes_logit, no_logit])
+                    yes_no_probs = torch.nn.functional.softmax(yes_no_logits, dim=0)
+                    yes_prob = yes_no_probs[0].item()
+                    no_prob = yes_no_probs[1].item()
+                    
+                    # Predict based on higher probability
+                    predicted_label = 1 if yes_prob > no_prob else 0
+                    prediction_text = "yes" if predicted_label == 1 else "no"
                     
                     all_binary_predictions.append(predicted_label)
                     all_binary_labels.append(true_label)
+                    
+                    # Store individual prediction details
+                    if save_predictions:
+                        individual_predictions[f"index{sample_index}"] = {
+                            "yes": yes_prob,
+                            "no": no_prob,
+                            "yes_no_diff": yes_prob - no_prob,
+                            "prediction": prediction_text,
+                            "label": true_label,
+                            "correctness": predicted_label == true_label
+                        }
+                    sample_index += 1
             
             # Get loss from evaluation using original method for loss calculation
             eval_results = trainer.evaluate(eval_dataset=batch_dataset)
@@ -393,6 +410,13 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
         
         # Clear cache after each batch
         torch.cuda.empty_cache()
+    
+    # Save individual predictions to JSON if requested
+    if save_predictions and output_dir:
+        predictions_file = os.path.join(output_dir, "individual_predictions.json")
+        with open(predictions_file, 'w') as f:
+            json.dump(individual_predictions, f, indent=2)
+        print(f"\nIndividual predictions saved to: {predictions_file}")
     
     # Calculate overall metrics
     avg_loss = total_loss / len(eval_dataset)
@@ -470,7 +494,7 @@ def main():
     
     # Create log filename with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = os.path.join(log_dir, f"training_log_theory_{timestamp}.log")
+    log_file = os.path.join(log_dir, f"training_log_{timestamp}.log")
     
     # Redirect stdout and stderr to both console and log file
     tee_stdout = TeeOutput(log_file)
@@ -488,9 +512,9 @@ def main():
         parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-1.7B", help="Pre-trained model name or path")
-        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_theory_papers/theory_papers_text/", help="Path to the folder containing training data")
+        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_cv_papers/cv_papers_text/", help="Path to the folder containing training data")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/theory", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/cv", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use for training/evaluation")
         args = parser.parse_args()
@@ -557,7 +581,7 @@ def main():
         print("Loading dataset...")
         
         # Define processed dataset cache path
-        PROCESSED_DATASET_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/theory"
+        PROCESSED_DATASET_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cv"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
         
         # Check if processed dataset exists by looking for the dataset_info.json file
@@ -813,7 +837,10 @@ def main():
         # Use batched evaluation to prevent OOM
         eval_results = batched_accuracy_evaluation(
             trainer, eval_dataset, batch_size=2, 
-            detailed_eval=args.detailed_eval, tokenizer=tokenizer
+            detailed_eval=args.detailed_eval, 
+            tokenizer=tokenizer,
+            save_predictions=args.eval,  # Save predictions only in eval mode
+            output_dir=OUTPUT_DIR
         )
         
         print(f"Final evaluation results: {eval_results}")

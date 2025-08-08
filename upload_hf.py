@@ -6,8 +6,8 @@ api = HfApi(token='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')
 # Define folder paths and their corresponding repo IDs
 folders_to_upload = [
     {
-        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/Llama-3.2-1B/finetuned_model/cv",
-        "repo_id": "PaperPred/PaperPrediction-CV-1B"
+        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/all_four_domain",
+        "repo_id": "PaperPred/PaperPrediction-ALL-1.7B"
     }
     # {
     #     "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/llm",

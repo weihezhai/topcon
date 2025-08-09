@@ -501,6 +501,8 @@ def main():
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/", help="Path to the folder containing training data")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
+        parser.add_argument("--statistics_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json', help="Path to the statistical.json file containing paper statistics")
+        parser.add_argument("--titles_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/iclr_2025_summary_20250609_064704.csv', help="Path to the CSV file containing paper titles")
         parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/llm", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=[0, 1], help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
@@ -521,6 +523,8 @@ def main():
         MODEL_NAME = args.model_name
         DATA_FOLDER = args.data_folder
         LABELS_FILE = args.labels_file
+        STATISTICS_FILE = args.statistics_file
+        TITLES_FILE = args.titles_file
         OUTPUT_DIR = args.output_dir
         MAX_LENGTH = args.max_length
         
@@ -579,8 +583,13 @@ def main():
         # Load and prepare dataset
         print("Loading dataset...")
         
-        # Define processed dataset cache path
-        PROCESSED_DATASET_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/llm"
+        # Define processed dataset cache path - include stats/titles in cache name if provided
+        cache_suffix = "llm"
+        if STATISTICS_FILE:
+            cache_suffix += "_with_stats"
+        if TITLES_FILE:
+            cache_suffix += "_with_titles"
+        PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
         
         # Check if processed dataset exists by looking for the dataset_info.json file
@@ -590,12 +599,24 @@ def main():
                 print("Loading cached processed dataset...")
                 dataset = load_from_disk(PROCESSED_DATASET_CACHE)
                 # Still need to create dataset_builder for stats
-                dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
+                dataset_builder = TextDatasetBuilder(
+                    DATA_FOLDER, 
+                    LABELS_FILE, 
+                    statistics_file=STATISTICS_FILE,
+                    titles_file=TITLES_FILE,
+                    max_length=MAX_LENGTH
+                )
                 print("Successfully loaded cached dataset!")
             except Exception as e:
                 print(f"Failed to load cached dataset: {e}")
                 print("Processing dataset from scratch...")
-                dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
+                dataset_builder = TextDatasetBuilder(
+                    DATA_FOLDER, 
+                    LABELS_FILE, 
+                    statistics_file=STATISTICS_FILE,
+                    titles_file=TITLES_FILE,
+                    max_length=MAX_LENGTH
+                )
                 dataset = dataset_builder.load_dataset()
                 
                 # Save processed dataset to cache
@@ -603,12 +624,26 @@ def main():
                 dataset.save_to_disk(PROCESSED_DATASET_CACHE)
         else:
             print("No cached dataset found. Processing dataset for the first time...")
-            dataset_builder = TextDatasetBuilder(DATA_FOLDER, LABELS_FILE, MAX_LENGTH)
+            dataset_builder = TextDatasetBuilder(
+                DATA_FOLDER, 
+                LABELS_FILE, 
+                statistics_file=STATISTICS_FILE,
+                titles_file=TITLES_FILE,
+                max_length=MAX_LENGTH
+            )
             dataset = dataset_builder.load_dataset()
             
             # Save processed dataset to cache
             print(f"Saving processed dataset to {PROCESSED_DATASET_CACHE}")
             dataset.save_to_disk(PROCESSED_DATASET_CACHE)
+        
+        # Print dataset configuration
+        print("\nDataset Configuration:")
+        print(f"  Data folder: {DATA_FOLDER}")
+        print(f"  Labels file: {LABELS_FILE}")
+        print(f"  Statistics file: {STATISTICS_FILE if STATISTICS_FILE else 'Not provided'}")
+        print(f"  Titles file: {TITLES_FILE if TITLES_FILE else 'Not provided'}")
+        print(f"  Max length: {MAX_LENGTH}")
         
         # Print dataset statistics
         stats = dataset_builder.get_dataset_stats(dataset)

@@ -31,7 +31,7 @@ import torch.nn as nn
 import argparse
 
 # Import the dataset builder
-from dataset_builder_abs_intro import TextDatasetBuilder
+from dataset_builder_new import TextDatasetBuilder
 from datasets import load_from_disk
 
 class TeeOutput:
@@ -162,7 +162,7 @@ def preprocess_function(examples, tokenizer, max_length=1024):
     # Create prompts that ask for accept/reject decision
     prompts = []
     for text in examples['text']:
-        prompt = f"Paper content:\n{text}\n\nBased on this research paper's abstract, introduction and statistics, should this paper be accepted?\n\nDecision:"
+        prompt = f"Paper content:\n{text}\n\nBased on this research paper's abstract, introduction and statistics, should this paper be accepted? Answer yes or no. \n\nDecision:"
         prompts.append(prompt)
     
     # First, tokenize target tokens to know their length
@@ -502,7 +502,7 @@ def main():
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_llm_papers/llm_papers_text/", help="Path to the folder containing training data")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json', help="Path to the statistical.json file containing paper statistics")
-        parser.add_argument("--titles_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/iclr_2025_summary_20250609_064704.csv', help="Path to the CSV file containing paper titles")
+        # parser.add_argument("--titles_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/iclr_2025_summary_20250609_064704.csv', help="Path to the CSV file containing paper titles")
         parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/llm", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=[0, 1], help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
@@ -524,7 +524,7 @@ def main():
         DATA_FOLDER = args.data_folder
         LABELS_FILE = args.labels_file
         STATISTICS_FILE = args.statistics_file
-        TITLES_FILE = args.titles_file
+        # TITLES_FILE = args.titles_file
         OUTPUT_DIR = args.output_dir
         MAX_LENGTH = args.max_length
         
@@ -587,8 +587,8 @@ def main():
         cache_suffix = "llm"
         if STATISTICS_FILE:
             cache_suffix += "_with_stats"
-        if TITLES_FILE:
-            cache_suffix += "_with_titles"
+        # if TITLES_FILE:
+        #     cache_suffix += "_with_titles"
         PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
         
@@ -603,7 +603,7 @@ def main():
                     DATA_FOLDER, 
                     LABELS_FILE, 
                     statistics_file=STATISTICS_FILE,
-                    titles_file=TITLES_FILE,
+                    # titles_file=TITLES_FILE,
                     max_length=MAX_LENGTH
                 )
                 print("Successfully loaded cached dataset!")
@@ -614,10 +614,10 @@ def main():
                     DATA_FOLDER, 
                     LABELS_FILE, 
                     statistics_file=STATISTICS_FILE,
-                    titles_file=TITLES_FILE,
+                    # titles_file=TITLES_FILE,
                     max_length=MAX_LENGTH
                 )
-                dataset = dataset_builder.load_dataset()
+                dataset = dataset_builder.load_dataset_with_ids()
                 
                 # Save processed dataset to cache
                 print(f"Saving processed dataset to {PROCESSED_DATASET_CACHE}")
@@ -628,10 +628,10 @@ def main():
                 DATA_FOLDER, 
                 LABELS_FILE, 
                 statistics_file=STATISTICS_FILE,
-                titles_file=TITLES_FILE,
+                # titles_file=TITLES_FILE,
                 max_length=MAX_LENGTH
             )
-            dataset = dataset_builder.load_dataset()
+            dataset = dataset_builder.load_dataset_with_ids()
             
             # Save processed dataset to cache
             print(f"Saving processed dataset to {PROCESSED_DATASET_CACHE}")
@@ -642,7 +642,7 @@ def main():
         print(f"  Data folder: {DATA_FOLDER}")
         print(f"  Labels file: {LABELS_FILE}")
         print(f"  Statistics file: {STATISTICS_FILE if STATISTICS_FILE else 'Not provided'}")
-        print(f"  Titles file: {TITLES_FILE if TITLES_FILE else 'Not provided'}")
+        # print(f"  Titles file: {TITLES_FILE if TITLES_FILE else 'Not provided'}")
         print(f"  Max length: {MAX_LENGTH}")
         
         # Print dataset statistics

@@ -97,7 +97,7 @@ class TextDatasetBuilder:
             1. Title (first text_level=1)
             2. Abstract section
             3. Introduction section  
-            4. Main body sections (until References)
+            4. Main body sections (until Acknowledgments or References)
             5. Equations
         """
         # Load JSON data from file
@@ -114,6 +114,7 @@ class TextDatasetBuilder:
         title_idx = None
         abstract_idx = None
         intro_idx = None
+        acknowledgments_idx = None
         references_idx = None
         
         for i, entry in enumerate(paper_data):
@@ -130,17 +131,29 @@ class TextDatasetBuilder:
                 # Look for introduction
                 elif "INTRODUCTION" in text.upper():
                     intro_idx = i
+                # Look for acknowledgments (before references)
+                elif acknowledgments_idx is None and ("ACKNOWLEDGMENT" in text.upper() or "ACKNOWLEDGEMENT" in text.upper()):
+                    acknowledgments_idx = i
                 # Look for references
                 elif "REFERENCES" in text.upper() or "REFERENCE" in text.upper():
                     references_idx = i
                     break
-            # Also check if any regular text block starts with "REFERENCES"
-            elif entry.get("type") == "text" and references_idx is None:
+            # Also check if any regular text block starts with "ACKNOWLEDGMENTS" or "REFERENCES"
+            elif entry.get("type") == "text":
                 text = entry.get("text", "").strip()
+                upper_text = text.upper()
+                
+                # Check if text starts with "ACKNOWLEDGMENTS" (case-insensitive)
+                if acknowledgments_idx is None and (upper_text.startswith("ACKNOWLEDGMENT") or upper_text.startswith("ACKNOWLEDGEMENT")):
+                    acknowledgments_idx = i
                 # Check if text starts with "REFERENCES" (case-insensitive)
-                if text.upper().startswith("REFERENCES"):
+                elif references_idx is None and upper_text.startswith("REFERENCES"):
                     references_idx = i
                     break
+        
+        # Determine the end index for content extraction
+        # Stop at acknowledgments if it exists, otherwise stop at references
+        content_end_idx = acknowledgments_idx if acknowledgments_idx is not None else references_idx
         
         # Extract title
         if title_idx is not None:
@@ -171,9 +184,9 @@ class TextDatasetBuilder:
                     break
             
             if next_section_idx is None:
-                next_section_idx = references_idx if references_idx else len(paper_data)
+                next_section_idx = content_end_idx if content_end_idx else len(paper_data)
             
-            for i in range(intro_idx, next_section_idx):
+            for i in range(intro_idx, min(next_section_idx, content_end_idx if content_end_idx else len(paper_data))):
                 entry = paper_data[i]
                 if entry.get("type") == "text":
                     text = entry.get("text", "").strip()
@@ -184,7 +197,7 @@ class TextDatasetBuilder:
                     if eq_text:
                         content_parts.append(eq_text)
         
-        # Extract main body (from after introduction to references)
+        # Extract main body (from after introduction to acknowledgments/references)
         if intro_idx is not None:
             start_idx = intro_idx
             # Find next section after introduction
@@ -193,7 +206,7 @@ class TextDatasetBuilder:
                     start_idx = i
                     break
             
-            end_idx = references_idx if references_idx else len(paper_data)
+            end_idx = content_end_idx if content_end_idx else len(paper_data)
             
             for i in range(start_idx, end_idx):
                 entry = paper_data[i]

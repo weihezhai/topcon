@@ -470,6 +470,12 @@ def main():
                 device_map="auto",
                 torch_dtype=torch.bfloat16,
             )
+
+            # Tell Trainer not to DataParallel-wrap us
+            setattr(model, "is_parallelizable", True)
+            setattr(model, "model_parallel", True)
+            if hasattr(model.lm, "hf_device_map"):
+                model.hf_device_map = model.lm.hf_device_map
             # instantiate collator now we know prompt tokenized lengths
             P_len, S_len = model.prompt_lengths()
             print(f"[hier] Prefix len={P_len}, Suffix len={S_len}, K={args.k_soft_tokens}")

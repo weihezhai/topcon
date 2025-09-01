@@ -116,7 +116,7 @@ class PromptHierYesNo(nn.Module):
             chunk_emb = chunk_emb * chunk_mask.to(device=dev, dtype=chunk_emb.dtype).unsqueeze(-1)
 
         # + index embedding
-        idx = torch.arange(C, device=dev).unsqueeze(0).expand(B, C).clamp(max=self.max_chunks-1)
+        idx = torch.arange(C, device=self.idx_emb.weight.device).unsqueeze(0).expand(B, C).clamp(max=self.max_chunks-1)
         chunk_emb = chunk_emb + self.idx_emb(idx)
 
         # ---- 2) project each chunk -> K soft tokens

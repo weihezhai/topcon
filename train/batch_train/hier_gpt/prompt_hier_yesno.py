@@ -72,8 +72,10 @@ class PromptHierYesNo(nn.Module):
         nn.init.normal_(self.idx_emb.weight, std=0.02)
 
         # mean pooling over chunk tokens
-        self.token_pool = lambda hs, m: (hs * m.unsqueeze(-1)).sum(1) / m.sum(1).clamp(min=1).unsqueeze(-1)
-
+        self.token_pool = lambda hs, m: (
+            (hs * m.to(device=hs.device, dtype=hs.dtype).unsqueeze(-1)).sum(1) /
+            m.to(device=hs.device, dtype=hs.dtype).sum(1).clamp(min=1).unsqueeze(-1)
+        )
         # Stage-1: freeze the LM (encoder path); later, Stage-2 unfreezes top layers
         self.freeze_lm_for_chunks = freeze_lm_for_chunks
         if freeze_lm_for_chunks:
@@ -107,8 +109,11 @@ class PromptHierYesNo(nn.Module):
         with torch.set_grad_enabled(not self.freeze_lm_for_chunks):
             enc = self.backbone(input_ids=x, attention_mask=m, use_cache=False)
             last_h = enc.last_hidden_state               # [B*C, S, H]
-            chunk_emb = self.token_pool(last_h, m).view(B, C, H)  # [B,C,H]
-            chunk_emb = chunk_emb * chunk_mask.to(dev).unsqueeze(-1)
+            m_pool = m.to(device=last_h.device, dtype=last_h.dtype)
+            chunk_emb = self.token_pool(last_h, m_pool).view(B, C, H).to(dev)
+            # chunk_emb = self.token_pool(last_h, m).view(B, C, H)  # [B,C,H]
+            # chunk_emb = chunk_emb * chunk_mask.to(dev).unsqueeze(-1)
+            chunk_emb = chunk_emb * chunk_mask.to(device=dev, dtype=chunk_emb.dtype).unsqueeze(-1)
 
         # + index embedding
         idx = torch.arange(C, device=dev).unsqueeze(0).expand(B, C).clamp(max=self.max_chunks-1)

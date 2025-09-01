@@ -297,12 +297,12 @@ def main():
         parser.add_argument("--max_sentences", type=int, default=128)
         parser.add_argument("--max_chunks_cap", type=int, default=128)
         parser.add_argument("--k_soft_tokens", type=int, default=4)
-        parser.add_argument("--prompt_prefix", type=str, default="You are a reviewer. Below are compressed chunk representations of a paper.\n")
-        parser.add_argument("--prompt_suffix", type=str, default="\nBased on the abstract, introduction and statistics, should this paper be accepted? Answer yes or no.\n\nDecision:")
+        parser.add_argument("--prompt_prefix", type=str, default="You are a reviewer. Below are compressed chunk representations of an top conference AI paper.\n")
+        parser.add_argument("--prompt_suffix", type=str, default="\nBased on the paper content, should this paper be accepted? Answer yes or no.\n\nDecision:")
 
         # Stage-2 (top layers finetune)
-        parser.add_argument("--stage2_unfreeze_top", type=int, default=0, help="Number of top layers to unfreeze in Stage-2 (0=skip)")
-        parser.add_argument("--stage2_epochs", type=int, default=2)
+        parser.add_argument("--stage2_unfreeze_top", type=int, default=8, help="Number of top layers to unfreeze in Stage-2 (0=skip)")
+        parser.add_argument("--stage2_epochs", type=int, default=5)
         parser.add_argument("--stage2_lr", type=float, default=1e-4)
 
         args = parser.parse_args()

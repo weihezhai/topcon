@@ -57,8 +57,8 @@ class TextDatasetBuilder:
         # Now split into sentences (won't split at periods in URLs since they're replaced)
         sentences = re.split(r'(?<=[.!?])\s+', text_with_placeholders)
         
-        # Filter out sentences containing GitHub links
-        github_pattern = r'https?://(?:www\.)?github\.com/[^\s)]*'
+        # Filter out sentences containing GitHub links (both github.com and github.io)
+        github_pattern = r'https?://(?:www\.)?(?:github\.com|[^/\s]*\.github\.io)[^\s)]*'
         filtered_sentences = []
         
         for sentence in sentences:

@@ -121,6 +121,7 @@ class PromptHierYesNo(nn.Module):
         chunk_emb = chunk_emb.to(idx_dev) + self.idx_emb(idx)
 
         # ---- 2) project each chunk -> K soft tokens
+        proj = self.chunk_proj(chunk_emb).view(B, C, K, H)   # [B,C,K,H]
         m = chunk_mask.to(device=proj.device, dtype=proj.dtype)
         proj = proj * m.unsqueeze(-1).unsqueeze(-1)
         soft_tokens = proj.view(B, C*K, H)                   # [B, C*K, H]

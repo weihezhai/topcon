@@ -101,22 +101,22 @@ class PromptHierYesNo(nn.Module):
         H, K = self.H, self.K
 
         # ---- 1) encode chunks -> mean pooled embeddings [B,C,H]
-        x = input_ids.view(B*C, S).to(dev)
-        m = attention_mask.view(B*C, S).to(dev)
+        x = input_ids.view(B*C, S)
+        m = attention_mask.view(B*C, S)
 
         with torch.set_grad_enabled(not self.freeze_lm_for_chunks):
             enc = self.backbone(input_ids=x, attention_mask=m, use_cache=False)
             last_h = enc.last_hidden_state               # [B*C, S, H]
             chunk_emb = self.token_pool(last_h, m).view(B, C, H)  # [B,C,H]
-            chunk_emb = chunk_emb * chunk_mask.to(dev).unsqueeze(-1)
+            chunk_emb = chunk_emb * chunk_mask.to(chunk_emb.device).unsqueeze(-1)
 
         # + index embedding
-        idx = torch.arange(C, device=dev).unsqueeze(0).expand(B, C).clamp(max=self.max_chunks-1)
+        idx = torch.arange(C, device=chunk_emb.device).unsqueeze(0).expand(B, C).clamp(max=self.max_chunks-1)
         chunk_emb = chunk_emb + self.idx_emb(idx)
 
         # ---- 2) project each chunk -> K soft tokens
         proj = self.chunk_proj(chunk_emb).view(B, C, K, H)   # [B,C,K,H]
-        proj = proj * chunk_mask.unsqueeze(-1).unsqueeze(-1).to(proj.dtype)
+        proj = proj * chunk_mask.to(proj.device).unsqueeze(-1).unsqueeze(-1).to(proj.dtype)
         soft_tokens = proj.view(B, C*K, H)                   # [B, C*K, H]
 
         # ---- 3) compose full inputs_embeds
@@ -129,30 +129,32 @@ class PromptHierYesNo(nn.Module):
         CK = C * K
         # Compose: [prefix | soft-chunks | suffix | target yes/no token]
         L = P + CK + Suf + 1
-        inputs_embeds = torch.zeros(B, L, H, dtype=pref_b.dtype, device=dev)
+        inputs_embeds = torch.zeros(B, L, H, dtype=pref_b.dtype, device=pref.device)
         inputs_embeds[:, :P, :] = pref_b
-        inputs_embeds[:, P:P+CK, :] = soft_tokens
+        inputs_embeds[:, P:P+CK, :] = soft_tokens.to(inputs_embeds.device)
         inputs_embeds[:, P+CK:P+CK+Suf, :] = suff_b
 
         # last token = target token embedding (teacher-forcing)
         # We derive target ids back from 'labels' last element per sample (already set by collator).
         if labels is not None:
             # labels: [B, L], only labels[:, -1] != -100 (value = yes/no id)
-            tgt_ids = labels[:, -1].to(dev)
+            labels_dev = labels.to(inputs_embeds.device)
+            tgt_ids = labels_dev[:, -1]
         else:
-            tgt_ids = torch.full((B,), self.no_id, dtype=torch.long, device=dev)
+            labels_dev = None
+            tgt_ids = torch.full((B,), self.no_id, dtype=torch.long, device=inputs_embeds.device)
         inputs_embeds[:, -1, :] = self.word_emb(tgt_ids)
 
         # ---- 4) attention mask for the composed sequence
-        attn = torch.zeros(B, L, dtype=torch.long, device=dev)
+        attn = torch.zeros(B, L, dtype=torch.long, device=inputs_embeds.device)
         attn[:, :P] = 1
-        cm = chunk_mask.to(dev).unsqueeze(-1).expand(B, C, K).reshape(B, CK)
+        cm = chunk_mask.to(inputs_embeds.device).unsqueeze(-1).expand(B, C, K).reshape(B, CK)
         attn[:, P:P+CK] = cm.long()
         attn[:, P+CK:P+CK+Suf] = 1
         attn[:, -1] = 1
 
         # ---- 5) forward LM with labels (standard HF CausalLM loss)
-        out = self.lm(inputs_embeds=inputs_embeds, attention_mask=attn, labels=labels, use_cache=False)
+        out = self.lm(inputs_embeds=inputs_embeds, attention_mask=attn, labels=labels_dev, use_cache=False)
 
         # ---- 6) return 1-step shifted logits for your unchanged compute_metrics
         lm_logits = out.logits                              # [B, L, V]

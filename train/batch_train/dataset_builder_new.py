@@ -117,6 +117,7 @@ class TextDatasetBuilder:
         references_idx = None
         
         for i, entry in enumerate(paper_data):
+            # Check for level 1 headers
             if entry.get("type") == "text" and entry.get("text_level") == 1:
                 text = entry.get("text", "").strip()
                 
@@ -131,6 +132,13 @@ class TextDatasetBuilder:
                     intro_idx = i
                 # Look for references
                 elif "REFERENCES" in text.upper() or "REFERENCE" in text.upper():
+                    references_idx = i
+                    break
+            # Also check if any regular text block starts with "REFERENCES"
+            elif entry.get("type") == "text" and references_idx is None:
+                text = entry.get("text", "").strip()
+                # Check if text starts with "REFERENCES" (case-insensitive)
+                if text.upper().startswith("REFERENCES"):
                     references_idx = i
                     break
         

@@ -17,9 +17,9 @@ import torch.nn as nn
 import argparse
 
 # NEW imports
-from models.prompt_hier_yesno import PromptHierYesNo
-from dataloaders.hier_prompt_collator import HierPromptCollator
-from dataset.chunker import (
+from prompt_hier_yesno import PromptHierYesNo
+from hier_prompt_collator import HierPromptCollator
+from chunker import (
     chunk_and_tokenize_sliding,
     chunk_and_tokenize_sentence,
 )

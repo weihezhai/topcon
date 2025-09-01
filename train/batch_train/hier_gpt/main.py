@@ -110,7 +110,7 @@ def compute_metrics(eval_pred, tokenizer=None):
         accuracy = accuracy_score(binary_labels, binary_predictions)
         return {"accuracy": accuracy}
     else:
-        return {"accuracy": 0.0"}
+        return {"accuracy": 0.0}
 
 # -------------------- original helpers (unchanged) --------------------
 def preprocess_function(examples, tokenizer, max_length=1024):
@@ -285,7 +285,7 @@ def main():
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/llm/")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json")
         parser.add_argument("--statistics_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json')
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/llm")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/llm/hier")
         parser.add_argument("--max_length", type=int, default=10000)
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=[0,1])
 

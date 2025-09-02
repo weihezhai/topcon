@@ -32,4 +32,4 @@ source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 #   --gpu_ids 0 1 2
 
 
-python main.py --use_hier --gpu_ids
+python main.py --use_hier

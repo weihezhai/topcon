@@ -287,7 +287,7 @@ def main():
         parser.add_argument("--statistics_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json')
         parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/llm/hier")
         parser.add_argument("--max_length", type=int, default=10000)
-        parser.add_argument("--gpu_ids", type=int, nargs='+', default=[0,1])
+        parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="List of GPU IDs to use (e.g., --gpu_ids 0 1 2). If not set, auto-detects available GPUs.")
 
         # NEW flags
         parser.add_argument("--use_hier", action="store_true", help="Enable hierarchical prompt+soft tokens pipeline")
@@ -579,7 +579,7 @@ def main():
                     model=model,
                     args=stage2_args,
                     train_dataset=train_dataset,
-                    eval_dataset=eval_dataset.select(range(min(200, len(eval_dataset)))),
+                    eval_dataset=small_eval_dataset,
                     tokenizer=tokenizer,
                     data_collator=data_collator,
                     compute_metrics=lambda p: compute_metrics(p, tokenizer),

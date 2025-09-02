@@ -26,7 +26,7 @@ class PromptHierYesNo(nn.Module):
         prompt_prefix: str,
         prompt_suffix: str,
         k_soft_tokens_per_chunk: int = 4,
-        freeze_lm_for_chunks: bool = True,
+        freeze_lm_for_chunks: bool = False,
         device_map: str = "auto",
         torch_dtype = torch.bfloat16,
     ):
@@ -79,6 +79,11 @@ class PromptHierYesNo(nn.Module):
         if freeze_lm_for_chunks:
             for p in self.backbone.parameters():
                 p.requires_grad = False
+        else:
+            for p in self.backbone.parameters():
+                p.requires_grad = True
+            for p in self.lm_head.parameters():
+                p.requires_grad = True
     @property
     def backbone(self):
         return self.lm.model if hasattr(self.lm, "model") else self.lm.transformer

@@ -299,10 +299,10 @@ def main():
         parser.add_argument("--k_soft_tokens", type=int, default=4)
         parser.add_argument("--prompt_prefix", type=str, default="You are a reviewer. Below are compressed chunk representations of an top conference AI paper.\n")
         parser.add_argument("--prompt_suffix", type=str, default="\nBased on the paper content, should this paper be accepted? Answer yes or no.\n\nDecision:")
-
+        parser.add_argument("--freeze_lm_for_chunks", action="store_true", help="Freeze the language model when processing chunks (only train soft tokens)")
         # Stage-2 (top layers finetune)
-        parser.add_argument("--stage2_unfreeze_top", type=int, default=8, help="Number of top layers to unfreeze in Stage-2 (0=skip)")
-        parser.add_argument("--stage2_epochs", type=int, default=5)
+        parser.add_argument("--stage2_unfreeze_top", type=int, default=0, help="Number of top layers to unfreeze in Stage-2 (0=skip)")
+        parser.add_argument("--stage2_epochs", type=int, default=0)
         parser.add_argument("--stage2_lr", type=float, default=1e-4)
 
         args = parser.parse_args()
@@ -466,7 +466,7 @@ def main():
                 prompt_prefix=args.prompt_prefix,
                 prompt_suffix=args.prompt_suffix,
                 k_soft_tokens_per_chunk=args.k_soft_tokens,
-                freeze_lm_for_chunks=not args.eval,  # freeze during training Stage-1
+                freeze_lm_for_chunks=args.freeze_lm_for_chunks,  # freeze during training Stage-1
                 device_map="auto",
                 torch_dtype=torch.bfloat16,
             )
@@ -499,7 +499,7 @@ def main():
                 per_device_train_batch_size=1,
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,
-                learning_rate=1e-5 if not args.use_hier else 5e-4,  # higher LR when most params frozen
+                learning_rate=1e-5,  # higher LR when most params frozen
                 warmup_steps=20,
                 weight_decay=0.001,
                 logging_dir=f"{OUTPUT_DIR}/logs",

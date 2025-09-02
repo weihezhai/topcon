@@ -2,6 +2,9 @@
 import torch
 import torch.nn as nn
 from transformers import AutoModelForCausalLM
+import torch.nn.functional as F
+from transformers.modeling_outputs import CausalLMOutput
+
 
 class PromptHierYesNo(nn.Module):
     """
@@ -41,9 +44,6 @@ class PromptHierYesNo(nn.Module):
         # self.backbone = self.lm.model if hasattr(self.lm, "model") else self.lm.transformer
         self.H = self.lm.config.hidden_size
         self.lm.config.use_cache = False  # safer for training
-
-        if hasattr(self.backbone, 'config'):
-            self.backbone.config.use_cache = False
 
         # tokenize prompts once and keep on buffer
         self.register_buffer(
@@ -176,13 +176,34 @@ class PromptHierYesNo(nn.Module):
         attn[:, -1] = 1
 
         # ---- 5) forward LM with labels (standard HF CausalLM loss)
-        out = self.lm(inputs_embeds=inputs_embeds, attention_mask=attn, labels=labels, use_cache=False)
+        base = getattr(self.lm, "model", None) or getattr(self.lm, "transformer", None) or getattr(self.lm, "base_model", None)
+        if base is None:
+        # As a last resort, many HF CausalLMs hold the base in .get_decoder() or as .model
+            base = self.lm
 
+        out = base(inputs_embeds=inputs_embeds, attention_mask=attn, use_cache=False,
+                    output_hidden_states=False, return_dict=True)
+        hs = out.last_hidden_state  # [B, L, H]
         # ---- 6) return 1-step shifted logits for your unchanged compute_metrics
-        lm_logits = out.logits                              # [B, L, V]
-        shifted = torch.zeros_like(lm_logits)
-        shifted[:, 1:, :] = lm_logits[:, :-1, :]
-        return {"loss": out.loss, "logits": shifted}
+        W = self.lm.get_output_embeddings().weight  # [V, H] tied output embeddings
+        yes_w = W[self.yes_id].to(dtype=final_h.dtype)  # [H]
+        no_w  = W[self.no_id].to(dtype=final_h.dtype)   # [H]
+        logit_yes = torch.matmul(final_h, yes_w)  # [B]
+        logit_no  = torch.matmul(final_h, no_w)   # [B]
+        decision_logits = torch.stack([logit_no, logit_yes], dim=-1)  # [B, 2], order: [no, yes]
+
+        # ---- 7) compute binary loss from labels[:, -1] (map token id -> {0,1})
+        loss = None
+        if labels is not None:
+            targets = (labels[:, -1] == self.yes_id).long()  # [B], 1 for yes, 0 for no
+            # Compute on float32 for numerical stability; grads still flow correctly.
+            loss = F.cross_entropy(decision_logits.float(), targets)
+
+        # Return a tiny structure so eval doesn't blow memory
+        if kwargs.get("return_dict", True):
+            return CausalLMOutput(loss=loss, logits=decision_logits)
+        else:
+            return (decision_logits, loss)
 
     def state_dict(self, *args, **kwargs):
         """

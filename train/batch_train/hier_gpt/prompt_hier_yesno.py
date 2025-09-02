@@ -176,6 +176,34 @@ class PromptHierYesNo(nn.Module):
         shifted[:, 1:, :] = lm_logits[:, :-1, :]
         return {"loss": out.loss, "logits": shifted}
 
+    def state_dict(self, *args, **kwargs):
+        """
+        Override state_dict to handle tied weights for safetensors compatibility.
+        Clones the tied tensor in the saved dict only, so training still uses tied weights.
+        """
+        sd = super().state_dict(*args, **kwargs)
+        
+        # Handle different model architectures
+        # For models with .model structure (e.g., LLaMA)
+        head_key = "lm.lm_head.weight"
+        embed_key_model = "lm.model.embed_tokens.weight"
+        
+        # For models with .transformer structure (e.g., Qwen)
+        embed_key_transformer = "lm.transformer.wte.weight"
+        
+        # Check for tied weights and clone if necessary
+        if head_key in sd:
+            if embed_key_model in sd:
+                # Check if they share the same storage (are tied)
+                if sd[head_key].data_ptr() == sd[embed_key_model].data_ptr():
+                    sd[head_key] = sd[head_key].clone()
+            elif embed_key_transformer in sd:
+                # Check for transformer-style models
+                if sd[head_key].data_ptr() == sd[embed_key_transformer].data_ptr():
+                    sd[head_key] = sd[head_key].clone()
+        
+        return sd
+
     # -------- stage-2 helpers --------
     def unfreeze_top_layers(self, n: int):
         """

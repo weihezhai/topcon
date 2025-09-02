@@ -39,17 +39,6 @@ class PromptHierYesNo(nn.Module):
         )
         # access internals
         # self.backbone = self.lm.model if hasattr(self.lm, "model") else self.lm.transformer
-        @property
-        def backbone(self):
-            return self.lm.model if hasattr(self.lm, "model") else self.lm.transformer
-        # self.word_emb = self.lm.get_input_embeddings()
-        @property
-        def word_emb(self):
-            return self.lm.get_input_embeddings()
-        # self.lm_head  = self.lm.lm_head
-        @property
-        def lm_head(self):
-            return self.lm.lm_head
         self.H = self.lm.config.hidden_size
         self.lm.config.use_cache = False  # safer for training
 
@@ -90,6 +79,17 @@ class PromptHierYesNo(nn.Module):
         if freeze_lm_for_chunks:
             for p in self.backbone.parameters():
                 p.requires_grad = False
+    @property
+    def backbone(self):
+        return self.lm.model if hasattr(self.lm, "model") else self.lm.transformer
+        # self.word_emb = self.lm.get_input_embeddings()
+    @property
+    def word_emb(self):
+        return self.lm.get_input_embeddings()
+    # self.lm_head  = self.lm.lm_head
+    @property
+    def lm_head(self):
+        return self.lm.lm_head
 
     # utilities
     def _embed_ids(self, ids: torch.Tensor) -> torch.Tensor:

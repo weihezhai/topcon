@@ -597,7 +597,7 @@ def main():
             dataloader_pin_memory=False,
             remove_unused_columns=False,
             label_names=["labels"],
-            eval_accumulation_steps=4,
+            eval_accumulation_steps=16,
             dataloader_num_workers=0,
             prediction_loss_only= False if args.use_hier else True,
             skip_memory_metrics=True,

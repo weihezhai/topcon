@@ -519,7 +519,7 @@ def main():
                 adam_epsilon=1e-8,
                 lr_scheduler_type="linear",
                 optim="adamw_torch",
-                eval_accumulation_steps=4,
+                eval_accumulation_steps=16,
                 dataloader_num_workers=0,
                 prediction_loss_only= False if args.use_hier else True,   # need logits in hier mode for metrics
                 skip_memory_metrics=True,

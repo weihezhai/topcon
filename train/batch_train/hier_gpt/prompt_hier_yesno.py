@@ -108,7 +108,7 @@ class PromptHierYesNo(nn.Module):
         # lengths on current device
         return int(self.prefix_ids.numel()), int(self.suffix_ids.numel())
 
-    def forward(self, input_ids, attention_mask, chunk_mask, labels=None):
+    def forward(self, input_ids, attention_mask, chunk_mask, labels=None, **kwargs):
         """
         input_ids:      [B, C, S]
         attention_mask: [B, C, S]
@@ -187,7 +187,7 @@ class PromptHierYesNo(nn.Module):
 
         # The decision position is L-2 (predicting the final token at L-1)
         final_h = hs[:, -2, :]  # [B, H]
-        
+
         # ---- 6) return 1-step shifted logits for your unchanged compute_metrics
         W = self.lm.get_output_embeddings().weight  # [V, H] tied output embeddings
         yes_w = W[self.yes_id].to(dtype=final_h.dtype)  # [H]

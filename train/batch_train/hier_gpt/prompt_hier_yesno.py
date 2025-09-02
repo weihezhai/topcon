@@ -184,6 +184,10 @@ class PromptHierYesNo(nn.Module):
         out = base(inputs_embeds=inputs_embeds, attention_mask=attn, use_cache=False,
                     output_hidden_states=False, return_dict=True)
         hs = out.last_hidden_state  # [B, L, H]
+
+        # The decision position is L-2 (predicting the final token at L-1)
+        final_h = hs[:, -2, :]  # [B, H]
+        
         # ---- 6) return 1-step shifted logits for your unchanged compute_metrics
         W = self.lm.get_output_embeddings().weight  # [V, H] tied output embeddings
         yes_w = W[self.yes_id].to(dtype=final_h.dtype)  # [H]

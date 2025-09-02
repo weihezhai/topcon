@@ -7,7 +7,7 @@
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --job-name=llm_4b
-#SBATCH --output=./logs/llm_4b.%j.out
+#SBATCH --output=./logs/llm_4b_hier.%j.out
 #SBATCH --time=0-12:00:00
 
 # Load necessary modules

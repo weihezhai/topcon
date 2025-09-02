@@ -38,9 +38,18 @@ class PromptHierYesNo(nn.Module):
             device_map=device_map,
         )
         # access internals
-        self.backbone = self.lm.model if hasattr(self.lm, "model") else self.lm.transformer
-        self.word_emb = self.lm.get_input_embeddings()
-        self.lm_head  = self.lm.lm_head
+        # self.backbone = self.lm.model if hasattr(self.lm, "model") else self.lm.transformer
+        @property
+        def backbone(self):
+            return self.lm.model if hasattr(self.lm, "model") else self.lm.transformer
+        # self.word_emb = self.lm.get_input_embeddings()
+        @property
+        def word_emb(self):
+            return self.lm.get_input_embeddings()
+        # self.lm_head  = self.lm.lm_head
+        @property
+        def lm_head(self):
+            return self.lm.lm_head
         self.H = self.lm.config.hidden_size
         self.lm.config.use_cache = False  # safer for training
 

@@ -42,6 +42,9 @@ class PromptHierYesNo(nn.Module):
         self.H = self.lm.config.hidden_size
         self.lm.config.use_cache = False  # safer for training
 
+        if hasattr(self.backbone, 'config'):
+            self.backbone.config.use_cache = False
+
         # tokenize prompts once and keep on buffer
         self.register_buffer(
             "prefix_ids",

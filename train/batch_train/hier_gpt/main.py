@@ -296,7 +296,7 @@ def main():
         parser.add_argument("--stride", type=int, default=32)
         parser.add_argument("--max_sentences", type=int, default=128)
         parser.add_argument("--max_chunks_cap", type=int, default=128)
-        parser.add_argument("--k_soft_tokens", type=int, default=4)
+        parser.add_argument("--k_soft_tokens", type=int, default=6)
         parser.add_argument("--prompt_prefix", type=str, default="You are a reviewer. Below are compressed chunk representations of an top conference AI paper.\n")
         parser.add_argument("--prompt_suffix", type=str, default="\nBased on the paper content, should this paper be accepted? Answer yes or no.\n\nDecision:")
         parser.add_argument("--freeze_lm_for_chunks", action="store_true", help="Freeze the language model when processing chunks (only train soft tokens)")
@@ -495,7 +495,7 @@ def main():
             # base (Stage-1) training args
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
-                num_train_epochs=1,
+                num_train_epochs=5,
                 per_device_train_batch_size=1,
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,

@@ -366,21 +366,9 @@ class TextDatasetBuilder:
                 
                 try:
                     # Extract content from JSON
-                    original_text = self._extract_paper_content(filepath)
-                    if original_text:  # Only add non-empty texts
-                        # Count references
-                        reference_count = self.count_references(original_text)
-                        
-                        # Apply abs_intro to extract only text before </introduction> if needed
-                        # text = self.abs_intro(original_text)
-                        
-                        # Append statistics if available
-                        stats_text = self.format_statistics(paper_id, stats_dict, reference_count)
-                        if stats_text:
-                            text = original_text + stats_text
-                        else:
-                            text = original_text
-                        
+                    text = self._extract_paper_content(filepath)
+                    if text:  # Only add non-empty texts
+                        # No longer appending statistics
                         texts.append(text)
                         labels.append(label)
                         processed_files += 1
@@ -443,21 +431,9 @@ class TextDatasetBuilder:
                 
                 try:
                     # Extract content from JSON
-                    original_text = self._extract_paper_content(filepath)
-                    if original_text:  # Only add non-empty texts
-                        # Count references
-                        reference_count = self.count_references(original_text)
-                        
-                        # Apply abs_intro to extract only text before </introduction> if needed
-                        # text = self.abs_intro(original_text)
-                        
-                        # Append statistics if available
-                        stats_text = self.format_statistics(paper_id, stats_dict, reference_count)
-                        if stats_text:
-                            text = original_text + stats_text
-                        else:
-                            text = original_text
-                        
+                    text = self._extract_paper_content(filepath)
+                    if text:  # Only add non-empty texts
+                        # No longer appending statistics
                         texts.append(text)
                         labels.append(label)
                         paper_ids.append(paper_id)

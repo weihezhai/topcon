@@ -35,7 +35,6 @@ python cpt_gpt.py \
     --num_proc 4 \
     --eval_holdout 0.1 \
     --gpu_ids 1 3 \
-    # --flash_attn \
     --use_dataset_builder \
     --use_cache \
     --cache_dir "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cpt/llm" \

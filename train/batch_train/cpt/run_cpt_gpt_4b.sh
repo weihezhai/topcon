@@ -49,7 +49,7 @@ python cpt_gpt.py \
     --use_dataset_builder \
     --use_cache \
     --cache_dir "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset" \
-    --model_cache_dir "/mnt/parscratch/users/acr24wz/etu/topcon/models" \
-    --flash_attn
+    --model_cache_dir "/mnt/parscratch/users/acr24wz/etu/topcon/models" 
+    # --flash_attn
 
 echo "Continued pretraining with 4B model completed!"

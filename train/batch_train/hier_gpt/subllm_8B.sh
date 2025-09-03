@@ -8,7 +8,7 @@
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --job-name=llm_8b_hier
 #SBATCH --output=./logs/llm_8b_hier.%j.out
-#SBATCH --time=0-14:00:00
+#SBATCH --time=0-16:00:00
 
 # Load necessary modules
 # module load Anaconda3/2024.02-1

@@ -53,6 +53,7 @@ def load_papers_dataset(spec: Dict[str, str|List[str]]):
     return ds
 
 def main():
+    ap = argparse.ArgumentParser(description="Continued pretraining with Qwen3")
     ap.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Qwen/Qwen3-4B or Qwen/Qwen3-8B")
     ap.add_argument("--data_path", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/llm/", help="Folder of .txt/.md OR a .txt/.md/.jsonl/.json file with a 'text' field")
     ap.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to labels JSON file")

@@ -65,15 +65,15 @@ def main():
     ap.add_argument("--max_steps", type=int, default=-1, help="Set >0 to override epochs")
     ap.add_argument("--lr", type=float, default=8e-6, help="Learning rate for CPT")
     ap.add_argument("--warmup_ratio", type=float, default=0.1)
-    ap.add_argument("--batch_size", type=int, default=1, help="Per-GPU micro-batch size")
-    ap.add_argument("--grad_accum", type=int, default=8, help="Gradient accumulation to reach effective batch")
+    ap.add_argument("--batch_size", type=int, default=3, help="Per-GPU micro-batch size")
+    ap.add_argument("--grad_accum", type=int, default=6, help="Gradient accumulation to reach effective batch")
     ap.add_argument("--save_steps", type=int, default=200, help="Save checkpoint every N steps")
     ap.add_argument("--logging_steps", type=int, default=50, help="Log metrics every N steps")
     ap.add_argument("--deepspeed", type=str, default=None, help="Path to a DeepSpeed ZeRO json (optional)")
     ap.add_argument("--bf16", action="store_true", default=True, help="Use bfloat16 (recommended on A100/H100)")
     ap.add_argument("--fp16", action="store_true", help="Use fp16 instead (if no bf16)")
     ap.add_argument("--num_proc", type=int, default=4, help="Preprocessing workers")
-    ap.add_argument("--eval_holdout", type=float, default=0.1, help="Hold out % for perplexity eval; set 0 to disable")
+    ap.add_argument("--eval_holdout", type=int, default=100, help="Number of samples to hold out for perplexity eval; set 0 to disable")
     ap.add_argument("--flash_attn", action="store_true", help="Try FlashAttention-2 if installed")
     ap.add_argument("--gpu_ids", type=int, nargs='+', default=[0, 1], help="GPU IDs to use for training (e.g., --gpu_ids 0 1)")
     ap.add_argument("--use_dataset_builder", action="store_true", default=True, help="Use dataset_builder_new instead of direct file loading")
@@ -178,7 +178,14 @@ def main():
         
         # Optional eval split for PPL
         if args.eval_holdout and args.eval_holdout > 0:
-            split = ds.train_test_split(test_size=args.eval_holdout, seed=42)
+            total_samples = len(ds)
+            if args.eval_holdout >= total_samples:
+                print(f"Warning: eval_holdout ({args.eval_holdout}) >= total samples ({total_samples}). Using 10% instead.")
+                test_size = 0.1
+            else:
+                test_size = args.eval_holdout
+                print(f"Using {args.eval_holdout} samples for evaluation holdout")
+            split = ds.train_test_split(test_size=test_size, seed=42, shuffle=True)
             ds = DatasetDict(train=split["train"], eval=split["test"])
         else:
             ds = DatasetDict(train=ds)

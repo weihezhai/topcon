@@ -75,7 +75,7 @@ def main():
     ap.add_argument("--num_proc", type=int, default=4, help="Preprocessing workers")
     ap.add_argument("--eval_holdout", type=int, default=100, help="Number of samples to hold out for perplexity eval; set 0 to disable")
     ap.add_argument("--flash_attn", action="store_true", help="Try FlashAttention-2 if installed")
-    ap.add_argument("--gpu_ids", type=int, nargs='+', default=[0, 1], help="GPU IDs to use for training (e.g., --gpu_ids 0 1)")
+    ap.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training (e.g., --gpu_ids 0 1). If not specified, uses all available GPUs")
     ap.add_argument("--use_dataset_builder", action="store_true", default=True, help="Use dataset_builder_new instead of direct file loading")
     ap.add_argument("--use_cache", action="store_true", default=True, help="Use dataset caching to speed up repeated runs")
     ap.add_argument("--cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cpt/llm", help="Directory to store cached datasets")
@@ -83,15 +83,25 @@ def main():
     ap.add_argument("--eval", action="store_true", help="Run in evaluation mode using fine-tuned model")
     args = ap.parse_args()
 
-    # Handle GPU selection (matching continued_pretraining.py)
-    if not hasattr(args, 'gpu_ids') or args.gpu_ids is None:
+    # Handle GPU selection - use all GPUs if not specified
+    if args.gpu_ids is None:
+        # Use all available GPUs
         available_gpus = torch.cuda.device_count()
+        if available_gpus == 0:
+            raise RuntimeError("No GPUs available!")
         args.gpu_ids = list(range(available_gpus))
-        print(f"Auto-detected {available_gpus} GPUs: {args.gpu_ids}")
+        print(f"No GPU IDs specified. Using all {available_gpus} available GPUs: {args.gpu_ids}")
+    else:
+        # Validate specified GPU IDs
+        available_gpus = torch.cuda.device_count()
+        for gpu_id in args.gpu_ids:
+            if gpu_id >= available_gpus:
+                raise ValueError(f"GPU ID {gpu_id} not available. Only {available_gpus} GPUs detected (0-{available_gpus-1})")
+        print(f"Using specified GPU IDs: {args.gpu_ids}")
     
+    # Set CUDA_VISIBLE_DEVICES
     gpu_ids_str = ','.join(map(str, args.gpu_ids))
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu_ids_str
-    print(f"Using GPU IDs: {args.gpu_ids}")
     print(f"CUDA_VISIBLE_DEVICES set to: {gpu_ids_str}")
 
     # 1) Load tokenizer & model with caching support

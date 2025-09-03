@@ -246,7 +246,7 @@ def main():
         overwrite_output_dir=True,
         do_train=not args.eval,  # Don't train in eval mode
         do_eval=("eval" in packed) or args.eval,  # Always eval in eval mode
-        evaluation_strategy=("steps" if "eval" in packed or args.eval else "no"),
+        eval_strategy=("steps" if "eval" in packed or args.eval else "no"),
         eval_steps=args.save_steps if "eval" in packed or args.eval else None,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,

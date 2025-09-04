@@ -24,4 +24,4 @@ source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed
-python cpt_abs_intro_two_a100_llm.py --detailed_eval
+python cpt_train_shef_abs_intro_two_a100_llm.py --detailed_eval

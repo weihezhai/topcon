@@ -154,6 +154,9 @@ def main():
         use_finetuned=use_finetuned,
         finetuned_path=finetuned_path if use_finetuned else None
     )
+
+    if hasattr(model, "config"):
+        model.config.use_cache = False  # Disable caching for training
     
     print(f"{'Evaluation' if args.eval else 'Training'} mode using model from {model_path}")
 

@@ -31,5 +31,6 @@ source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 #   --output_dir /path/to/out_hier_stage2 \
 #   --gpu_ids 0 1 2
 
+# tensorboard --port=6006 --bind_all --logdir=./logs/
 
 python cpt_gpt.py --batch_size 3 --grad_accum 4

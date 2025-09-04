@@ -58,14 +58,20 @@ def main():
     ap.add_argument("--data_path", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/llm/", help="Folder of .txt/.md OR a .txt/.md/.jsonl/.json file with a 'text' field")
     ap.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to labels JSON file")
     ap.add_argument("--statistics_file", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json", help="Path to statistics JSON file (optional)")
+    
+    ap.add_argument("--cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cpt/llm", help="Directory to store cached datasets")
+    ap.add_argument("--model_cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B", help="Directory to store cached models")
     ap.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/cpt_model/llm")
+    
+    
+    ap.add_argument("--batch_size", type=int, default=2, help="Per-GPU micro-batch size")
+    ap.add_argument("--epochs", type=int, default=3)
     ap.add_argument("--block_size", type=int, default=2048, help="Pack tokens to this length; pick what fits memory (e.g., 2048/4096/8192)")
     ap.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length")
-    ap.add_argument("--epochs", type=int, default=3)
+    
     ap.add_argument("--max_steps", type=int, default=-1, help="Set >0 to override epochs")
     ap.add_argument("--lr", type=float, default=8e-6, help="Learning rate for CPT")
     ap.add_argument("--warmup_ratio", type=float, default=0.1)
-    ap.add_argument("--batch_size", type=int, default=1, help="Per-GPU micro-batch size")
     ap.add_argument("--grad_accum", type=int, default=8, help="Gradient accumulation to reach effective batch")
     ap.add_argument("--save_steps", type=int, default=200, help="Save checkpoint every N steps")
     ap.add_argument("--logging_steps", type=int, default=50, help="Log metrics every N steps")
@@ -75,12 +81,12 @@ def main():
     ap.add_argument("--num_proc", type=int, default=4, help="Preprocessing workers")
     ap.add_argument("--eval_holdout", type=int, default=100, help="Number of samples to hold out for perplexity eval; set 0 to disable")
     ap.add_argument("--flash_attn", action="store_true", help="Try FlashAttention-2 if installed")
-    ap.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training (e.g., --gpu_ids 0 1). If not specified, uses all available GPUs")
     ap.add_argument("--use_dataset_builder", action="store_true", default=True, help="Use dataset_builder_new instead of direct file loading")
     ap.add_argument("--use_cache", action="store_true", default=True, help="Use dataset caching to speed up repeated runs")
-    ap.add_argument("--cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cpt/llm", help="Directory to store cached datasets")
-    ap.add_argument("--model_cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B", help="Directory to store cached models")
     ap.add_argument("--eval", action="store_true", help="Run in evaluation mode using fine-tuned model")
+    
+    ap.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training (e.g., --gpu_ids 0 1). If not specified, uses all available GPUs")
+    
     args = ap.parse_args()
 
     # Handle GPU selection - use all GPUs if not specified

@@ -94,9 +94,9 @@ class TextDatasetBuilder:
             
         Returns:
             Concatenated text from:
-            1. Title (first text_level=1)
-            2. Abstract section
-            3. Introduction section only
+            1. Title (first text_level=1) wrapped in <title> tags
+            2. Abstract section wrapped in <abstract> tags
+            3. Introduction section wrapped in <introduction> tags
         """
         # Load JSON data from file
         try:
@@ -133,21 +133,27 @@ class TextDatasetBuilder:
         # Extract title
         if title_idx is not None:
             title_text = paper_data[title_idx].get("text", "").strip()
-            content_parts.append(title_text)
+            content_parts.append(f"<title>{title_text}</title>")
         
         # Extract abstract (from abstract header to introduction)
         if abstract_idx is not None and intro_idx is not None:
+            abstract_parts = []
             for i in range(abstract_idx, intro_idx):
                 entry = paper_data[i]
                 if entry.get("type") == "text":
                     text = entry.get("text", "").strip()
-                    if text:
-                        content_parts.append(text)
+                    # Skip the "ABSTRACT" header itself
+                    if text and not "ABSTRACT" in text.upper():
+                        abstract_parts.append(text)
                 elif entry.get("type") == "equation":
                     # Include equations in abstract if any
                     eq_text = entry.get("text", "").strip()
                     if eq_text:
-                        content_parts.append(eq_text)
+                        abstract_parts.append(eq_text)
+            
+            if abstract_parts:
+                abstract_text = " ".join(abstract_parts)
+                content_parts.append(f"<abstract>{abstract_text}</abstract>")
         
         # Extract introduction (from intro header to next section)
         if intro_idx is not None:
@@ -163,16 +169,22 @@ class TextDatasetBuilder:
                 next_section_idx = len(paper_data)
             
             # Extract introduction content
+            intro_parts = []
             for i in range(intro_idx, next_section_idx):
                 entry = paper_data[i]
                 if entry.get("type") == "text":
                     text = entry.get("text", "").strip()
-                    if text:
-                        content_parts.append(text)
+                    # Skip the "INTRODUCTION" header itself
+                    if text and not "INTRODUCTION" in text.upper():
+                        intro_parts.append(text)
                 elif entry.get("type") == "equation":
                     eq_text = entry.get("text", "").strip()
                     if eq_text:
-                        content_parts.append(eq_text)
+                        intro_parts.append(eq_text)
+            
+            if intro_parts:
+                intro_text = " ".join(intro_parts)
+                content_parts.append(f"<introduction>{intro_text}</introduction>")
         
         # Join all parts and remove GitHub links
         full_text = " ".join(content_parts)
@@ -180,6 +192,42 @@ class TextDatasetBuilder:
         
         return full_text
     
+    def _extract_full_paper_content(self, json_file_path: str) -> str:
+        """
+        Extract full paper content from a JSON file for reference counting.
+        
+        Args:
+            json_file_path: Path to the JSON file containing paper data
+            
+        Returns:
+            Concatenated text from all text and equation entries
+        """
+        # Load JSON data from file
+        try:
+            with open(json_file_path, 'r', encoding='utf-8') as f:
+                paper_data = json.load(f)
+        except Exception as e:
+            print(f"Error loading JSON from {json_file_path}: {e}")
+            return ""
+        
+        content_parts = []
+        
+        # Extract all text and equation content
+        for entry in paper_data:
+            if entry.get("type") == "text":
+                text = entry.get("text", "").strip()
+                if text:
+                    content_parts.append(text)
+            elif entry.get("type") == "equation":
+                eq_text = entry.get("text", "").strip()
+                if eq_text:
+                    content_parts.append(eq_text)
+        
+        # Join all parts
+        full_text = " ".join(content_parts)
+        
+        return full_text
+
     def debug_label_matching(self):
         """Debug function to check label matching issues"""
         print("\n=== DEBUGGING LABEL MATCHING ===")
@@ -320,11 +368,14 @@ class TextDatasetBuilder:
                 label = self.get_label_from_status(status)
                 
                 try:
-                    # Extract content from JSON
+                    # Extract title+abstract+intro content for the main text
                     original_text = self._extract_paper_content(filepath)
                     if original_text:  # Only add non-empty texts
-                        # Count references
-                        reference_count = self.count_references(original_text)
+                        # Extract full paper content for reference counting
+                        full_paper_text = self._extract_full_paper_content(filepath)
+                        
+                        # Count references on full paper content
+                        reference_count = self.count_references(full_paper_text)
                         
                         # Apply abs_intro to extract only text before </introduction> if needed
                         # text = self.abs_intro(original_text)
@@ -397,11 +448,14 @@ class TextDatasetBuilder:
                 label = self.get_label_from_status(status)
                 
                 try:
-                    # Extract content from JSON
+                    # Extract title+abstract+intro content for the main text
                     original_text = self._extract_paper_content(filepath)
                     if original_text:  # Only add non-empty texts
-                        # Count references
-                        reference_count = self.count_references(original_text)
+                        # Extract full paper content for reference counting
+                        full_paper_text = self._extract_full_paper_content(filepath)
+                        
+                        # Count references on full paper content
+                        reference_count = self.count_references(full_paper_text)
                         
                         # Apply abs_intro to extract only text before </introduction> if needed
                         # text = self.abs_intro(original_text)

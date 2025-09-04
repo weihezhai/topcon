@@ -32,4 +32,4 @@ source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 #   --gpu_ids 0 1 2
 
 
-python cpt_gpt.py --batch_size 1 --grad_accum 8
+python cpt_gpt.py --batch_size 2 --grad_accum 6

@@ -1,4 +1,4 @@
-import argparse, os, math, glob, json, random
+import argparse, os, math, glob, json, random, types
 from dataclasses import dataclass
 from typing import Optional, Dict, List
 import datasets
@@ -51,7 +51,17 @@ def load_papers_dataset(spec: Dict[str, str|List[str]]):
     if text_col != "text":
         ds = ds.rename_column(text_col, "text")
     return ds
-
+def _safe_compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
+    outputs = model(**inputs)
+    loss = outputs["loss"] if isinstance(outputs, dict) else outputs.loss
+    if isinstance(num_items_in_batch, torch.Tensor):
+        # either make it a CPU scalar...
+        num_items_in_batch = int(num_items_in_batch.detach().cpu().item())
+        # ...or, alternatively:
+        # num_items_in_batch = num_items_in_batch.to(loss.device)
+    if num_items_in_batch is not None:
+        loss = loss / num_items_in_batch
+    return (loss, outputs) if return_outputs else loss
 def main():
     ap = argparse.ArgumentParser(description="Continued pretraining with Qwen3")
     ap.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B", help="Qwen/Qwen3-4B or Qwen/Qwen3-8B")
@@ -310,6 +320,8 @@ def main():
         tokenizer=tokenizer,
         data_collator=collator,
     )
+    # safe compute_loss to handle DDP
+    trainer.compute_loss = types.MethodType(_safe_compute_loss, trainer)
 
     # 7) Train or Evaluate
     if args.eval:

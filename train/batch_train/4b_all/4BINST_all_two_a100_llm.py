@@ -20,28 +20,28 @@ import torch.nn as nn
 import argparse
 
 # Import the dataset builder
-from dataset_builder_abs_intro_new import TextDatasetBuilder
+from dataset_builder_new import TextDatasetBuilder
 from datasets import load_from_disk
 
-class PatchedTrainer(Trainer):
-    # NOTE: keep the signature so HF can pass return_outputs and other kwargs safely
-    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        # 1) Remove from the batch dict (some HF versions inject it here)
-        if isinstance(inputs, dict) and "num_items_in_batch" in inputs:
-            inputs = dict(inputs)  # avoid mutating upstream
-            inputs.pop("num_items_in_batch", None)
+# class PatchedTrainer(Trainer):
+#     # NOTE: keep the signature so HF can pass return_outputs and other kwargs safely
+#     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+#         # 1) Remove from the batch dict (some HF versions inject it here)
+#         if isinstance(inputs, dict) and "num_items_in_batch" in inputs:
+#             inputs = dict(inputs)  # avoid mutating upstream
+#             inputs.pop("num_items_in_batch", None)
 
-        # 2) Remove from kwargs (HF training_step passes it here explicitly)
-        kwargs.pop("num_items_in_batch", None)
+#         # 2) Remove from kwargs (HF training_step passes it here explicitly)
+#         kwargs.pop("num_items_in_batch", None)
 
-        # 3) Call parent WITHOUT the kwarg so it cannot leak back in
-        #    (explicitly set num_items_in_batch=None to be crystal clear)
-        return super().compute_loss(
-            model,
-            inputs,
-            return_outputs=return_outputs,
-            num_items_in_batch=None,  # <-- important
-        )
+#         # 3) Call parent WITHOUT the kwarg so it cannot leak back in
+#         #    (explicitly set num_items_in_batch=None to be crystal clear)
+#         return super().compute_loss(
+#             model,
+#             inputs,
+#             return_outputs=return_outputs,
+#             num_items_in_batch=None,  # <-- important
+#         )
 
 class TeeOutput:
     """Class to duplicate stdout to both console and log file"""
@@ -507,13 +507,13 @@ def main():
         parser = argparse.ArgumentParser(description="Fine-tune a language model with multi-GPU support")
         parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
-        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B", help="Pre-trained model name or path")
+        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B-Instruct-2507", help="Pre-trained model name or path")
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/llm/", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json', help="Path to the statistical.json file containing paper statistics")
         # parser.add_argument("--titles_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/iclr_2025_summary_20250609_064704.csv', help="Path to the CSV file containing paper titles")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/finetuned/llm/checkpoint-1200", help="Directory to save/load the fine-tuned model")
-        parser.add_argument("--max_length", type=int, default=3000, help="Maximum sequence length for training")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B_instruct/finetuned/llm/", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=[0, 1], help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         args = parser.parse_args()
                 # Auto-detect available GPUs if none specified
@@ -538,7 +538,7 @@ def main():
         MAX_LENGTH = args.max_length
         
         # Model directories
-        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/qwen_qwen3-8b"  # Where to cache the downloaded model
+        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B_instruct/"  # Where to cache the downloaded model
 
         # If in evaluation mode, use the fine-tuned model directory
         if args.eval:
@@ -593,7 +593,7 @@ def main():
         print("Loading dataset...")
         
         # Define processed dataset cache path - include stats/titles in cache name if provided
-        cache_suffix = "llm_mineru_abs_intro"
+        cache_suffix = "llm_mineru_all"
         if STATISTICS_FILE:
             cache_suffix += "_with_stats"
         # if TITLES_FILE:
@@ -726,6 +726,7 @@ def main():
                 device_map="auto",  # Automatically distribute across available GPUs
                 max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
                 offload_folder="./offload",  # Offload to disk if needed
+                attn_implementation="sdpa"
             )
             print("Loaded fine-tuned model for evaluation")
         else:
@@ -736,6 +737,7 @@ def main():
                 device_map="auto",  # Automatically distribute across available GPUs
                 max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
                 offload_folder="./offload",  # Offload to disk if needed
+                attn_implementation="sdpa"
             )
 
         print(model)
@@ -793,7 +795,7 @@ def main():
             )
             
             # Initialize trainer
-            trainer = PatchedTrainer(
+            trainer = Trainer(
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
@@ -883,7 +885,7 @@ def main():
             dataloader_persistent_workers=False,
         )
         
-        trainer = PatchedTrainer(
+        trainer = Trainer(
             model=model,
             args=training_args_eval,
             tokenizer=tokenizer,

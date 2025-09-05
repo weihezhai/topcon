@@ -761,9 +761,9 @@ def main():
                 per_device_train_batch_size=1,  # Keep small for large model
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
-                learning_rate=1e-5,
-                warmup_steps=20,
-                weight_decay=0.001,
+                learning_rate=2e-5,
+                warmup_steps=150, # 10 percent of total steps
+                weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,
                 eval_strategy="steps",

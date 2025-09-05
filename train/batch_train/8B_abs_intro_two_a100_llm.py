@@ -788,6 +788,8 @@ def main():
                 # Multi-GPU specific settings
                 ddp_find_unused_parameters=False,  # For efficiency in DDP
                 dataloader_persistent_workers=False,  # Disable persistent workers
+                gradient_checkpointing=True,  # Enable gradient checkpointing to save memory
+                attn_implementation="flash_attention_2" # Use efficient attention implementation
             )
             
             # Initialize trainer

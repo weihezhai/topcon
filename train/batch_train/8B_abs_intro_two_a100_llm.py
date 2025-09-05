@@ -881,7 +881,7 @@ def main():
             dataloader_persistent_workers=False,
         )
         
-        trainer = Trainer(
+        trainer = PatchedTrainer(
             model=model,
             args=training_args_eval,
             tokenizer=tokenizer,

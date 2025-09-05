@@ -726,6 +726,7 @@ def main():
                 device_map="auto",  # Automatically distribute across available GPUs
                 max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
                 offload_folder="./offload",  # Offload to disk if needed
+                attn_implementation="flash_attention_2"  # Use efficient attention implementation
             )
             print("Loaded fine-tuned model for evaluation")
         else:
@@ -736,6 +737,7 @@ def main():
                 device_map="auto",  # Automatically distribute across available GPUs
                 max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
                 offload_folder="./offload",  # Offload to disk if needed
+                attn_implementation="flash_attention_2"  # Use efficient attention implementation
             )
 
         print(model)
@@ -789,7 +791,6 @@ def main():
                 ddp_find_unused_parameters=False,  # For efficiency in DDP
                 dataloader_persistent_workers=False,  # Disable persistent workers
                 gradient_checkpointing=True,  # Enable gradient checkpointing to save memory
-                attn_implementation="flash_attention_2" # Use efficient attention implementation
             )
             
             # Initialize trainer
@@ -860,6 +861,7 @@ def main():
                 device_map="auto",
                 max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
                 offload_folder="./offload",
+                attn_implementation="flash_attention_2"  # Use efficient attention implementation
             )
             
             # Clear cache again after loading

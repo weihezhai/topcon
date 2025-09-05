@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --partition=gpu
+#SBATCH --partition=gpu-h100
 #SBATCH --qos=gpu
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:1
 #SBATCH --mem=100G
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk

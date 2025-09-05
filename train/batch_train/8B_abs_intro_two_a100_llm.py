@@ -23,6 +23,12 @@ import argparse
 from dataset_builder_abs_intro_new import TextDatasetBuilder
 from datasets import load_from_disk
 
+class PatchedTrainer(Trainer):
+    def compute_loss(self, model, inputs, **kwargs):
+        # Avoid device mismatch in ForCausalLMLoss
+        inputs.pop("num_items_in_batch", None)
+        return super().compute_loss(model, inputs, **kwargs)
+
 class TeeOutput:
     """Class to duplicate stdout to both console and log file"""
     def __init__(self, log_file):
@@ -771,7 +777,7 @@ def main():
             )
             
             # Initialize trainer
-            trainer = Trainer(
+            trainer = PatchedTrainer(
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,

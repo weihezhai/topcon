@@ -1,7 +1,7 @@
 import json
 import glob
 import os
-from filter_paper import filter_papers_by_keywords
+
 
 def analyze_candidate_matches(papers_data, candidates):
     """
@@ -61,6 +61,48 @@ def analyze_candidate_matches(papers_data, candidates):
             match_stats[matched_candidate]["total_matches"] += 1
     
     return match_stats
+
+def filter_papers_by_keywords(matched_ids, paper_labels, keywords):
+    """
+    Filter papers whose titles contain at least one of the keywords.
+    Returns a dictionary mapping each keyword to list of paper IDs.
+    """
+    keyword_to_papers = defaultdict(list)
+    matched_papers = set()  # Track papers that matched at least one keyword
+    
+    # Process each matched paper
+    for paper_id in matched_ids:
+        if paper_id not in paper_labels:
+            continue
+        
+        title = paper_labels[paper_id]['title']
+        title_lower = title.lower()
+        
+        # Check each keyword
+        for keyword in keywords:
+            keyword_lower = keyword.lower()
+            # Use word boundary to match whole words
+            if re.search(r'\b' + re.escape(keyword_lower) + r'\b', title_lower):
+                keyword_to_papers[keyword].append(paper_id)
+                matched_papers.add(paper_id)
+    
+    # Convert defaultdict to regular dict and sort lists
+    result = {}
+    for keyword in keywords:
+        if keyword in keyword_to_papers:
+            result[keyword] = sorted(keyword_to_papers[keyword])
+        else:
+            result[keyword] = []
+    
+    # Add 'other' category for papers that don't match any keyword
+    other_papers = []
+    for paper_id in matched_ids:
+        if paper_id in paper_labels and paper_id not in matched_papers:
+            other_papers.append(paper_id)
+    
+    result['other'] = sorted(other_papers)
+    
+    return result
 
 def batch_filter_papers(input_dir, output_file, candidates):
     """
@@ -205,13 +247,13 @@ if __name__ == "__main__":
     # Configuration
     # llm_candidates = ["LLM", "language model", "RAG", "hallucination", "jailbreaking", "agents", "agent", "agentic", 'alignment']
     # cv_candidates = ["computer vision", "CV", "vision", "image", "video", '3D', 'diffusion', 'gaussian splatting']
-    candidates = ['probabilistic methods (Bayesian methods, variational inference, sampling, UQ, etc.)', 'optimization', 'learning theory']
     # rl_candidates = ['reinforcement learning', 'game theory', 'applications to robotics, autonomy, planning', 'robotics']
+    th_candidates = ['probabilistic methods (Bayesian methods, variational inference, sampling, UQ, etc.)', 'optimization', 'learning theory']
     input_directory = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/"
     output_file = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_theory_papers/batch_filtered_results.json"
     
     # Run batch processing
-    matched_ids = batch_filter_papers(input_directory, output_file, candidates)
+    matched_ids = batch_filter_papers(input_directory, output_file, th_candidates)
     
     # Also save just the IDs list for convenience
     ids_only_file = "/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/filtered_theory_papers/matched_paper_ids.json"

@@ -1,14 +1,14 @@
 #!/bin/bash
 #SBATCH --partition=gpu
 #SBATCH --qos=gpu
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:1
 #SBATCH --mem=100G
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --job-name=llm_8b_main_body
-#SBATCH --output=./logs/llm_8b_main_body.%j.out
-#SBATCH --time=0-15:00:00
+#SBATCH --job-name=eval_llm_8b_main_body
+#SBATCH --output=./logs/eval_llm_8b_main_body.%j.out
+#SBATCH --time=0-2:00:00
 
 # Load necessary modules
 # module load Anaconda3/2024.02-1

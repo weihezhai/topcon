@@ -514,7 +514,7 @@ def main():
         # parser.add_argument("--titles_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/iclr_2025_summary_20250609_064704.csv', help="Path to the CSV file containing paper titles")
         parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B_instruct/finetuned/llm/checkpoint-1400", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=3000, help="Maximum sequence length for training")
-        parser.add_argument("--gpu_ids", type=int, nargs='+', default=[0, 1], help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
+        parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         args = parser.parse_args()
                 # Auto-detect available GPUs if none specified
         if not hasattr(args, 'gpu_ids') or args.gpu_ids is None:

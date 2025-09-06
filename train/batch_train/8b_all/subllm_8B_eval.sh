@@ -6,9 +6,9 @@
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --job-name=llm_4b
-#SBATCH --output=./logs/llm_4b.%j.out
-#SBATCH --time=0-6:00:00
+#SBATCH --job-name=llm_8b_main_body
+#SBATCH --output=./logs/llm_8b_main_body.%j.out
+#SBATCH --time=0-15:00:00
 
 # Load necessary modules
 # module load Anaconda3/2024.02-1
@@ -24,4 +24,7 @@ source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed
-python train_shef_abs_intro_two_a100_llm.py --detailed_eval
+python 8B_all_two_a100_llm.py \
+    --eval \
+    --detailed_eval \
+    --output_dir /mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/finetuned/llm/checkpoint-800

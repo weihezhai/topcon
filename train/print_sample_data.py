@@ -60,7 +60,7 @@ def print_random_samples(dataset_path, num_samples=20, output_file=None):
 
 if __name__ == "__main__":
     # Update this path to your cached dataset location
-    dataset_path = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/llm_mineru_abs_intro_with_stats"
+    dataset_path = "/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/llm_mineru_all_with_stats"
     
     # Option 1: Print to terminal (might be cut off by terminal buffer)
     print_random_samples(dataset_path, num_samples=20)

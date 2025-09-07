@@ -368,8 +368,14 @@ class TextDatasetBuilder:
                     # Extract content from JSON
                     text = self._extract_paper_content(filepath)
                     if text:  # Only add non-empty texts
-                        # No longer appending statistics
-                        texts.append(text)
+                        # Count references in the text
+                        reference_count = self.count_references(text)
+                        
+                        # Add statistics at the end of the text
+                        stats_str = self.format_statistics(paper_id, stats_dict, reference_count)
+                        text_with_stats = text + stats_str
+                        
+                        texts.append(text_with_stats)
                         labels.append(label)
                         processed_files += 1
                 except Exception as e:
@@ -433,8 +439,14 @@ class TextDatasetBuilder:
                     # Extract content from JSON
                     text = self._extract_paper_content(filepath)
                     if text:  # Only add non-empty texts
-                        # No longer appending statistics
-                        texts.append(text)
+                        # Count references in the text
+                        reference_count = self.count_references(text)
+                        
+                        # Add statistics at the end of the text
+                        stats_str = self.format_statistics(paper_id, stats_dict, reference_count)
+                        text_with_stats = text + stats_str
+                        
+                        texts.append(text_with_stats)
                         labels.append(label)
                         paper_ids.append(paper_id)
                 except Exception as e:

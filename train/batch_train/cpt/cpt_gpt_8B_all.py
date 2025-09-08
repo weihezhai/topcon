@@ -1,4 +1,4 @@
-import argparse, os, math, glob, json, random
+import argparse, os, math, glob, json, random, types
 from dataclasses import dataclass
 from typing import Optional, Dict, List
 import datasets
@@ -51,22 +51,38 @@ def load_papers_dataset(spec: Dict[str, str|List[str]]):
     if text_col != "text":
         ds = ds.rename_column(text_col, "text")
     return ds
-
+def _safe_compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
+    outputs = model(**inputs)
+    loss = outputs["loss"] if isinstance(outputs, dict) else outputs.loss
+    if isinstance(num_items_in_batch, torch.Tensor):
+        # either make it a CPU scalar...
+        num_items_in_batch = int(num_items_in_batch.detach().cpu().item())
+        # ...or, alternatively:
+        # num_items_in_batch = num_items_in_batch.to(loss.device)
+    if num_items_in_batch is not None:
+        loss = loss / num_items_in_batch
+    return (loss, outputs) if return_outputs else loss
 def main():
     ap = argparse.ArgumentParser(description="Continued pretraining with Qwen3")
-    ap.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Qwen/Qwen3-4B or Qwen/Qwen3-8B")
-    ap.add_argument("--data_path", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/llm/", help="Folder of .txt/.md OR a .txt/.md/.jsonl/.json file with a 'text' field")
+    ap.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B", help="Qwen/Qwen3-4B or Qwen/Qwen3-8B")
+    ap.add_argument("--data_path", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/all/", help="Folder of .txt/.md OR a .txt/.md/.jsonl/.json file with a 'text' field")
     ap.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to labels JSON file")
     ap.add_argument("--statistics_file", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json", help="Path to statistics JSON file (optional)")
-    ap.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/cpt_model/llm")
+    
+    ap.add_argument("--cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cpt/all/", help="Directory to store cached datasets")
+    ap.add_argument("--model_cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B", help="Directory to store cached models")
+    ap.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/cpt_model/all")
+    
+    
+    ap.add_argument("--batch_size", type=int, default=2, help="Per-GPU micro-batch size")
+    ap.add_argument("--epochs", type=int, default=3)
     ap.add_argument("--block_size", type=int, default=2048, help="Pack tokens to this length; pick what fits memory (e.g., 2048/4096/8192)")
     ap.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length")
-    ap.add_argument("--epochs", type=int, default=3)
+    
     ap.add_argument("--max_steps", type=int, default=-1, help="Set >0 to override epochs")
-    ap.add_argument("--lr", type=float, default=8e-6, help="Learning rate for CPT")
+    ap.add_argument("--lr", type=float, default=1e-5, help="Learning rate for CPT")
     ap.add_argument("--warmup_ratio", type=float, default=0.1)
-    ap.add_argument("--batch_size", type=int, default=3, help="Per-GPU micro-batch size")
-    ap.add_argument("--grad_accum", type=int, default=6, help="Gradient accumulation to reach effective batch")
+    ap.add_argument("--grad_accum", type=int, default=8, help="Gradient accumulation to reach effective batch")
     ap.add_argument("--save_steps", type=int, default=200, help="Save checkpoint every N steps")
     ap.add_argument("--logging_steps", type=int, default=50, help="Log metrics every N steps")
     ap.add_argument("--deepspeed", type=str, default=None, help="Path to a DeepSpeed ZeRO json (optional)")
@@ -75,12 +91,12 @@ def main():
     ap.add_argument("--num_proc", type=int, default=4, help="Preprocessing workers")
     ap.add_argument("--eval_holdout", type=int, default=100, help="Number of samples to hold out for perplexity eval; set 0 to disable")
     ap.add_argument("--flash_attn", action="store_true", help="Try FlashAttention-2 if installed")
-    ap.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training (e.g., --gpu_ids 0 1). If not specified, uses all available GPUs")
     ap.add_argument("--use_dataset_builder", action="store_true", default=True, help="Use dataset_builder_new instead of direct file loading")
     ap.add_argument("--use_cache", action="store_true", default=True, help="Use dataset caching to speed up repeated runs")
-    ap.add_argument("--cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cpt/llm", help="Directory to store cached datasets")
-    ap.add_argument("--model_cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B", help="Directory to store cached models")
     ap.add_argument("--eval", action="store_true", help="Run in evaluation mode using fine-tuned model")
+    
+    ap.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training (e.g., --gpu_ids 0 1). If not specified, uses all available GPUs")
+    
     args = ap.parse_args()
 
     # Handle GPU selection - use all GPUs if not specified
@@ -138,6 +154,9 @@ def main():
         use_finetuned=use_finetuned,
         finetuned_path=finetuned_path if use_finetuned else None
     )
+
+    if hasattr(model, "config"):
+        model.config.use_cache = False  # Disable caching for training
     
     print(f"{'Evaluation' if args.eval else 'Training'} mode using model from {model_path}")
 
@@ -304,6 +323,8 @@ def main():
         tokenizer=tokenizer,
         data_collator=collator,
     )
+    # safe compute_loss to handle DDP
+    trainer.compute_loss = types.MethodType(_safe_compute_loss, trainer)
 
     # 7) Train or Evaluate
     if args.eval:

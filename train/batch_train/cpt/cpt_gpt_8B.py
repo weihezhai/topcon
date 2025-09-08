@@ -140,7 +140,7 @@ def main():
     if tokenizer.pad_token is None and tokenizer.eos_token is not None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    attn_impl = "flash_attention_2" if args.flash_attn else "eager"
+    attn_impl = "sdpa" if args.flash_attn else "eager"
     
     # Load model with caching support
     model, model_path = model_cache_handler.load_or_download_model(

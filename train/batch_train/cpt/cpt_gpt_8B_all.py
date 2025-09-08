@@ -52,20 +52,20 @@ def load_papers_dataset(spec: Dict[str, str|List[str]]):
         ds = ds.rename_column(text_col, "text")
     return ds
 def _safe_compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
-    outputs = model(**inputs)
-    loss = outputs["loss"] if isinstance(outputs, dict) else outputs.loss
+    # Convert to a plain Python number so HF loss can safely divide without device issues
     if isinstance(num_items_in_batch, torch.Tensor):
-        # either make it a CPU scalar...
         num_items_in_batch = int(num_items_in_batch.detach().cpu().item())
-        # ...or, alternatively:
-        # num_items_in_batch = num_items_in_batch.to(loss.device)
-    if num_items_in_batch is not None:
-        loss = loss / num_items_in_batch
+    elif num_items_in_batch is not None:
+        num_items_in_batch = int(num_items_in_batch)
+
+    # Important: pass num_items_in_batch into the model; DO NOT divide here
+    outputs = model(**inputs, num_items_in_batch=num_items_in_batch)
+    loss = outputs["loss"] if isinstance(outputs, dict) else outputs.loss
     return (loss, outputs) if return_outputs else loss
 def main():
     ap = argparse.ArgumentParser(description="Continued pretraining with Qwen3")
     ap.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B", help="Qwen/Qwen3-4B or Qwen/Qwen3-8B")
-    ap.add_argument("--data_path", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/all/", help="Folder of .txt/.md OR a .txt/.md/.jsonl/.json file with a 'text' field")
+    ap.add_argument("--data_path", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/all/iclr_2025_data/iclr_2025_mineru_processed", help="Folder of .txt/.md OR a .txt/.md/.jsonl/.json file with a 'text' field")
     ap.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to labels JSON file")
     ap.add_argument("--statistics_file", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json", help="Path to statistics JSON file (optional)")
     

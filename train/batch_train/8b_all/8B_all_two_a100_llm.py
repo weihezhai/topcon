@@ -23,25 +23,35 @@ import argparse
 from dataset_builder_new import TextDatasetBuilder
 from datasets import load_from_disk
 
+# class PatchedTrainer(Trainer):
+#     # NOTE: keep the signature so HF can pass return_outputs and other kwargs safely
+#     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+#         # 1) Remove from the batch dict (some HF versions inject it here)
+#         if isinstance(inputs, dict) and "num_items_in_batch" in inputs:
+#             inputs = dict(inputs)  # avoid mutating upstream
+#             inputs.pop("num_items_in_batch", None)
+
+#         # 2) Remove from kwargs (HF training_step passes it here explicitly)
+#         kwargs.pop("num_items_in_batch", None)
+
+#         # 3) Call parent WITHOUT the kwarg so it cannot leak back in
+#         #    (explicitly set num_items_in_batch=None to be crystal clear)
+#         return super().compute_loss(
+#             model,
+#             inputs,
+#             return_outputs=return_outputs,
+#             num_items_in_batch=None,  # <-- important
+#         )
 class PatchedTrainer(Trainer):
-    # NOTE: keep the signature so HF can pass return_outputs and other kwargs safely
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        # 1) Remove from the batch dict (some HF versions inject it here)
         if isinstance(inputs, dict) and "num_items_in_batch" in inputs:
-            inputs = dict(inputs)  # avoid mutating upstream
+            inputs = dict(inputs)
             inputs.pop("num_items_in_batch", None)
 
-        # 2) Remove from kwargs (HF training_step passes it here explicitly)
-        kwargs.pop("num_items_in_batch", None)
-
-        # 3) Call parent WITHOUT the kwarg so it cannot leak back in
-        #    (explicitly set num_items_in_batch=None to be crystal clear)
-        return super().compute_loss(
-            model,
-            inputs,
-            return_outputs=return_outputs,
-            num_items_in_batch=None,  # <-- important
-        )
+        # Do NOT call super(); call the model directly without the kwarg.
+        outputs = model(**inputs)
+        loss = outputs["loss"] if isinstance(outputs, dict) else outputs.loss
+        return (loss, outputs) if return_outputs else loss
 
 class TeeOutput:
     """Class to duplicate stdout to both console and log file"""

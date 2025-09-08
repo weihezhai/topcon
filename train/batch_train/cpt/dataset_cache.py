@@ -14,14 +14,10 @@ class DatasetCache:
                       labels_file: str,
                       statistics_file: Optional[str] = None,
                       max_length: int = 10000) -> str:
-        """Generate a unique cache path based on dataset configuration."""
-        # Create a unique identifier based on dataset parameters
-        cache_key = f"{data_path}_{max_length}"
-        cache_suffix = hashlib.md5(cache_key.encode()).hexdigest()[:8]
-        
-        cache_path = os.path.join(self.cache_dir, cache_suffix)
-        os.makedirs(cache_path, exist_ok=True)
-        return cache_path
+        """Generate cache path directly in the cache directory without suffix."""
+        # Use the cache directory directly without any subdirectory
+        os.makedirs(self.cache_dir, exist_ok=True)
+        return self.cache_dir
     
     def load_cached_dataset(self, cache_path: str) -> Optional[Dataset]:
         """Load dataset from cache if it exists."""

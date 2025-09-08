@@ -69,7 +69,7 @@ def main():
     ap.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to labels JSON file")
     ap.add_argument("--statistics_file", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json", help="Path to statistics JSON file (optional)")
     
-    ap.add_argument("--cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cpt/llm/264020c9", help="Directory to store cached datasets")
+    ap.add_argument("--cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cpt/llm/", help="Directory to store cached datasets")
     ap.add_argument("--model_cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B", help="Directory to store cached models")
     ap.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/cpt_model/llm")
     

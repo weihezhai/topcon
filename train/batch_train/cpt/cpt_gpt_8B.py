@@ -69,7 +69,7 @@ def main():
     ap.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to labels JSON file")
     ap.add_argument("--statistics_file", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json", help="Path to statistics JSON file (optional)")
     
-    ap.add_argument("--cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cpt/llm", help="Directory to store cached datasets")
+    ap.add_argument("--cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cpt/llm/264020c9", help="Directory to store cached datasets")
     ap.add_argument("--model_cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B", help="Directory to store cached models")
     ap.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/cpt_model/llm")
     
@@ -80,7 +80,7 @@ def main():
     ap.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length")
     
     ap.add_argument("--max_steps", type=int, default=-1, help="Set >0 to override epochs")
-    ap.add_argument("--lr", type=float, default=8e-6, help="Learning rate for CPT")
+    ap.add_argument("--lr", type=float, default=1e-5, help="Learning rate for CPT")
     ap.add_argument("--warmup_ratio", type=float, default=0.1)
     ap.add_argument("--grad_accum", type=int, default=8, help="Gradient accumulation to reach effective batch")
     ap.add_argument("--save_steps", type=int, default=200, help="Save checkpoint every N steps")

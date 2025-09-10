@@ -681,7 +681,6 @@ def main():
         print(f"Total samples: {stats['total_samples']}")
         print(f"Label distribution: {stats['label_distribution']}")
         print(f"Average text length: {stats['text_stats']['avg_length_words']:.2f} words")
-        print(f"Sample text: {stats['text_stats']['sample_text']}")
         
         # Split dataset using sklearn for proper stratification
         print("Splitting dataset...")

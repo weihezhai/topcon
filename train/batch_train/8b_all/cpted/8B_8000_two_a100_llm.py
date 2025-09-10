@@ -746,7 +746,7 @@ def main():
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
                 learning_rate=2e-5,
-                warmup_steps=120, # 10 percent of total steps
+                warmup_steps=200, # 10 percent of total steps
                 weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,

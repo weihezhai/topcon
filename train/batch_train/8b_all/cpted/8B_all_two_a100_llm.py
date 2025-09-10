@@ -815,7 +815,7 @@ def main():
             )
             
             # Initialize trainer
-            trainer = PatchedTrainer(
+            trainer = Trainer(
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,

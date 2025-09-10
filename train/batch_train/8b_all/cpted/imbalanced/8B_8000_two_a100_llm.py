@@ -751,7 +751,7 @@ def main():
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,
                 eval_strategy="steps",
-                eval_steps=2,
+                eval_steps=200,
                 save_steps=200,
                 save_total_limit=3,  # Increase to keep more checkpoints including best
                 load_best_model_at_end=True,  # Change to True to load best model at end

@@ -23,6 +23,8 @@ import argparse
 from dataset_builder_new import TextDatasetBuilder
 from datasets import load_from_disk
 
+from contextlib import contextmanager
+
 class TeeOutput:
     """Class to duplicate stdout to both console and log file"""
     def __init__(self, log_file):
@@ -744,12 +746,12 @@ def main():
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
                 learning_rate=2e-5,
-                warmup_steps=120, # 10 percent of total steps
+                warmup_steps=200, # 10 percent of total steps
                 weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,
                 eval_strategy="steps",
-                eval_steps=100,
+                eval_steps=2,
                 save_steps=200,
                 save_total_limit=3,  # Increase to keep more checkpoints including best
                 load_best_model_at_end=True,  # Change to True to load best model at end
@@ -791,8 +793,13 @@ def main():
             original_evaluate = trainer.evaluate
             def memory_safe_evaluate(*args, **kwargs):
                 torch.cuda.empty_cache()
+                # Disable cache during evaluation to save memory
+                original_use_cache = model.config.use_cache
+                model.config.use_cache = False
                 with torch.no_grad():
                     result = original_evaluate(*args, **kwargs)
+                # Restore original cache setting
+                model.config.use_cache = original_use_cache
                 torch.cuda.empty_cache()
                 return result
             trainer.evaluate = memory_safe_evaluate

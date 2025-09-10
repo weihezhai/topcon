@@ -59,7 +59,6 @@ class PatchedTrainer(Trainer):
                 num_items_in_batch = int((labels != -100).sum().detach().cpu().item())
             else:
                 num_items_in_batch = int(sum(int(t != -100) for row in labels for t in row))
-        # 3) Pass a **Python int** to the model so Qwen/HF does the divide ONCE, on the loss' device
         outputs = model(**inputs, num_items_in_batch=num_items_in_batch)
 
         loss = outputs["loss"] if isinstance(outputs, dict) else outputs.loss

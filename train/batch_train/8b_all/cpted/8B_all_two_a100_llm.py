@@ -58,9 +58,7 @@ class PatchedTrainer(Trainer):
                 # labels are already on some device; make a CPU scalar
                 num_items_in_batch = int((labels != -100).sum().detach().cpu().item())
             else:
-                # list-of-lists fallback (shouldn’t happen in Trainer, but safe)
                 num_items_in_batch = int(sum(int(t != -100) for row in labels for t in row))
-
         # 3) Pass a **Python int** to the model so Qwen/HF does the divide ONCE, on the loss' device
         outputs = model(**inputs, num_items_in_batch=num_items_in_batch)
 

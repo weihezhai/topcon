@@ -45,22 +45,21 @@ from datasets import load_from_disk
 
 class PatchedTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        # Strip any accidental injection to avoid duplication
+        # 1) If HF ever injected this into the batch, strip it to avoid duplicates
         if isinstance(inputs, dict) and "num_items_in_batch" in inputs:
             inputs = dict(inputs)
             inputs.pop("num_items_in_batch", None)
 
-        # Count active tokens (labels != -100) and make it a CPU int
+        # 2) Compute the number of active tokens (labels != -100) for THIS microbatch
         num_items_in_batch = None
         labels = inputs.get("labels", None)
         if labels is not None:
             if torch.is_tensor(labels):
+                # labels are already on some device; make a CPU scalar
                 num_items_in_batch = int((labels != -100).sum().detach().cpu().item())
             else:
                 num_items_in_batch = int(sum(int(t != -100) for row in labels for t in row))
-
-        # IMPORTANT: keyword BEFORE **inputs (or merge into the dict)
-        outputs = model(num_items_in_batch=num_items_in_batch, **inputs)
+        outputs = model(**inputs, num_items_in_batch=num_items_in_batch)
 
         loss = outputs["loss"] if isinstance(outputs, dict) else outputs.loss
         return (loss, outputs) if return_outputs else loss
@@ -193,7 +192,7 @@ def preprocess_function(examples, tokenizer, max_length=1024):
     # Create prompts that ask for accept/reject decision
     prompts = []
     for text in examples['text']:
-        prompt = f"Paper content:\n{text}\n\nBased on this AI research paper's content and statistics, should this paper be accepted? answer yes or no. \n\nDecision:"
+        prompt = f"Paper content:\n{text}\n\nBased on this AI research paper's content and statistics, should this paper be accepted? Answer yes or no.\n\nDecision:"
         prompts.append(prompt)
     
     # First, tokenize target tokens to know their length

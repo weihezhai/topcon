@@ -41,7 +41,7 @@ from datasets import load_from_disk
 #             inputs,
 #             return_outputs=return_outputs,
 #             num_items_in_batch=None,  # <-- important
-        )
+        # )
 
 # class PatchedTrainer(Trainer):
 #     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):

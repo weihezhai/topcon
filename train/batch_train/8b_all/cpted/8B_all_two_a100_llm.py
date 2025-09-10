@@ -785,17 +785,17 @@ def main():
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
                 learning_rate=2e-5,
-                warmup_steps=150, # 10 percent of total steps
+                warmup_steps=120, # 10 percent of total steps
                 weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,
                 eval_strategy="steps",
                 eval_steps=100,
                 save_steps=200,
-                save_total_limit=2,
-                load_best_model_at_end=False,  # Disable to save memory
-                metric_for_best_model="eval_loss",
-                greater_is_better=False,
+                save_total_limit=3,  # Increase to keep more checkpoints including best
+                load_best_model_at_end=True,  # Change to True to load best model at end
+                metric_for_best_model="eval_accuracy",  # Or use "eval_accuracy" if you prefer
+                greater_is_better=True,  # False for loss, True for accuracy
                 bf16=True,  # Enable bf16 for memory efficiency
                 dataloader_pin_memory=False,
                 remove_unused_columns=False,
@@ -806,7 +806,7 @@ def main():
                 optim="adamw_torch",
                 eval_accumulation_steps=4,
                 dataloader_num_workers=0,  # Disable multiprocessing for multi-GPU setup
-                prediction_loss_only=True,
+                prediction_loss_only=False,  # Change to False to compute metrics
                 skip_memory_metrics=True,
                 # Multi-GPU specific settings
                 ddp_find_unused_parameters=False,  # For efficiency in DDP

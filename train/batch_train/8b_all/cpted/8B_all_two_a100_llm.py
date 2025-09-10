@@ -23,46 +23,46 @@ import argparse
 from dataset_builder_new import TextDatasetBuilder
 from datasets import load_from_disk
 
-# class PatchedTrainer(Trainer):
-#     # NOTE: keep the signature so HF can pass return_outputs and other kwargs safely
-#     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-#         # 1) Remove from the batch dict (some HF versions inject it here)
-#         if isinstance(inputs, dict) and "num_items_in_batch" in inputs:
-#             inputs = dict(inputs)  # avoid mutating upstream
-#             inputs.pop("num_items_in_batch", None)
-
-#         # 2) Remove from kwargs (HF training_step passes it here explicitly)
-#         kwargs.pop("num_items_in_batch", None)
-
-#         # 3) Call parent WITHOUT the kwarg so it cannot leak back in
-#         #    (explicitly set num_items_in_batch=None to be crystal clear)
-#         return super().compute_loss(
-#             model,
-#             inputs,
-#             return_outputs=return_outputs,
-#             num_items_in_batch=None,  # <-- important
-#         )
-
 class PatchedTrainer(Trainer):
+    # NOTE: keep the signature so HF can pass return_outputs and other kwargs safely
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        # 1) If HF ever injected this into the batch, strip it to avoid duplicates
+        # 1) Remove from the batch dict (some HF versions inject it here)
         if isinstance(inputs, dict) and "num_items_in_batch" in inputs:
-            inputs = dict(inputs)
+            inputs = dict(inputs)  # avoid mutating upstream
             inputs.pop("num_items_in_batch", None)
 
-        # 2) Compute the number of active tokens (labels != -100) for THIS microbatch
-        num_items_in_batch = None
-        labels = inputs.get("labels", None)
-        if labels is not None:
-            if torch.is_tensor(labels):
-                # labels are already on some device; make a CPU scalar
-                num_items_in_batch = int((labels != -100).sum().detach().cpu().item())
-            else:
-                num_items_in_batch = int(sum(int(t != -100) for row in labels for t in row))
-        outputs = model(**inputs, num_items_in_batch=num_items_in_batch)
+        # 2) Remove from kwargs (HF training_step passes it here explicitly)
+        kwargs.pop("num_items_in_batch", None)
 
-        loss = outputs["loss"] if isinstance(outputs, dict) else outputs.loss
-        return (loss, outputs) if return_outputs else loss
+        # 3) Call parent WITHOUT the kwarg so it cannot leak back in
+        #    (explicitly set num_items_in_batch=None to be crystal clear)
+        return super().compute_loss(
+            model,
+            inputs,
+            return_outputs=return_outputs,
+            num_items_in_batch=None,  # <-- important
+        )
+
+# class PatchedTrainer(Trainer):
+#     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+#         # 1) If HF ever injected this into the batch, strip it to avoid duplicates
+#         if isinstance(inputs, dict) and "num_items_in_batch" in inputs:
+#             inputs = dict(inputs)
+#             inputs.pop("num_items_in_batch", None)
+
+#         # 2) Compute the number of active tokens (labels != -100) for THIS microbatch
+#         num_items_in_batch = None
+#         labels = inputs.get("labels", None)
+#         if labels is not None:
+#             if torch.is_tensor(labels):
+#                 # labels are already on some device; make a CPU scalar
+#                 num_items_in_batch = int((labels != -100).sum().detach().cpu().item())
+#             else:
+#                 num_items_in_batch = int(sum(int(t != -100) for row in labels for t in row))
+#         outputs = model(**inputs, num_items_in_batch=num_items_in_batch)
+
+#         loss = outputs["loss"] if isinstance(outputs, dict) else outputs.loss
+#         return (loss, outputs) if return_outputs else loss
 
 class TeeOutput:
     """Class to duplicate stdout to both console and log file"""

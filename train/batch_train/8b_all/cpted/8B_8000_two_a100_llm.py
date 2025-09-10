@@ -25,47 +25,6 @@ from datasets import load_from_disk
 
 from contextlib import contextmanager
 
-@contextmanager
-def memory_lean_eval(model):
-    """
-    Temporarily enable gradient checkpointing-style configuration and other
-    memory savers for inference/eval.
-    - Disables KV cache (major memory saver on long contexts)
-    - Ensures eval() + inference_mode()
-    - Optionally toggles gradient checkpointing (mostly no-op in inference)
-    Restores original flags afterwards.
-    """
-    # save state
-    prev_training = model.training
-    prev_use_cache = getattr(model.config, "use_cache", None)
-
-    # turn on checkpointing (harmless in inference) and disable cache
-    try:
-        if hasattr(model, "gradient_checkpointing_enable"):
-            model.gradient_checkpointing_enable()
-    except Exception as e:
-        print(f"[warn] gradient_checkpointing_enable failed: {e}")
-
-    if prev_use_cache is not None:
-        model.config.use_cache = False  # big memory saver in eval
-
-    model.eval()
-
-    try:
-        with torch.inference_mode():   # stronger than no_grad for inference
-            yield
-    finally:
-        # restore
-        try:
-            if hasattr(model, "gradient_checkpointing_disable"):
-                model.gradient_checkpointing_disable()
-        except Exception as e:
-            print(f"[warn] gradient_checkpointing_disable failed: {e}")
-
-        if prev_use_cache is not None:
-            model.config.use_cache = prev_use_cache
-        model.train(prev_training)
-
 class TeeOutput:
     """Class to duplicate stdout to both console and log file"""
     def __init__(self, log_file):
@@ -326,136 +285,151 @@ def custom_evaluate_with_memory_cleanup(trainer, eval_dataset=None):
     return eval_results
 
 def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None):
-    """Evaluate accuracy using probability-based comparison of yes/no tokens with low memory usage."""
+    """Evaluate accuracy using probability-based comparison of yes/no tokens"""
     print(f"Running probability-based accuracy evaluation on {len(eval_dataset)} samples...")
-
+    
     # Get token IDs for "yes" and "no"
     yes_token_id = tokenizer(" yes", add_special_tokens=False)['input_ids'][0]
-    no_token_id  = tokenizer(" no",  add_special_tokens=False)['input_ids'][0]
-
+    no_token_id = tokenizer(" no", add_special_tokens=False)['input_ids'][0]
+    
     all_binary_predictions = []
     all_binary_labels = []
     total_loss = 0.0
-
+    
     model = trainer.model
-
-    # --- Memory-lean eval context (disables KV cache, uses inference_mode, toggles checkpointing) ---
-    with memory_lean_eval(model):
-        # Process evaluation dataset in small batches
-        for i in range(0, len(eval_dataset), batch_size):
-            batch_end = min(i + batch_size, len(eval_dataset))
-            batch_dataset = eval_dataset.select(range(i, batch_end))
-
-            print(f"Processing batch {i//batch_size + 1}/{(len(eval_dataset) + batch_size - 1)//batch_size} (samples {i}-{batch_end-1})")
-
-            # Clear cache before each batch
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-
-            # Build minimal inputs only up to the decision position
+    
+    # Process evaluation dataset in small batches
+    for i in range(0, len(eval_dataset), batch_size):
+        batch_end = min(i + batch_size, len(eval_dataset))
+        batch_dataset = eval_dataset.select(range(i, batch_end))
+        
+        print(f"Processing batch {i//batch_size + 1}/{(len(eval_dataset) + batch_size - 1)//batch_size} (samples {i}-{batch_end-1})")
+        
+        # Clear cache before each batch
+        torch.cuda.empty_cache()
+        
+        with torch.no_grad():
+            # Extract input portions and decision positions for efficient inference
             batch_input_ids = []
             batch_attention_masks = []
             decision_positions = []
             true_labels = []
-
+            
             for sample in batch_dataset:
                 input_ids = sample['input_ids']
                 attention_mask = sample['attention_mask']
                 labels = sample['labels']
-
+                
+                # Find decision position (first non-ignored label)
                 decision_pos = None
                 for k in range(len(labels)):
                     if labels[k] != -100:
                         decision_pos = k
                         break
-
+                
                 if decision_pos is not None:
+                    # Only keep input up to decision position (exclude target tokens)
                     input_portion = input_ids[:decision_pos]
-                    mask_portion  = attention_mask[:decision_pos]
-
+                    mask_portion = attention_mask[:decision_pos]
+                    
                     batch_input_ids.append(input_portion)
                     batch_attention_masks.append(mask_portion)
-                    decision_positions.append(len(input_portion))  # next position to predict
-
+                    decision_positions.append(len(input_portion))  # Next position is where we predict
+                    
+                    # Get ground truth
                     true_token_id = labels[decision_pos]
-                    true_labels.append(1 if true_token_id == yes_token_id else 0)
-
+                    true_label = 1 if true_token_id == yes_token_id else 0
+                    true_labels.append(true_label)
+            
             if len(batch_input_ids) > 0:
-                # left-pad to same length inside the small batch
+                # Pad batch to same length
                 max_len = max(len(ids) for ids in batch_input_ids)
                 padded_input_ids = []
                 padded_attention_masks = []
-
-                for input_ids, attention_mask in zip(batch_input_ids, batch_attention_masks):
-                    pad_len = max_len - len(input_ids)
-                    padded_input_ids.append(input_ids + [tokenizer.pad_token_id] * pad_len)
-                    padded_attention_masks.append(attention_mask + [0] * pad_len)
-
+                
+                for j, (input_ids, attention_mask) in enumerate(zip(batch_input_ids, batch_attention_masks)):
+                    pad_length = max_len - len(input_ids)
+                    padded_ids = input_ids + [tokenizer.pad_token_id] * pad_length
+                    padded_mask = attention_mask + [0] * pad_length
+                    
+                    padded_input_ids.append(padded_ids)
+                    padded_attention_masks.append(padded_mask)
+                
+                # Convert to tensors - let the model handle device placement for multi-GPU
                 input_tensor = torch.tensor(padded_input_ids)
-                mask_tensor  = torch.tensor(padded_attention_masks)
-
-                # pick a device owned by the (possibly sharded/parallel) model
-                first_device = next(model.module.parameters()).device if hasattr(model, 'module') else next(model.parameters()).device
-                input_tensor = input_tensor.to(first_device, non_blocking=True)
-                mask_tensor  = mask_tensor.to(first_device,  non_blocking=True)
-
-                # --- bf16 autocast keeps activations/temps smaller ---
-                with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=torch.cuda.is_available()):
-                    # IMPORTANT: use_cache=False to avoid KV cache memory
-                    outputs = model(input_ids=input_tensor, attention_mask=mask_tensor, use_cache=False, return_dict=True)
-                    logits  = outputs.logits  # [B, T, V]
-
-                # Use logits at the decision positions only, then free the big tensor
+                mask_tensor = torch.tensor(padded_attention_masks)
+                
+                # For multi-GPU models, we need to move tensors to the first device of the model
+                if hasattr(model, 'module'):
+                    # If wrapped in DataParallel/DistributedDataParallel
+                    first_device = next(model.module.parameters()).device
+                else:
+                    # For device_map models, find the first device
+                    first_device = next(model.parameters()).device
+                
+                input_tensor = input_tensor.to(first_device)
+                mask_tensor = mask_tensor.to(first_device)
+                
+                # Get logits from model - only forward pass, no need for full sequence
+                outputs = model(input_ids=input_tensor, attention_mask=mask_tensor)
+                logits = outputs.logits
+                
+                # Extract logits at decision positions for each sample
                 for j, (decision_pos, true_label) in enumerate(zip(decision_positions, true_labels)):
-                    logits_at_pos = logits[j, decision_pos - 1]  # predict next token
-                    yes_logit = logits_at_pos[yes_token_id].item()
-                    no_logit  = logits_at_pos[no_token_id].item()
-
+                    # Get logits at the position where we need to predict the next token
+                    logits_at_pos = logits[j, decision_pos - 1]  # -1 because we predict the next token
+                    
+                    # Compare yes vs no logits
+                    yes_logit = logits_at_pos[yes_token_id]
+                    no_logit = logits_at_pos[no_token_id]
+                    
+                    # Predict based on higher logit
                     predicted_label = 1 if yes_logit > no_logit else 0
+                    
                     all_binary_predictions.append(predicted_label)
                     all_binary_labels.append(true_label)
-
-                # aggressively free memory
-                del outputs, logits, input_tensor, mask_tensor
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-
-            # If you still want average loss, keep Trainer's per-batch evaluate but guard for OOM.
-            try:
-                eval_results = trainer.evaluate(eval_dataset=batch_dataset)
-                total_loss += float(eval_results.get('eval_loss', 0.0)) * (batch_end - i)
-            except RuntimeError as e:
-                print(f"[warn] trainer.evaluate OOM on this batch; skipping loss aggregation: {e}")
-
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-
+            
+            # Get loss from evaluation using original method for loss calculation
+            eval_results = trainer.evaluate(eval_dataset=batch_dataset)
+            total_loss += eval_results['eval_loss'] * (batch_end - i)
+        
+        # Clear cache after each batch
+        torch.cuda.empty_cache()
+    
     # Calculate overall metrics
-    avg_loss = total_loss / max(1, len(eval_dataset))
+    avg_loss = total_loss / len(eval_dataset)
     accuracy = accuracy_score(all_binary_labels, all_binary_predictions) if len(all_binary_labels) > 0 else 0.0
-
+    
     results = {
         'eval_loss': avg_loss,
         'eval_accuracy': accuracy,
         'eval_samples': len(eval_dataset)
     }
-
+    
+    # Add detailed metrics if requested
     if detailed_eval and len(all_binary_labels) > 0:
+        # Calculate precision, recall, F1
         precision, recall, f1, support = precision_recall_fscore_support(
             all_binary_labels, all_binary_predictions, average='macro', zero_division=0
         )
+        
+        # Calculate per-class metrics
         precision_per_class, recall_per_class, f1_per_class, support_per_class = precision_recall_fscore_support(
             all_binary_labels, all_binary_predictions, average=None, zero_division=0
         )
+        
+        # Confusion matrix
         cm = confusion_matrix(all_binary_labels, all_binary_predictions)
+        
+        # Classification report
         class_report = classification_report(
-            all_binary_labels, all_binary_predictions,
-            target_names=['No', 'Yes'],
+            all_binary_labels, all_binary_predictions, 
+            target_names=['No', 'Yes'], 
             zero_division=0
         )
-
+        
         results.update({
-            'binary_accuracy': accuracy,
+            'binary_accuracy': accuracy_score(all_binary_labels, all_binary_predictions),
             'precision': precision,
             'recall': recall,
             'f1': f1,
@@ -466,24 +440,29 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
             'confusion_matrix': cm.tolist(),
             'classification_report': class_report
         })
-
+        
         print("\n" + "="*50)
         print("PROBABILITY-BASED EVALUATION METRICS")
         print("="*50)
-        print(f"Binary Classification Accuracy: {accuracy:.4f}")
+        print(f"Binary Classification Accuracy: {results['binary_accuracy']:.4f}")
         print(f"Precision: {precision:.4f}")
         print(f"Recall: {recall:.4f}")
         print(f"F1-Score: {f1:.4f}")
         print("\nPer-class metrics:")
         print(f"  Reject (0) - Precision: {precision_per_class[0]:.4f}, Recall: {recall_per_class[0]:.4f}, F1: {f1_per_class[0]:.4f}")
         print(f"  Accept (1) - Precision: {precision_per_class[1]:.4f}, Recall: {recall_per_class[1]:.4f}, F1: {f1_per_class[1]:.4f}")
-        print(f"\nConfusion Matrix:\n{cm}")
-        print(f"\nClassification Report:\n{class_report}")
+        print(f"\nConfusion Matrix:")
+        print(f"              Predicted")
+        print(f"              Reject  Accept")
+        print(f"Actual Reject   {cm[0,0]:4d}    {cm[0,1]:4d}")
+        print(f"       Accept   {cm[1,0]:4d}    {cm[1,1]:4d}")
+        print(f"\nClassification Report:")
+        print(class_report)
         print("="*50)
         print("Method: Comparing logits of 'yes' vs 'no' tokens at decision position")
         print("Prediction: Accept if P(yes) > P(no), else Reject")
         print("="*50)
-
+    
     return results
 
 def main():
@@ -772,7 +751,7 @@ def main():
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,
                 eval_strategy="steps",
-                eval_steps=10,
+                eval_steps=100,
                 save_steps=200,
                 save_total_limit=3,  # Increase to keep more checkpoints including best
                 load_best_model_at_end=True,  # Change to True to load best model at end
@@ -814,8 +793,13 @@ def main():
             original_evaluate = trainer.evaluate
             def memory_safe_evaluate(*args, **kwargs):
                 torch.cuda.empty_cache()
+                # Disable cache during evaluation to save memory
+                original_use_cache = model.config.use_cache
+                model.config.use_cache = False
                 with torch.no_grad():
                     result = original_evaluate(*args, **kwargs)
+                # Restore original cache setting
+                model.config.use_cache = original_use_cache
                 torch.cuda.empty_cache()
                 return result
             trainer.evaluate = memory_safe_evaluate

@@ -449,7 +449,7 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     if detailed_eval and len(all_binary_labels) > 0:
         # Calculate precision, recall, F1
         precision, recall, f1, support = precision_recall_fscore_support(
-            all_binary_labels, all_binary_predictions, average='binary', zero_division=0
+            all_binary_labels, all_binary_predictions, average='macro', zero_division=0
         )
         
         # Calculate per-class metrics
@@ -681,6 +681,7 @@ def main():
         print(f"Total samples: {stats['total_samples']}")
         print(f"Label distribution: {stats['label_distribution']}")
         print(f"Average text length: {stats['text_stats']['avg_length_words']:.2f} words")
+        print(f"Sample text: {stats['text_stats']['sample_text']}")
         
         # Split dataset using sklearn for proper stratification
         print("Splitting dataset...")

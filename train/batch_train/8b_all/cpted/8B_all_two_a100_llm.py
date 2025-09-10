@@ -45,21 +45,22 @@ from datasets import load_from_disk
 
 class PatchedTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        # 1) If HF ever injected this into the batch, strip it to avoid duplicates
+        # Strip any accidental injection to avoid duplication
         if isinstance(inputs, dict) and "num_items_in_batch" in inputs:
             inputs = dict(inputs)
             inputs.pop("num_items_in_batch", None)
 
-        # 2) Compute the number of active tokens (labels != -100) for THIS microbatch
+        # Count active tokens (labels != -100) and make it a CPU int
         num_items_in_batch = None
         labels = inputs.get("labels", None)
         if labels is not None:
             if torch.is_tensor(labels):
-                # labels are already on some device; make a CPU scalar
                 num_items_in_batch = int((labels != -100).sum().detach().cpu().item())
             else:
                 num_items_in_batch = int(sum(int(t != -100) for row in labels for t in row))
-        outputs = model(**inputs, num_items_in_batch=num_items_in_batch)
+
+        # IMPORTANT: keyword BEFORE **inputs (or merge into the dict)
+        outputs = model(num_items_in_batch=num_items_in_batch, **inputs)
 
         loss = outputs["loss"] if isinstance(outputs, dict) else outputs.loss
         return (loss, outputs) if return_outputs else loss

@@ -2,13 +2,13 @@
 #SBATCH --partition=gpu
 #SBATCH --qos=gpu
 #SBATCH --gres=gpu:2
-#SBATCH --mem=100G
+#SBATCH --mem=160G
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --job-name=cpted_all_8b_imbalanced
 #SBATCH --output=./logs/cpted_all_8b_imbalanced.%j.out
-#SBATCH --time=0-10:00:00
+#SBATCH --time=01-10:00:00
 
 # Load necessary modules
 # module load Anaconda3/2024.02-1

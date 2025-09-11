@@ -214,6 +214,11 @@ def main():
             tokenizer.pad_token = tokenizer.eos_token
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
+
+            
+        # Set padding side for decoder-only models used in classification
+        tokenizer.padding_side = "left"  # Add this line
+
         print(f"pad_token_id = {tokenizer.pad_token_id}")
 
         # ----- dataset -----

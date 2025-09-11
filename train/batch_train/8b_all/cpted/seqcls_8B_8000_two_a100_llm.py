@@ -165,6 +165,7 @@ def main():
         parser = argparse.ArgumentParser(description="Sequence classification fine-tuning on LLM")
         parser.add_argument("--eval", action="store_true", help="Only evaluate a fine-tuned model in output_dir")
         parser.add_argument("--detailed_eval", action="store_true", help="Print extended metrics and confusion matrix")
+        parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 5 for quick testing")
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B", help="Base model to start from")
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/llm/")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json")
@@ -311,6 +312,16 @@ def main():
 
         # ----- training -----
         if not args.eval:
+            # Set eval_steps based on debug mode
+            eval_steps_value = 5 if args.debug else 200
+            save_steps_value = 5 if args.debug else 200
+            
+            if args.debug:
+                print("\n" + "="*60)
+                print("DEBUG MODE ENABLED")
+                print(f"Setting eval_steps={eval_steps_value}, save_steps={save_steps_value}")
+                print("="*60 + "\n")
+            
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
                 num_train_epochs=3,
@@ -323,8 +334,8 @@ def main():
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,
                 eval_strategy="steps",
-                eval_steps=200,
-                save_steps=200,
+                eval_steps=eval_steps_value,
+                save_steps=save_steps_value,
                 save_total_limit=3,
                 load_best_model_at_end=True,
                 metric_for_best_model="eval_accuracy",

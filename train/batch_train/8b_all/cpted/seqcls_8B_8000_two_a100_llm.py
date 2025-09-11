@@ -332,7 +332,7 @@ def main():
                 num_train_epochs=3,
                 per_device_train_batch_size=2,
                 per_device_eval_batch_size=1,
-                gradient_accumulation_steps=4,
+                gradient_accumulation_steps=8,
                 learning_rate=2e-5,
                 warmup_steps=200,
                 weight_decay=0.01,

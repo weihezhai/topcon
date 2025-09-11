@@ -215,7 +215,7 @@ def main():
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
 
-            
+
         # Set padding side for decoder-only models used in classification
         tokenizer.padding_side = "left"  # Add this line
 
@@ -332,7 +332,7 @@ def main():
                 num_train_epochs=3,
                 per_device_train_batch_size=2,
                 per_device_eval_batch_size=1,
-                gradient_accumulation_steps=8,
+                gradient_accumulation_steps=4,
                 learning_rate=2e-5,
                 warmup_steps=200,
                 weight_decay=0.01,
@@ -350,7 +350,7 @@ def main():
                 remove_unused_columns=False,
                 max_grad_norm=1.0,
                 adam_epsilon=1e-8,
-                lr_scheduler_type="linear",
+                lr_scheduler_type="cosine",
                 optim="adamw_torch",
                 eval_accumulation_steps=4,
                 dataloader_num_workers=0,

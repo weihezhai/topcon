@@ -6,8 +6,8 @@
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --job-name=cpted_th_8b_balanced
-#SBATCH --output=./logs/cpted_th_8b_balanced.%j.out
+#SBATCH --job-name=non_cpt_th_8b_balanced
+#SBATCH --output=./logs/non_cpt_th_8b_balanced.%j.out
 #SBATCH --time=0-10:00:00
 
 # Load necessary modules

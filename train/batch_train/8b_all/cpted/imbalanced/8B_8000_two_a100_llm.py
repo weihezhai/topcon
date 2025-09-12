@@ -79,74 +79,66 @@ class CustomDataCollator:
         batch = {k: torch.tensor(v) for k, v in batch.items()}
         return batch
 
+def preprocess_logits_for_metrics(logits, labels):
+    """
+    Reduce (bs, seq, vocab) -> (bs, 2) keeping only the two logits we need
+    at the *decision position* (first non-ignored label).
+    """
+    if isinstance(logits, tuple):
+        logits = logits[0]  # some models return (logits, past_key_values, ...)
+    # logits: torch.FloatTensor [bs, seq, vocab]
+    # labels: torch.LongTensor  [bs, seq]
+    with torch.no_grad():
+        bs = logits.size(0)
+        # first position where label != -100 for each sample
+        first_pos = (labels.ne(-100).int().argmax(dim=1))  # [bs]
+        rows = torch.arange(bs, device=logits.device)
+        # logits at decision position: [bs, vocab]
+        dec_logits = logits[rows, first_pos, :]
+        # keep only yes/no columns -> [bs, 2]
+        two = dec_logits.index_select(
+            dim=1, index=torch.tensor([YES_ID, NO_ID], device=logits.device)
+        )
+        return two
+
 def compute_metrics(eval_pred, tokenizer=None):
-    """Compute metrics using probability comparison of yes/no tokens"""
-    if tokenizer is None:
-        # Fallback to old method if tokenizer not provided
-        predictions, labels = eval_pred
-        predictions = np.argmax(predictions, axis=-1)
-        true_labels = []
-        pred_labels = []
-        
-        for i in range(len(labels)):
-            for j in range(len(labels[i])):
-                if labels[i][j] != -100:
-                    true_labels.append(labels[i][j])
-                    pred_labels.append(predictions[i][j])
-        
-        if len(true_labels) > 0:
-            accuracy = accuracy_score(true_labels, pred_labels)
-            return {"accuracy": accuracy}
-        else:
-            return {"accuracy": 0.0}
-    
-    predictions, labels = eval_pred
-    
-    # Get token IDs for "yes" and "no"
-    yes_tokens = tokenizer(" yes", add_special_tokens=False)['input_ids']
-    no_tokens = tokenizer(" no", add_special_tokens=False)['input_ids']
-    
-    if len(yes_tokens) == 0 or len(no_tokens) == 0:
-        return {"accuracy": 0.0}
-    
-    yes_token_id = yes_tokens[0]
-    no_token_id = no_tokens[0]
-    
-    binary_predictions = []
-    binary_labels = []
-    
-    for i in range(len(labels)):
-        # Find the first position where label != -100 (the decision position)
-        decision_pos = None
-        for j in range(len(labels[i])):
-            if labels[i][j] != -100:
-                decision_pos = j
-                break
-        
-        if decision_pos is not None:
-            # Get logits at decision position
-            logits_at_pos = predictions[i][decision_pos]
-            
-            # Get probabilities for yes/no tokens
-            yes_logit = logits_at_pos[yes_token_id]
-            no_logit = logits_at_pos[no_token_id]
-            
-            # Predict based on which has higher probability
-            predicted_label = 1 if yes_logit > no_logit else 0
-            
-            # Get ground truth label
-            true_token_id = labels[i][decision_pos]
-            true_label = 1 if true_token_id == yes_token_id else 0
-            
-            binary_predictions.append(predicted_label)
-            binary_labels.append(true_label)
-    
-    # Calculate accuracy
-    if len(binary_labels) > 0:
-        accuracy = accuracy_score(binary_labels, binary_predictions)
-        return {"accuracy": accuracy}
+    """
+    Works in two modes:
+    - Preferred: predictions are (N, 2) = [yes_logit, no_logit] from preprocess_logits_for_metrics.
+    - Fallback:  predictions are (N, L, V); we extract the two logits at the decision position.
+    Returns {'accuracy': ...} (Trainer will prefix to 'eval_accuracy').
+    """
+    import numpy as np
+    from sklearn.metrics import accuracy_score
+
+    preds, labels = eval_pred  # preds is numpy; labels is numpy
+    # Build true labels from first non-ignored token
+    true_y = []
+    for row in labels:
+        # index of first non -100
+        pos = int(np.argmax(row != -100))
+        true_y.append(1 if row[pos] == YES_ID else 0)
+    true_y = np.array(true_y, dtype=int)
+
+    # Mode A: already reduced to two logits
+    if preds.ndim == 2 and preds.shape[1] == 2:
+        yes_better = (preds[:, 0] > preds[:, 1]).astype(int)
+        acc = accuracy_score(true_y, yes_better)
+        return {"accuracy": acc}
+
+    # Mode B (fallback): full logits; pick decision position + yes/no columns
     else:
-        return {"accuracy": 0.0}
+        # preds: (N, L, V)
+        N, L, V = preds.shape
+        # decision position per sample
+        decision_pos = (labels != -100).argmax(axis=1)  # (N,)
+        # gather logits at that position: (N, V)
+        rows = np.arange(N)
+        dec_logits = preds[rows, decision_pos, :]
+        yes_no = dec_logits[:, [YES_ID, NO_ID]]  # (N, 2)
+        yes_better = (yes_no[:, 0] > yes_no[:, 1]).astype(int)
+        acc = accuracy_score(true_y, yes_better)
+        return {"accuracy": acc}
 
 def preprocess_function(examples, tokenizer, max_length=1024):
     """Tokenize the texts and prepare for token probability training"""
@@ -269,20 +261,6 @@ def split_dataset_stratified(dataset, test_size=0.2, seed=42):
     })
     
     return {'train': train_dataset, 'test': test_dataset}
-
-def custom_evaluate_with_memory_cleanup(trainer, eval_dataset=None):
-    """Custom evaluation that clears memory cache to prevent slowdown"""
-    # Clear GPU cache before evaluation
-    torch.cuda.empty_cache()
-    
-    # Run evaluation
-    with torch.no_grad():
-        eval_results = trainer.evaluate(eval_dataset=eval_dataset)
-    
-    # Clear GPU cache after evaluation
-    torch.cuda.empty_cache()
-    
-    return eval_results
 
 def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None):
     """Evaluate accuracy using probability-based comparison of yes/no tokens"""
@@ -571,6 +549,10 @@ def main():
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
         
+        # Get token IDs for "yes" and "no"
+        YES_ID = tokenizer(" yes", add_special_tokens=False)["input_ids"][0]
+        NO_ID  = tokenizer(" no",  add_special_tokens=False)["input_ids"][0]
+
         # Load and prepare dataset
         print("Loading dataset...")
         
@@ -717,7 +699,7 @@ def main():
                 BASE_MODEL_CACHE,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
+                max_memory={i: "78GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
                 offload_folder="./offload",  # Offload to disk if needed
                 attn_implementation="sdpa"  # Use SDPA attention implementation
             )
@@ -765,7 +747,7 @@ def main():
                 adam_epsilon=1e-8,
                 lr_scheduler_type="linear",
                 optim="adamw_torch",
-                eval_accumulation_steps=4,
+                eval_accumulation_steps=1,
                 dataloader_num_workers=0,  # Disable multiprocessing for multi-GPU setup
                 prediction_loss_only=False,  # Change to False to compute metrics
                 skip_memory_metrics=True,
@@ -783,7 +765,8 @@ def main():
                 eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
                 tokenizer=tokenizer,
                 data_collator=data_collator,
-                compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer)
+                preprocess_logits_for_metrics=preprocess_logits_for_metrics,
+                compute_metrics=lambda ep: compute_metrics(ep)
             )
             
             # Train the model
@@ -864,7 +847,7 @@ def main():
             dataloader_pin_memory=False,
             remove_unused_columns=False,
             label_names=["labels"],
-            eval_accumulation_steps=4,
+            eval_accumulation_steps=1,
             dataloader_num_workers=0,
             prediction_loss_only=True,
             skip_memory_metrics=True,

@@ -2,13 +2,13 @@
 #SBATCH --partition=gpu-h100
 #SBATCH --qos=gpu
 #SBATCH --gres=gpu:1
-#SBATCH --mem=85G
+#SBATCH --mem=100G
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --job-name=4b_cpt
 #SBATCH --output=./logs/4b_cpt.%j.out
-#SBATCH --time=2-00:00:00
+#SBATCH --time=1-00:00:00
 
 # Load necessary modules
 # module load Anaconda3/2024.02-1
@@ -32,4 +32,4 @@ source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 #   --gpu_ids 0 1 2
 
 
-python cpt_gpt.py --batch_size 2 --grad_accum 6
+python cpt_gpt.py --flash_attn

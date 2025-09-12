@@ -95,7 +95,7 @@ def main():
     ap.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training (e.g., --gpu_ids 0 1). If not specified, uses all available GPUs")
     ap.add_argument("--use_dataset_builder", action="store_true", default=True, help="Use dataset_builder_new instead of direct file loading")
     ap.add_argument("--use_cache", action="store_true", default=True, help="Use dataset caching to speed up repeated runs")
-    ap.add_argument("--cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cpt/llm", help="Directory to store cached datasets")
+    ap.add_argument("--cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/cpt/all", help="Directory to store cached datasets")
     ap.add_argument("--model_cache_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B", help="Directory to store cached models")
     ap.add_argument("--eval", action="store_true", help="Run in evaluation mode using fine-tuned model")
     args = ap.parse_args()

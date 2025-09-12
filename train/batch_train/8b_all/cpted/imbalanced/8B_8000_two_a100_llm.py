@@ -486,7 +486,7 @@ def main():
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/llm/", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json', help="Path to the statistical.json file containing paper statistics")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/finetuned/llm", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/cpt_model/imbalanced/finetuned/llm", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=8000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         args = parser.parse_args()
@@ -512,7 +512,7 @@ def main():
         MAX_LENGTH = args.max_length
         
         # Model directories
-        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/cpt_model/all_20250909_014858/checkpoint-19400"  # Where to cache the downloaded model
+        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/cpt_model/cpt_8b_base/checkpoint-19400"  # Where to cache the downloaded model
 
         # If in evaluation mode, use the fine-tuned model directory
         if args.eval:
@@ -577,7 +577,7 @@ def main():
             cache_suffix += "_with_stats"
         # if TITLES_FILE:
         #     cache_suffix += "_with_titles"
-        PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/{cache_suffix}"
+        PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/imbalanced/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
         
         # Check if processed dataset exists by looking for the dataset_info.json file

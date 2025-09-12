@@ -1,7 +1,22 @@
 import os
 import sys
-from datetime import datetime
+import argparse
+
+# Parse GPU IDs early before importing torch
+parser = argparse.ArgumentParser(description="Fine-tune a language model with multi-GPU support")
+parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
+# Add other arguments here as needed
+args, unknown = parser.parse_known_args()  # Use parse_known_args to handle this early
+
+# Set CUDA_VISIBLE_DEVICES before importing torch
+if args.gpu_ids:
+    gpu_ids_str = ','.join(map(str, args.gpu_ids))
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_ids_str
+    print(f"Set CUDA_VISIBLE_DEVICES to: {gpu_ids_str}")
+
+# Now import torch and other libraries
 import torch
+from datetime import datetime
 import pandas as pd
 from datasets import Dataset
 from transformers import (
@@ -17,11 +32,12 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support, con
 from sklearn.model_selection import train_test_split
 import numpy as np
 import torch.nn as nn
-import argparse
 
 # Import the dataset builder
 from dataset_builder_new import TextDatasetBuilder
 from datasets import load_from_disk
+
+from contextlib import contextmanager
 
 class TeeOutput:
     """Class to duplicate stdout to both console and log file"""
@@ -77,74 +93,66 @@ class CustomDataCollator:
         batch = {k: torch.tensor(v) for k, v in batch.items()}
         return batch
 
+def preprocess_logits_for_metrics(logits, labels):
+    """
+    Reduce (bs, seq, vocab) -> (bs, 2) keeping only the two logits we need
+    at the *decision position* (first non-ignored label).
+    """
+    if isinstance(logits, tuple):
+        logits = logits[0]  # some models return (logits, past_key_values, ...)
+    # logits: torch.FloatTensor [bs, seq, vocab]
+    # labels: torch.LongTensor  [bs, seq]
+    with torch.no_grad():
+        bs = logits.size(0)
+        # first position where label != -100 for each sample
+        first_pos = (labels.ne(-100).int().argmax(dim=1))  # [bs]
+        rows = torch.arange(bs, device=logits.device)
+        # logits at decision position: [bs, vocab]
+        dec_logits = logits[rows, first_pos, :]
+        # keep only yes/no columns -> [bs, 2]
+        two = dec_logits.index_select(
+            dim=1, index=torch.tensor([YES_ID, NO_ID], device=logits.device)
+        )
+        return two
+
 def compute_metrics(eval_pred, tokenizer=None):
-    """Compute metrics using probability comparison of yes/no tokens"""
-    if tokenizer is None:
-        # Fallback to old method if tokenizer not provided
-        predictions, labels = eval_pred
-        predictions = np.argmax(predictions, axis=-1)
-        true_labels = []
-        pred_labels = []
-        
-        for i in range(len(labels)):
-            for j in range(len(labels[i])):
-                if labels[i][j] != -100:
-                    true_labels.append(labels[i][j])
-                    pred_labels.append(predictions[i][j])
-        
-        if len(true_labels) > 0:
-            accuracy = accuracy_score(true_labels, pred_labels)
-            return {"accuracy": accuracy}
-        else:
-            return {"accuracy": 0.0}
-    
-    predictions, labels = eval_pred
-    
-    # Get token IDs for "yes" and "no"
-    yes_tokens = tokenizer(" yes", add_special_tokens=False)['input_ids']
-    no_tokens = tokenizer(" no", add_special_tokens=False)['input_ids']
-    
-    if len(yes_tokens) == 0 or len(no_tokens) == 0:
-        return {"accuracy": 0.0}
-    
-    yes_token_id = yes_tokens[0]
-    no_token_id = no_tokens[0]
-    
-    binary_predictions = []
-    binary_labels = []
-    
-    for i in range(len(labels)):
-        # Find the first position where label != -100 (the decision position)
-        decision_pos = None
-        for j in range(len(labels[i])):
-            if labels[i][j] != -100:
-                decision_pos = j
-                break
-        
-        if decision_pos is not None:
-            # Get logits at decision position
-            logits_at_pos = predictions[i][decision_pos]
-            
-            # Get probabilities for yes/no tokens
-            yes_logit = logits_at_pos[yes_token_id]
-            no_logit = logits_at_pos[no_token_id]
-            
-            # Predict based on which has higher probability
-            predicted_label = 1 if yes_logit > no_logit else 0
-            
-            # Get ground truth label
-            true_token_id = labels[i][decision_pos]
-            true_label = 1 if true_token_id == yes_token_id else 0
-            
-            binary_predictions.append(predicted_label)
-            binary_labels.append(true_label)
-    
-    # Calculate accuracy
-    if len(binary_labels) > 0:
-        accuracy = accuracy_score(binary_labels, binary_predictions)
-        return {"accuracy": accuracy}
+    """
+    Works in two modes:
+    - Preferred: predictions are (N, 2) = [yes_logit, no_logit] from preprocess_logits_for_metrics.
+    - Fallback:  predictions are (N, L, V); we extract the two logits at the decision position.
+    Returns {'accuracy': ...} (Trainer will prefix to 'eval_accuracy').
+    """
+    import numpy as np
+    from sklearn.metrics import accuracy_score
+
+    preds, labels = eval_pred  # preds is numpy; labels is numpy
+    # Build true labels from first non-ignored token
+    true_y = []
+    for row in labels:
+        # index of first non -100
+        pos = int(np.argmax(row != -100))
+        true_y.append(1 if row[pos] == YES_ID else 0)
+    true_y = np.array(true_y, dtype=int)
+
+    # Mode A: already reduced to two logits
+    if preds.ndim == 2 and preds.shape[1] == 2:
+        yes_better = (preds[:, 0] > preds[:, 1]).astype(int)
+        acc = accuracy_score(true_y, yes_better)
+        return {"accuracy": acc}
+
+    # Mode B (fallback): full logits; pick decision position + yes/no columns
     else:
-        return {"accuracy": 0.0}
+        # preds: (N, L, V)
+        N, L, V = preds.shape
+        # decision position per sample
+        decision_pos = (labels != -100).argmax(axis=1)  # (N,)
+        # gather logits at that position: (N, V)
+        rows = np.arange(N)
+        dec_logits = preds[rows, decision_pos, :]
+        yes_no = dec_logits[:, [YES_ID, NO_ID]]  # (N, 2)
+        yes_better = (yes_no[:, 0] > yes_no[:, 1]).astype(int)
+        acc = accuracy_score(true_y, yes_better)
+        return {"accuracy": acc}
 
 def preprocess_function(examples, tokenizer, max_length=1024):
     """Tokenize the texts and prepare for token probability training"""
@@ -267,20 +275,6 @@ def split_dataset_stratified(dataset, test_size=0.2, seed=42):
     })
     
     return {'train': train_dataset, 'test': test_dataset}
-
-def custom_evaluate_with_memory_cleanup(trainer, eval_dataset=None):
-    """Custom evaluation that clears memory cache to prevent slowdown"""
-    # Clear GPU cache before evaluation
-    torch.cuda.empty_cache()
-    
-    # Run evaluation
-    with torch.no_grad():
-        eval_results = trainer.evaluate(eval_dataset=eval_dataset)
-    
-    # Clear GPU cache after evaluation
-    torch.cuda.empty_cache()
-    
-    return eval_results
 
 def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None):
     """Evaluate accuracy using probability-based comparison of yes/no tokens"""
@@ -483,30 +477,30 @@ def main():
     print("="*80)
     
     try:
-        # Parse command line arguments
+        # Re-parse all arguments properly in main
         parser = argparse.ArgumentParser(description="Fine-tune a language model with multi-GPU support")
         parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
+        parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B", help="Pre-trained model name or path")
-        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/llm/", help="Path to the folder containing training jsons")
+        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/all/", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json', help="Path to the statistical.json file containing paper statistics")
-        # parser.add_argument("--titles_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/iclr_2025_summary_20250609_064704.csv', help="Path to the CSV file containing paper titles")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/finetuned/llm", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/cpt_model/imbalanced/finetuned/all", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=8000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         args = parser.parse_args()
-                # Auto-detect available GPUs if none specified
-        if not hasattr(args, 'gpu_ids') or args.gpu_ids is None:
-            available_gpus = torch.cuda.device_count()
-            args.gpu_ids = list(range(available_gpus))
-            print(f"Auto-detected {available_gpus} GPUs: {args.gpu_ids}")
-
-        # Set CUDA_VISIBLE_DEVICES to only use the specified GPUs
-        gpu_ids_str = ','.join(map(str, args.gpu_ids))
-        os.environ["CUDA_VISIBLE_DEVICES"] = gpu_ids_str
+        
         print(f"Using GPU IDs: {args.gpu_ids}")
-        print(f"CUDA_VISIBLE_DEVICES set to: {gpu_ids_str}")
+        print(f"CUDA_VISIBLE_DEVICES: {os.environ.get('CUDA_VISIBLE_DEVICES', 'Not set')}")
+        
+        # Now torch will see the correct GPUs
+        if torch.cuda.is_available():
+            print(f"Number of available GPUs (as seen by PyTorch): {torch.cuda.device_count()}")
+            for i in range(torch.cuda.device_count()):
+                print(f"GPU {i} (remapped index): {torch.cuda.get_device_name(i)}")
+                gpu_memory = torch.cuda.get_device_properties(i).total_memory / 1024**3
+                print(f"  Memory: {gpu_memory:.1f} GB")
         
         # Configuration
         MODEL_NAME = args.model_name
@@ -518,7 +512,7 @@ def main():
         MAX_LENGTH = args.max_length
         
         # Model directories
-        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/cpt_model/all_20250909_014858/checkpoint-19400"  # Where to cache the downloaded model
+        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/cpt_model/cpt_8b_base/checkpoint-19400"  # Where to cache the downloaded model
 
         # If in evaluation mode, use the fine-tuned model directory
         if args.eval:
@@ -569,16 +563,21 @@ def main():
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
         
+        # Get token IDs for "yes" and "no"
+        global YES_ID, NO_ID
+        YES_ID = tokenizer(" yes", add_special_tokens=False)["input_ids"][0]
+        NO_ID  = tokenizer(" no",  add_special_tokens=False)["input_ids"][0]
+
         # Load and prepare dataset
         print("Loading dataset...")
         
         # Define processed dataset cache path - include stats/titles in cache name if provided
-        cache_suffix = "llm_mineru_all"
+        cache_suffix = "all_mineru_all"
         if STATISTICS_FILE:
             cache_suffix += "_with_stats"
         # if TITLES_FILE:
         #     cache_suffix += "_with_titles"
-        PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/{cache_suffix}"
+        PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/acr24wz/etu/topcon/processed_dataset/imbalanced/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
         
         # Check if processed dataset exists by looking for the dataset_info.json file
@@ -687,8 +686,8 @@ def main():
         
         print("Tokenization complete")
         print(f"Train dataset columns: {train_dataset.column_names}")
-        print(f"Train dataset sample: {train_dataset[0]}")
-        
+        print(f"Train dataset sample (initial part): {str(train_dataset[0])[:50]}...")
+
         # Debug tensor shapes
         sample = train_dataset[0]
         print(f"Sample input_ids type: {type(sample['input_ids'])}")
@@ -715,7 +714,7 @@ def main():
                 BASE_MODEL_CACHE,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
+                max_memory={i: "78GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
                 offload_folder="./offload",  # Offload to disk if needed
                 attn_implementation="sdpa"  # Use SDPA attention implementation
             )
@@ -736,6 +735,12 @@ def main():
         
         # Only run training if not in evaluation mode
         if not args.eval:
+            # Set eval_steps based on debug mode
+            eval_steps = 10 if args.debug else 200
+            
+            if args.debug:
+                print("DEBUG MODE: eval_steps set to 10")
+            
             # Training arguments - adjusted for multi-GPU
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
@@ -744,12 +749,12 @@ def main():
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
                 learning_rate=2e-5,
-                warmup_steps=120, # 10 percent of total steps
+                warmup_ratio=0.1, # 10 percent of total steps
                 weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,
                 eval_strategy="steps",
-                eval_steps=100,
+                eval_steps=eval_steps,  # Use variable based on debug mode
                 save_steps=200,
                 save_total_limit=3,  # Increase to keep more checkpoints including best
                 load_best_model_at_end=True,  # Change to True to load best model at end
@@ -763,7 +768,7 @@ def main():
                 adam_epsilon=1e-8,
                 lr_scheduler_type="linear",
                 optim="adamw_torch",
-                eval_accumulation_steps=4,
+                eval_accumulation_steps=1,
                 dataloader_num_workers=0,  # Disable multiprocessing for multi-GPU setup
                 prediction_loss_only=False,  # Change to False to compute metrics
                 skip_memory_metrics=True,
@@ -781,7 +786,8 @@ def main():
                 eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
                 tokenizer=tokenizer,
                 data_collator=data_collator,
-                compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer)
+                preprocess_logits_for_metrics=preprocess_logits_for_metrics,
+                compute_metrics=lambda ep: compute_metrics(ep)
             )
             
             # Train the model
@@ -791,8 +797,13 @@ def main():
             original_evaluate = trainer.evaluate
             def memory_safe_evaluate(*args, **kwargs):
                 torch.cuda.empty_cache()
+                # Disable cache during evaluation to save memory
+                original_use_cache = model.config.use_cache
+                model.config.use_cache = False
                 with torch.no_grad():
                     result = original_evaluate(*args, **kwargs)
+                # Restore original cache setting
+                model.config.use_cache = original_use_cache
                 torch.cuda.empty_cache()
                 return result
             trainer.evaluate = memory_safe_evaluate
@@ -857,7 +868,7 @@ def main():
             dataloader_pin_memory=False,
             remove_unused_columns=False,
             label_names=["labels"],
-            eval_accumulation_steps=4,
+            eval_accumulation_steps=1,
             dataloader_num_workers=0,
             prediction_loss_only=True,
             skip_memory_metrics=True,

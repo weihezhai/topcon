@@ -483,7 +483,7 @@ def main():
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
         parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B", help="Pre-trained model name or path")
-        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/llm/", help="Path to the folder containing training jsons")
+        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/balanced/rl/", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json', help="Path to the statistical.json file containing paper statistics")
         parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/cpt_model/imbalanced/finetuned/rl", help="Directory to save/load the fine-tuned model")

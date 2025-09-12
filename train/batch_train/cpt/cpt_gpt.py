@@ -15,6 +15,23 @@ from dataset_builder_new import TextDatasetBuilder
 from dataset_cache import DatasetCache  # Import the new caching module
 from model_cache import ModelCache  # Import the new model caching module
 from datetime import datetime
+import logging
+from transformers.integrations import TensorBoardCallback
+from transformers.trainer_callback import TrainerCallback
+
+class PlainTextLoggingCallback(TrainerCallback):
+    """Custom callback to save logs to plain text file"""
+    def __init__(self, log_file):
+        self.log_file = log_file
+        # Setup file logger
+        self.file_handler = logging.FileHandler(log_file)
+        self.file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+        
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if logs:
+            with open(self.log_file, 'a') as f:
+                f.write(f"Step {state.global_step}: {logs}\n")
+                f.flush()
 
 def detect_loader(data_path: str):
     p = data_path
@@ -55,15 +72,15 @@ def load_papers_dataset(spec: Dict[str, str|List[str]]):
 def main():
     ap = argparse.ArgumentParser(description="Continued pretraining with Qwen3")
     ap.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Qwen/Qwen3-4B or Qwen/Qwen3-8B")
-    ap.add_argument("--data_path", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/llm/", help="Folder of .txt/.md OR a .txt/.md/.jsonl/.json file with a 'text' field")
+    ap.add_argument("--data_path", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/all", help="Folder of .txt/.md OR a .txt/.md/.jsonl/.json file with a 'text' field")
     ap.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to labels JSON file")
     ap.add_argument("--statistics_file", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json", help="Path to statistics JSON file (optional)")
-    ap.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/cpt_model/llm")
+    ap.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/cpt_model/cpt")
     ap.add_argument("--block_size", type=int, default=2048, help="Pack tokens to this length; pick what fits memory (e.g., 2048/4096/8192)")
     ap.add_argument("--max_length", type=int, default=10000, help="Maximum sequence length")
     ap.add_argument("--epochs", type=int, default=3)
     ap.add_argument("--max_steps", type=int, default=-1, help="Set >0 to override epochs")
-    ap.add_argument("--lr", type=float, default=8e-6, help="Learning rate for CPT")
+    ap.add_argument("--lr", type=float, default=1e-5, help="Learning rate for CPT")
     ap.add_argument("--warmup_ratio", type=float, default=0.1)
     ap.add_argument("--batch_size", type=int, default=3, help="Per-GPU micro-batch size")
     ap.add_argument("--grad_accum", type=int, default=6, help="Gradient accumulation to reach effective batch")
@@ -275,6 +292,11 @@ def main():
         logging_steps=args.logging_steps,
         save_steps=args.save_steps,
         save_total_limit=3,
+        save_strategy="steps",  # or "epoch"
+        load_best_model_at_end=True,  # Load best model at the end
+        metric_for_best_model="eval_loss",  # Metric to determine best model
+        greater_is_better=False,  # Lower loss is better
+        save_safetensors=True,  # Save in safetensors format (optional, but recommended)
         num_train_epochs=args.epochs if args.max_steps < 0 else 1,
         max_steps=args.max_steps if args.max_steps > 0 else -1,
         bf16=args.bf16,
@@ -295,6 +317,11 @@ def main():
         optim="adamw_torch",
     )
 
+    # In main() function, after creating trainer:
+    # Add plain text logging callback
+    log_file = f"{output_dir}/training_log.txt"
+    trainer.add_callback(PlainTextLoggingCallback(log_file))
+    
     # 6) Trainer
     trainer = Trainer(
         model=model,

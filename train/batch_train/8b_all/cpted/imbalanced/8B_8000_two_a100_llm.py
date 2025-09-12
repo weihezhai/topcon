@@ -1,7 +1,22 @@
 import os
 import sys
-from datetime import datetime
+import argparse
+
+# Parse GPU IDs early before importing torch
+parser = argparse.ArgumentParser(description="Fine-tune a language model with multi-GPU support")
+parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
+# Add other arguments here as needed
+args, unknown = parser.parse_known_args()  # Use parse_known_args to handle this early
+
+# Set CUDA_VISIBLE_DEVICES before importing torch
+if args.gpu_ids:
+    gpu_ids_str = ','.join(map(str, args.gpu_ids))
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_ids_str
+    print(f"Set CUDA_VISIBLE_DEVICES to: {gpu_ids_str}")
+
+# Now import torch and other libraries
 import torch
+from datetime import datetime
 import pandas as pd
 from datasets import Dataset
 from transformers import (
@@ -17,7 +32,6 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support, con
 from sklearn.model_selection import train_test_split
 import numpy as np
 import torch.nn as nn
-import argparse
 
 # Import the dataset builder
 from dataset_builder_new import TextDatasetBuilder
@@ -463,7 +477,7 @@ def main():
     print("="*80)
     
     try:
-        # Parse command line arguments
+        # Re-parse all arguments properly in main
         parser = argparse.ArgumentParser(description="Fine-tune a language model with multi-GPU support")
         parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
@@ -472,23 +486,21 @@ def main():
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/llm/", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json', help="Path to the statistical.json file containing paper statistics")
-        # parser.add_argument("--titles_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/iclr_2025_summary_20250609_064704.csv', help="Path to the CSV file containing paper titles")
         parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/finetuned/llm", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=8000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         args = parser.parse_args()
-
-        # Auto-detect available GPUs if none specified
-        if not hasattr(args, 'gpu_ids') or args.gpu_ids is None:
-            available_gpus = torch.cuda.device_count()
-            args.gpu_ids = list(range(available_gpus))
-            print(f"Auto-detected {available_gpus} GPUs: {args.gpu_ids}")
-
-        # Set CUDA_VISIBLE_DEVICES to only use the specified GPUs
-        gpu_ids_str = ','.join(map(str, args.gpu_ids))
-        os.environ["CUDA_VISIBLE_DEVICES"] = gpu_ids_str
+        
         print(f"Using GPU IDs: {args.gpu_ids}")
-        print(f"CUDA_VISIBLE_DEVICES set to: {gpu_ids_str}")
+        print(f"CUDA_VISIBLE_DEVICES: {os.environ.get('CUDA_VISIBLE_DEVICES', 'Not set')}")
+        
+        # Now torch will see the correct GPUs
+        if torch.cuda.is_available():
+            print(f"Number of available GPUs (as seen by PyTorch): {torch.cuda.device_count()}")
+            for i in range(torch.cuda.device_count()):
+                print(f"GPU {i} (remapped index): {torch.cuda.get_device_name(i)}")
+                gpu_memory = torch.cuda.get_device_properties(i).total_memory / 1024**3
+                print(f"  Memory: {gpu_memory:.1f} GB")
         
         # Configuration
         MODEL_NAME = args.model_name
@@ -552,6 +564,7 @@ def main():
             tokenizer.pad_token_id = tokenizer.eos_token_id
         
         # Get token IDs for "yes" and "no"
+        global YES_ID, NO_ID
         YES_ID = tokenizer(" yes", add_special_tokens=False)["input_ids"][0]
         NO_ID  = tokenizer(" no",  add_special_tokens=False)["input_ids"][0]
 
@@ -673,8 +686,8 @@ def main():
         
         print("Tokenization complete")
         print(f"Train dataset columns: {train_dataset.column_names}")
-        print(f"Train dataset sample: {train_dataset[0]}")
-        
+        print(f"Train dataset sample (initial part): {str(train_dataset[0])[:50]}...")
+
         # Debug tensor shapes
         sample = train_dataset[0]
         print(f"Sample input_ids type: {type(sample['input_ids'])}")
@@ -736,7 +749,7 @@ def main():
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
                 learning_rate=2e-5,
-                warmup_ratio=0.1, # 10 percent of total steps
+                warmup_ratio=0.1 # 10 percent of total steps
                 weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,

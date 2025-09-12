@@ -6,9 +6,9 @@
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --job-name=llm_4b_cpt
-#SBATCH --output=./logs/llm_4b_cpt.%j.out
-#SBATCH --time=0-12:00:00
+#SBATCH --job-name=4b_cpt
+#SBATCH --output=./logs/4b_cpt.%j.out
+#SBATCH --time=2-00:00:00
 
 # Load necessary modules
 # module load Anaconda3/2024.02-1

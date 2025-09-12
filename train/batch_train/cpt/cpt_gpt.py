@@ -316,11 +316,6 @@ def main():
         adam_epsilon=1e-8,
         optim="adamw_torch",
     )
-
-    # In main() function, after creating trainer:
-    # Add plain text logging callback
-    log_file = f"{output_dir}/training_log.txt"
-    trainer.add_callback(PlainTextLoggingCallback(log_file))
     
     # 6) Trainer
     trainer = Trainer(
@@ -331,6 +326,11 @@ def main():
         tokenizer=tokenizer,
         data_collator=collator,
     )
+
+    # In main() function, after creating trainer:
+    # Add plain text logging callback
+    log_file = f"{output_dir}/training_log.txt"
+    trainer.add_callback(PlainTextLoggingCallback(log_file))
 
     # 7) Train or Evaluate
     if args.eval:

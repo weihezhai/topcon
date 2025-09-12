@@ -736,7 +736,7 @@ def main():
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
                 learning_rate=2e-5,
-                warmup_steps=200, # 10 percent of total steps
+                warmup_ratio=0.1, # 10 percent of total steps
                 weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,
@@ -770,4 +770,134 @@ def main():
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
-                eval_dataset=small_eval_dataset  # Use smaller eval dataset for periodic evaluation
+                eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
+                tokenizer=tokenizer,
+                data_collator=data_collator,
+                preprocess_logits_for_metrics=preprocess_logits_for_metrics,
+                compute_metrics=lambda ep: compute_metrics(ep)
+            )
+            
+            # Train the model
+            print("Starting training...")
+            
+            # Override evaluation to use memory cleanup
+            original_evaluate = trainer.evaluate
+            def memory_safe_evaluate(*args, **kwargs):
+                torch.cuda.empty_cache()
+                # Disable cache during evaluation to save memory
+                original_use_cache = model.config.use_cache
+                model.config.use_cache = False
+                with torch.no_grad():
+                    result = original_evaluate(*args, **kwargs)
+                # Restore original cache setting
+                model.config.use_cache = original_use_cache
+                torch.cuda.empty_cache()
+                return result
+            trainer.evaluate = memory_safe_evaluate
+            
+            trainer.train()
+            
+            # Save the fine-tuned model
+            print(f"Saving fine-tuned model to {OUTPUT_DIR}")
+            trainer.save_model()
+            tokenizer.save_pretrained(OUTPUT_DIR)
+            
+            print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
+
+            # Explicitly delete trainer and optimizer to free memory
+            del trainer
+            if hasattr(model, 'optimizer'):
+                del model.optimizer
+            
+            # More thorough cleanup
+            model_to_delete = model
+            model = None
+            del model_to_delete
+            
+            # Force garbage collection
+            import gc
+            gc.collect()
+            
+            # Clear CUDA cache on all GPUs
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.synchronize()
+                torch.cuda.empty_cache()
+            
+            print("Cleared trainer, optimizer, and model from memory after training.")
+
+            print("Reloading model for final evaluation...")
+            
+            # Small delay to ensure memory is fully released
+            import time
+            time.sleep(2)
+            
+            # Reload the model fresh with device mapping
+            model = AutoModelForCausalLM.from_pretrained(
+                OUTPUT_DIR,  # Load the fine-tuned model
+                torch_dtype=torch.bfloat16,
+                device_map="auto",
+                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
+                offload_folder="./offload",
+                attn_implementation="sdpa"  # Use SDPA attention implementation
+            )
+            
+            # Clear cache again after loading
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+        # Create trainer for final evaluation (needed for both train and eval modes)
+        print("Setting up trainer for final evaluation...")
+        training_args_eval = TrainingArguments(
+            output_dir=OUTPUT_DIR,
+            per_device_eval_batch_size=1,
+            bf16=True,
+            dataloader_pin_memory=False,
+            remove_unused_columns=False,
+            label_names=["labels"],
+            eval_accumulation_steps=1,
+            dataloader_num_workers=0,
+            prediction_loss_only=True,
+            skip_memory_metrics=True,
+            ddp_find_unused_parameters=False,
+            dataloader_persistent_workers=False,
+        )
+        
+        trainer = Trainer(
+            model=model,
+            args=training_args_eval,
+            tokenizer=tokenizer,
+            data_collator=data_collator,
+            compute_metrics=lambda eval_pred: compute_metrics(eval_pred, tokenizer),
+        )
+
+        # Always run final evaluation (in both train and eval modes)
+        print("Running final evaluation with accuracy computation...")
+
+        # Use batched evaluation to prevent OOM
+        eval_results = batched_accuracy_evaluation(
+            trainer, eval_dataset, batch_size=1,  # Smaller batch size for multi-GPU
+            detailed_eval=args.detailed_eval, tokenizer=tokenizer
+        )
+        
+        print(f"Final evaluation results: {eval_results}")
+        
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+    finally:
+        # Print end time and close logs
+        print("="*80)
+        print(f"End time: {datetime.now()}")
+        print(f"Log saved to: {log_file}")
+        
+        # Restore original stdout/stderr and close log files
+        sys.stdout = tee_stdout.terminal
+        sys.stderr = tee_stderr.terminal
+        tee_stdout.close()
+        tee_stderr.close()
+
+if __name__ == "__main__":
+    main()

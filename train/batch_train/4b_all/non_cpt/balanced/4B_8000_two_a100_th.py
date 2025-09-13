@@ -743,7 +743,7 @@ def main():
         # Only run training if not in evaluation mode
         if not args.eval:
             # Set eval_steps based on debug mode
-            eval_steps = 10 if args.debug else 200
+            eval_steps = 10 if args.debug else 100
             
             if args.debug:
                 print("DEBUG MODE: eval_steps set to 10")
@@ -751,7 +751,7 @@ def main():
             # Training arguments - adjusted for multi-GPU
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
-                num_train_epochs=3,
+                num_train_epochs=5,
                 per_device_train_batch_size=1,  # Keep small for large model
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
@@ -762,7 +762,7 @@ def main():
                 logging_steps=1,
                 eval_strategy="steps",
                 eval_steps=eval_steps,  # Use variable based on debug mode
-                save_steps=200,
+                save_steps=100,
                 save_total_limit=3,  # Increase to keep more checkpoints including best
                 load_best_model_at_end=True,  # Change to True to load best model at end
                 metric_for_best_model="eval_accuracy",  # Or use "eval_accuracy" if you prefer

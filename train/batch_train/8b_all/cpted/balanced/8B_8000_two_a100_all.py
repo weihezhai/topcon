@@ -490,6 +490,13 @@ def main():
         parser.add_argument("--max_length", type=int, default=8000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         args = parser.parse_args()
+
+        # Default to all visible GPUs if none provided
+        if args.gpu_ids is None:
+            if torch.cuda.is_available():
+                args.gpu_ids = list(range(torch.cuda.device_count()))
+            else:
+                args.gpu_ids = []
         
         print(f"Using GPU IDs: {args.gpu_ids}")
         print(f"CUDA_VISIBLE_DEVICES: {os.environ.get('CUDA_VISIBLE_DEVICES', 'Not set')}")
@@ -702,10 +709,10 @@ def main():
             model = AutoModelForCausalLM.from_pretrained(
                 OUTPUT_DIR,  # Load from fine-tuned model directory
                 torch_dtype=torch.bfloat16,
-                device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
-                offload_folder="./offload",  # Offload to disk if needed
-                attn_implementation="sdpa"  # Use SDPA attention implementation
+                device_map="auto",
+                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
+                offload_folder="./offload",
+                attn_implementation="sdpa"
             )
             print("Loaded fine-tuned model for evaluation")
         else:
@@ -713,10 +720,10 @@ def main():
             model = AutoModelForCausalLM.from_pretrained(
                 BASE_MODEL_CACHE,
                 torch_dtype=torch.bfloat16,
-                device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "78GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
-                offload_folder="./offload",  # Offload to disk if needed
-                attn_implementation="sdpa"  # Use SDPA attention implementation
+                device_map="auto",
+                max_memory={i: "78GiB" for i in range(len(args.gpu_ids))},
+                offload_folder="./offload",
+                attn_implementation="sdpa"
             )
 
         print(model)
@@ -852,7 +859,7 @@ def main():
                 device_map="auto",
                 max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
                 offload_folder="./offload",
-                attn_implementation="sdpa"  # Use SDPA attention implementation
+                attn_implementation="sdpa"
             )
             
             # Clear cache again after loading

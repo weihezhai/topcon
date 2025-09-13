@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --partition=gpu
 #SBATCH --qos=gpu
-#SBATCH --gres=gpu:2
-#SBATCH --mem=120G
+#SBATCH --gres=gpu:1
+#SBATCH --mem=100G
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --job-name=non_cpt_llm_8b_imbalanced
-#SBATCH --output=./logs/non_cpt_llm_8b_imbalanced.%j.out
+#SBATCH --job-name=4b_non_cpt_rl_imbalanced
+#SBATCH --output=./logs/4b_non_cpt_rl_imbalanced.%j.out
 #SBATCH --time=0-10:00:00
 
 # Load necessary modules
@@ -24,4 +24,4 @@ source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed
-python 8B_8000_two_a100_llm.py --detailed_eval
+python 4B_8000_two_a100_rl.py --detailed_eval

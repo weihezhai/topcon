@@ -1,14 +1,14 @@
 #!/bin/bash
 #SBATCH --partition=gpu
 #SBATCH --qos=gpu
-#SBATCH --gres=gpu:2
-#SBATCH --mem=120G
+#SBATCH --gres=gpu:1
+#SBATCH --mem=100G
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --job-name=non_cpt_th_8b_imbalanced
-#SBATCH --output=./logs/non_cpt_th_8b_imbalanced.%j.out
-#SBATCH --time=0-10:00:00
+#SBATCH --job-name=4b_non_cpt_llm_imbalanced
+#SBATCH --output=./logs/4b_non_cpt_llm_imbalanced.%j.out
+#SBATCH --time=0-15:00:00
 
 # Load necessary modules
 # module load Anaconda3/2024.02-1
@@ -19,9 +19,9 @@ module load cuDNN/8.9.2.26-CUDA-12.1.1
 source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 # module load CUDA/12.4.0
 
-# Activate your conda environment ,m
+# Activate your conda environment
 # source activate etu
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed
-python 8B_8000_two_a100_th.py --detailed_eval
+python 4B_8000_two_a100_llm.py --detailed_eval

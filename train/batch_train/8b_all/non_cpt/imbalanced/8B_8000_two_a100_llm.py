@@ -491,6 +491,13 @@ def main():
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         args = parser.parse_args()
         
+        # Default to all visible GPUs if none provided
+        if args.gpu_ids is None:
+            if torch.cuda.is_available():
+                args.gpu_ids = list(range(torch.cuda.device_count()))
+            else:
+                args.gpu_ids = []
+                
         print(f"Using GPU IDs: {args.gpu_ids}")
         print(f"CUDA_VISIBLE_DEVICES: {os.environ.get('CUDA_VISIBLE_DEVICES', 'Not set')}")
         

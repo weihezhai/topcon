@@ -653,7 +653,7 @@ def main():
         eval_dataset = train_test_split_result['test']
 
         # Create a smaller subset for faster evaluation during training
-        small_eval_dataset = eval_dataset.select(range(min(50, len(eval_dataset))))  # Even smaller for faster eval
+        small_eval_dataset = eval_dataset.select(range(min(100, len(eval_dataset))))  # Even smaller for faster eval
         
         print(f"Train set: {len(train_dataset)} samples")
         print(f"Test set: {len(eval_dataset)} samples ({len(small_eval_dataset)} used for periodic eval)")
@@ -742,7 +742,7 @@ def main():
         # Only run training if not in evaluation mode
         if not args.eval:
             # Set eval_steps based on debug mode
-            eval_steps = 10 if args.debug else 200
+            eval_steps = 10 if args.debug else 100
             
             if args.debug:
                 print("DEBUG MODE: eval_steps set to 10")
@@ -761,7 +761,7 @@ def main():
                 logging_steps=1,
                 eval_strategy="steps",
                 eval_steps=eval_steps,  # Use variable based on debug mode
-                save_steps=200,
+                save_steps=100,
                 save_total_limit=3,  # Increase to keep more checkpoints including best
                 load_best_model_at_end=True,  # Change to True to load best model at end
                 metric_for_best_model="eval_accuracy",  # Or use "eval_accuracy" if you prefer

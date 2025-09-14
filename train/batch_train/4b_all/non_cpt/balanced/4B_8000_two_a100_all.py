@@ -653,7 +653,7 @@ def main():
         eval_dataset = train_test_split_result['test']
 
         # Create a smaller subset for faster evaluation during training
-        small_eval_dataset = eval_dataset.select(range(min(50, len(eval_dataset))))  # Even smaller for faster eval
+        small_eval_dataset = eval_dataset.select(range(min(100, len(eval_dataset))))  # Even smaller for faster eval
         
         print(f"Train set: {len(train_dataset)} samples")
         print(f"Test set: {len(eval_dataset)} samples ({len(small_eval_dataset)} used for periodic eval)")

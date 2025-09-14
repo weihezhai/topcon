@@ -482,11 +482,11 @@ def main():
         parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
         parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
-        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B", help="Pre-trained model name or path")
+        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/llm/", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/train/label_simple.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default='/mnt/parscratch/users/acr24wz/src/iclr/data/scratch/mpx602/topcon-1/conference_data/iclr_2025_data/statistics_per_paper.json', help="Path to the statistical.json file containing paper statistics")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/cpt_model/imbalanced/finetuned/llm", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/cpt_model/imbalanced/finetuned/llm", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=8000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         args = parser.parse_args()
@@ -519,7 +519,7 @@ def main():
         MAX_LENGTH = args.max_length
         
         # Model directories
-        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/cpt_model/cpt_8b_base/checkpoint-19400"  # Where to cache the downloaded model
+        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/cpt_model/cpt_4b_base"  # Where to cache the downloaded model
 
         # If in evaluation mode, use the fine-tuned model directory
         if args.eval:
@@ -654,7 +654,7 @@ def main():
         eval_dataset = train_test_split_result['test']
 
         # Create a smaller subset for faster evaluation during training
-        small_eval_dataset = eval_dataset.select(range(min(50, len(eval_dataset))))  # Even smaller for faster eval
+        small_eval_dataset = eval_dataset.select(range(min(100, len(eval_dataset))))  # Even smaller for faster eval
         
         print(f"Train set: {len(train_dataset)} samples")
         print(f"Test set: {len(eval_dataset)} samples ({len(small_eval_dataset)} used for periodic eval)")
@@ -743,7 +743,7 @@ def main():
         # Only run training if not in evaluation mode
         if not args.eval:
             # Set eval_steps based on debug mode
-            eval_steps = 10 if args.debug else 200
+            eval_steps = 10 if args.debug else 100
             
             if args.debug:
                 print("DEBUG MODE: eval_steps set to 10")
@@ -751,7 +751,7 @@ def main():
             # Training arguments - adjusted for multi-GPU
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
-                num_train_epochs=3,
+                num_train_epochs=5,
                 per_device_train_batch_size=1,  # Keep small for large model
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
@@ -762,7 +762,7 @@ def main():
                 logging_steps=1,
                 eval_strategy="steps",
                 eval_steps=eval_steps,  # Use variable based on debug mode
-                save_steps=200,
+                save_steps=100,
                 save_total_limit=3,  # Increase to keep more checkpoints including best
                 load_best_model_at_end=True,  # Change to True to load best model at end
                 metric_for_best_model="eval_accuracy",  # Or use "eval_accuracy" if you prefer

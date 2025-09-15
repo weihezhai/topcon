@@ -6,8 +6,8 @@
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --job-name=4b_non_cpt_llm_imbalanced
-#SBATCH --output=./logs/4b_non_cpt_llm_imbalanced.%j.out
+#SBATCH --job-name=merge_4b_non_cpt_llm
+#SBATCH --output=./logs/merge_4b_non_cpt_llm.%j.out
 #SBATCH --time=0-15:00:00
 
 # Load necessary modules

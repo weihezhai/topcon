@@ -485,7 +485,7 @@ def main():
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B", help="Pre-trained model name or path")
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/balanced/cv/", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/balanced_labels.json", help="Path to the file containing labels")
-        parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
+        parser.add_argument("--statistics_file", type=str, default='/mnt/parscratch/users/acr24wz/public/stats_overall.json', help="Path to the statistical.json file containing paper statistics")
         parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_8B/non_cpt_model/balanced/finetuned/cv", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=8000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")

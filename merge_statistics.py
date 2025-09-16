@@ -64,8 +64,8 @@ def recompute_summary(merged: Dict[str, Any]) -> None:
 
 def parse_args(argv: List[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Merge the 'papers' field from another statistics file into a base JSON.")
-    p.add_argument("base", help="Path to base statistics_per_paper.json")
-    p.add_argument("other", help="Path to other statistics JSON with the same schema")
+    p.add_argument("--base", help="Path to base statistics_per_paper.json")
+    p.add_argument("--other", help="Path to other statistics JSON with the same schema")
     p.add_argument("-o", "--output", help="Path to write merged JSON (default: overwrite base)", default=None)
     p.add_argument("--prefer", choices=["base", "other"], default="other",
                    help="Which file wins when merging non-dict/list values (default: other)")

@@ -306,10 +306,34 @@ def parse_args():
     p.add_argument("--thresholds", default="0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9", help="Comma-separated confidence thresholds")
     p.add_argument("--output_json", default=None, help="Optional path to save results JSON")
     p.add_argument("--limit_eval", type=int, default=None, help="Optional limit of test samples for faster run")
+    # NEW: GPU selection (mirrors training script behavior)
+    p.add_argument("--gpu_ids", type=int, nargs='+', default=None,
+                   help="GPU IDs to use (e.g., --gpu_ids 0 1). If not set, all visible GPUs are used.")
     return p.parse_args()
 
 def main():
     args = parse_args()
+
+    # NEW: set CUDA_VISIBLE_DEVICES early (before first CUDA use/model load)
+    if args.gpu_ids:
+        gpu_ids_str = ",".join(map(str, args.gpu_ids))
+        os.environ["CUDA_VISIBLE_DEVICES"] = gpu_ids_str
+        print(f"Set CUDA_VISIBLE_DEVICES to: {gpu_ids_str}")
+    else:
+        print("No --gpu_ids provided; using all currently visible GPUs.")
+
+    # (Optional) GPU diagnostics
+    if torch.cuda.is_available():
+        print(f"Detected {torch.cuda.device_count()} visible GPU(s):")
+        for i in range(torch.cuda.device_count()):
+            try:
+                name = torch.cuda.get_device_name(i)
+                total_mem = torch.cuda.get_device_properties(i).total_memory / 1024**3
+                print(f"  GPU {i}: {name} ({total_mem:.1f} GB)")
+            except Exception:
+                pass
+    else:
+        print("CUDA not available; running on CPU.")
 
     print("=== Confidence-based Stratification Utility ===")
     print(f"Model: {args.model_path}")
@@ -319,6 +343,7 @@ def main():
     print(f"Max length: {args.max_length}")
     print(f"Test size: {args.test_size}")
     print(f"Batch size: {args.batch_size}")
+    print(f"GPU IDs argument: {args.gpu_ids if args.gpu_ids else 'All visible'}")
 
     # Load tokenizer & model
     tokenizer = AutoTokenizer.from_pretrained(args.model_path)

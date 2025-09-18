@@ -268,6 +268,20 @@ def print_bin_table(rows):
               f"{fmt(r['accept_precision']):>8} {fmt(r['accept_recall']):>8} "
               f"{fmt(r['reject_precision']):>8} {fmt(r['reject_recall']):>8}")
 
+# New: renderer returning the same bin table as text
+def render_bin_table(rows) -> str:
+    lines = []
+    lines.append("\nConfidence bins (interval membership)")
+    hdr = ("Bin", "Count", "Acc", "AccP", "AccR", "RejP", "RejR")
+    lines.append(f"{hdr[0]:>18} {hdr[1]:>8} {hdr[2]:>8} {hdr[3]:>8} {hdr[4]:>8} {hdr[5]:>8} {hdr[6]:>8}")
+    for r in rows:
+        lines.append(
+            f"{r['bin']:>18} {r['count']:>8} {fmt(r['accuracy']):>8} "
+            f"{fmt(r['accept_precision']):>8} {fmt(r['accept_recall']):>8} "
+            f"{fmt(r['reject_precision']):>8} {fmt(r['reject_recall']):>8}"
+        )
+    return "\n".join(lines)
+
 # ----------------------------
 # Main
 # ----------------------------
@@ -309,6 +323,8 @@ def parse_args():
     # NEW: GPU selection (mirrors training script behavior)
     p.add_argument("--gpu_ids", type=int, nargs='+', default=None,
                    help="GPU IDs to use (e.g., --gpu_ids 0 1). If not set, all visible GPUs are used.")
+    # New: path to save the confidence bins table
+    p.add_argument("--output_bin_table", default=None, help="Optional path to save the confidence bins table (text)")
     return p.parse_args()
 
 def main():
@@ -420,6 +436,12 @@ def main():
     # Print
     print_threshold_table(threshold_rows)
     print_bin_table(bin_rows)
+
+    # New: save the printed bin table if requested
+    if args.output_bin_table:
+        with open(args.output_bin_table, "w") as f:
+            f.write(render_bin_table(bin_rows) + "\n")
+        print(f"\nSaved bin table to {args.output_bin_table}")
 
     # Aggregate summary
     overall_acc = sum(r["pred_label"] == r["true_label"] for r in records) / len(records) if records else 0.0

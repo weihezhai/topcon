@@ -302,7 +302,7 @@ def parse_args():
     p.add_argument("--max_length", type=int, default=8000)
     p.add_argument("--test_size", type=float, default=0.2)
     p.add_argument("--batch_size", type=int, default=1)
-    p.add_argument("--bins", default="0,0.2,0.4,0.6,0.8,1.0", help="Comma-separated bin edges in [0,1]")
+    p.add_argument("--bins", default="0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0", help="Comma-separated bin edges in [0,1]")
     p.add_argument("--thresholds", default="0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9", help="Comma-separated confidence thresholds")
     p.add_argument("--output_json", default=None, help="Optional path to save results JSON")
     p.add_argument("--limit_eval", type=int, default=None, help="Optional limit of test samples for faster run")

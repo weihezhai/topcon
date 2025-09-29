@@ -1,13 +1,13 @@
 from huggingface_hub import HfApi, HfFolder
 from huggingface_hub.utils import RepositoryNotFoundError
 
-api = HfApi(token='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')
+api = HfApi(token='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')
 
 # Define folder paths and their corresponding repo IDs
 folders_to_upload = [
     {
-        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/finetuned_model/all_four_domain",
-        "repo_id": "PaperPred/PaperPrediction-ALL-4B"
+        "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/cpt_model/balanced/finetuned/all/checkpoint-1800",
+        "repo_id": "PaperPred/PaperPrediction-ALL-4B-ba"
     }
     # {
     #     "folder_path": "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_1d7B/finetuned_model/llm",

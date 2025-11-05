@@ -1,0 +1,21 @@
+Job started at: Mon Oct 20 21:44:01 CEST 2025
+Running on node: cn0643
+Job ID: 10340140
+CPUs: 16
+Memory: 100GB
+
+🔧 Testing OpenReview client...
+🔍 Testing invitation: ICLR.cc/2024/Conference/-/Submission
+✅ Successfully connected! Found 3 notes for ICLR.cc/2024/Conference/-/Submission.
+📄 Sample note ID: cXs5md5wAq
+📝 Sample title: {'value': 'Modelling Microbial Communities with Graph Neural Networks'}
+📁 Output directory: /ceph/hpc/home/euweihez/topcon/d2025d08-005-users/iclr_2026
+🎯 Targeting ICLR 2026 papers
+🚀 Starting crawl for unlimited ICLR 2026 papers...
+📄 PDF downloads enabled
+🔍 Fetching papers...
+Searching for ICLR 2026 submissions...
+Trying invitation: ICLR.cc/2026/Conference/-/Submission
+Fetching all notes for ICLR.cc/2026/Conference/-/Submission with reviews (using directReplies)...
+Found 19746 papers with invitation: ICLR.cc/2026/Conference/-/Submission
+📊 Found 19746 papers

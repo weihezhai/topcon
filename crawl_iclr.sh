@@ -2,7 +2,7 @@
 #SBATCH --job-name=crawl
 #SBATCH --output=./crawl/logs/%x_%j.out
 #SBATCH --error=./crawl/logs/%x_%j.err
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=8
 ## SBATCH --mem=80G
 #SBATCH --time=12:00:00
 
@@ -21,7 +21,7 @@ echo "Memory: 100GB"
 echo ""
 
 # Run the crawler
-uv run spider_with_pdfs_apiv2.py --conference iclr --venue 2026 --limit 0
+uv run spider_with_pdfs_apiv2.py --conference neurips --venue 2025 --limit 0
 
 # Print job completion
 echo ""

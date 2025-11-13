@@ -30,6 +30,11 @@ class OpenReviewCrawlerWithPDFs:
         # Define invitation formats for different conferences
         conference_formats = {
             'neurips': {
+                '2025': [
+                    'NeurIPS.cc/2025/Conference/-/Submission',
+                    'NeurIPS.cc/2025/Conference/Submission',
+                    'neurips.cc/2025/Conference/-/Submission',
+                ],
                 '2024': [
                     'NeurIPS.cc/2024/Conference/-/Submission',
                     'NeurIPS.cc/2024/Conference/Submission',
@@ -616,7 +621,7 @@ def test_client():
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Crawl academic conference papers and download PDFs from OpenReview')
-    parser.add_argument('--output-dir', '-o', type=str, default='/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/iclr_2026/',
+    parser.add_argument('--output-dir', '-o', type=str, default='/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/nips_2025/',
                        help='Output directory for storing crawled data and PDFs (default: conference_data)')
     parser.add_argument('--limit', '-l', type=int, default=0,
                        help='Maximum number of papers to crawl (default: unlimited), 0 means unlimited')

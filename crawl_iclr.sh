@@ -2,9 +2,9 @@
 #SBATCH --job-name=crawl
 #SBATCH --output=./crawl/logs/%x_%j.out
 #SBATCH --error=./crawl/logs/%x_%j.err
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=4
 ## SBATCH --mem=80G
-#SBATCH --time=12:00:00
+#SBATCH --time=5:00:00
 
 # Create log directory if it doesn't exist
 mkdir -p ./crawl/logs

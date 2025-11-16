@@ -1,7 +1,6 @@
 import os
 import sys
 import argparse
-import json
 
 # Parse GPU IDs early before importing torch
 parser = argparse.ArgumentParser(description="Fine-tune a language model with multi-GPU support")
@@ -252,19 +251,33 @@ def download_and_save_model(model_name, cache_dir):
     return cache_dir
 
 def split_dataset_stratified(dataset, test_size=0.2, seed=42):
-    """Split dataset with stratification while preserving all columns (incl. paper_id)."""
+    """Split dataset with stratification using sklearn"""
+    texts = dataset['text']
     labels = dataset['labels']
-    indices = np.arange(len(labels))
-    train_idx, test_idx = train_test_split(
-        indices, test_size=test_size, random_state=seed, stratify=labels
+    
+    # Use sklearn for stratified split
+    train_texts, test_texts, train_labels, test_labels = train_test_split(
+        texts, labels, 
+        test_size=test_size, 
+        random_state=seed, 
+        stratify=labels
     )
-    return {
-        'train': dataset.select(train_idx.tolist()),
-        'test': dataset.select(test_idx.tolist())
-    }
+    
+    # Create new datasets
+    train_dataset = Dataset.from_dict({
+        'text': train_texts,
+        'labels': train_labels
+    })
+    
+    test_dataset = Dataset.from_dict({
+        'text': test_texts,
+        'labels': test_labels
+    })
+    
+    return {'train': train_dataset, 'test': test_dataset}
 
 def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None):
-    """Evaluate accuracy using probability-based comparison of yes/no tokens, also return per-id predictions."""
+    """Evaluate accuracy using probability-based comparison of yes/no tokens"""
     print(f"Running probability-based accuracy evaluation on {len(eval_dataset)} samples...")
     
     # Get token IDs for "yes" and "no"
@@ -274,7 +287,6 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     all_binary_predictions = []
     all_binary_labels = []
     total_loss = 0.0
-    predictions_by_id = {}
     
     model = trainer.model
     
@@ -294,7 +306,6 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
             batch_attention_masks = []
             decision_positions = []
             true_labels = []
-            paper_ids_in_batch = []
             
             for sample in batch_dataset:
                 input_ids = sample['input_ids']
@@ -321,9 +332,6 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                     true_token_id = labels[decision_pos]
                     true_label = 1 if true_token_id == yes_token_id else 0
                     true_labels.append(true_label)
-                    # Keep paper_id for JSON output
-                    pid = sample.get('paper_id', None)
-                    paper_ids_in_batch.append(pid)
             
             if len(batch_input_ids) > 0:
                 # Pad batch to same length
@@ -372,9 +380,6 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                     
                     all_binary_predictions.append(predicted_label)
                     all_binary_labels.append(true_label)
-                    pid = paper_ids_in_batch[j]
-                    if pid is not None:
-                        predictions_by_id[str(pid)] = int(predicted_label)
             
             # Get loss from evaluation using original method for loss calculation
             eval_results = trainer.evaluate(eval_dataset=batch_dataset)
@@ -390,8 +395,7 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     results = {
         'eval_loss': avg_loss,
         'eval_accuracy': accuracy,
-        'eval_samples': len(eval_dataset),
-        'predictions_by_id': predictions_by_id
+        'eval_samples': len(eval_dataset)
     }
     
     # Add detailed metrics if requested
@@ -479,13 +483,12 @@ def main():
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
         parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
-        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/balanced/all/", help="Path to the folder containing training jsons")
+        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/balanced/llm/", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/balanced_labels.json", help="Path to the file containing labels")
-        parser.add_argument("--statistics_file", type=str, default='/mnt/parscratch/users/acr24wz/public/stats_overall.json', help="Path to the statistical.json file containing paper statistics")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/cpt_model/balanced/finetuned/all", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/cpt_model/balanced/finetuned/llm", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=8000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
-        parser.add_argument("--predictions_file", type=str, default=None, help="Path to save per-paper predictions JSON")
         args = parser.parse_args()
 
         # Default to all visible GPUs if none provided
@@ -576,7 +579,7 @@ def main():
         print("Loading dataset...")
         
         # Define processed dataset cache path - include stats/titles in cache name if provided
-        cache_suffix = "all_mineru_all"
+        cache_suffix = "llm_mineru_all"
         if STATISTICS_FILE:
             cache_suffix += "_with_stats"
         # if TITLES_FILE:
@@ -706,10 +709,10 @@ def main():
             model = AutoModelForCausalLM.from_pretrained(
                 OUTPUT_DIR,  # Load from fine-tuned model directory
                 torch_dtype=torch.bfloat16,
-                device_map="auto",
-                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
-                offload_folder="./offload",
-                attn_implementation="sdpa"
+                device_map="auto",  # Automatically distribute across available GPUs
+                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
+                offload_folder="./offload",  # Offload to disk if needed
+                attn_implementation="sdpa"  # Use SDPA attention implementation
             )
             print("Loaded fine-tuned model for evaluation")
         else:
@@ -717,10 +720,10 @@ def main():
             model = AutoModelForCausalLM.from_pretrained(
                 BASE_MODEL_CACHE,
                 torch_dtype=torch.bfloat16,
-                device_map="auto",
-                max_memory={i: "78GiB" for i in range(len(args.gpu_ids))},
-                offload_folder="./offload",
-                attn_implementation="sdpa"
+                device_map="auto",  # Automatically distribute across available GPUs
+                max_memory={i: "78GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
+                offload_folder="./offload",  # Offload to disk if needed
+                attn_implementation="sdpa"  # Use SDPA attention implementation
             )
 
         print(model)
@@ -787,7 +790,8 @@ def main():
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
-                eval_dataset=small_eval_dataset,  
+                eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
+                tokenizer=tokenizer,
                 data_collator=data_collator,
                 preprocess_logits_for_metrics=preprocess_logits_for_metrics,
                 compute_metrics=lambda ep: compute_metrics(ep)
@@ -855,7 +859,7 @@ def main():
                 device_map="auto",
                 max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
                 offload_folder="./offload",
-                attn_implementation="sdpa"
+                attn_implementation="sdpa"  # Use SDPA attention implementation
             )
             
             # Clear cache again after loading
@@ -897,16 +901,6 @@ def main():
         )
         
         print(f"Final evaluation results: {eval_results}")
-
-        # Save per-paper predictions to JSON if requested
-        if args.predictions_file:
-            try:
-                os.makedirs(os.path.dirname(args.predictions_file), exist_ok=True)
-                with open(args.predictions_file, "w", encoding="utf-8") as f:
-                    json.dump(eval_results.get("predictions_by_id", {}), f, ensure_ascii=False, indent=2)
-                print(f"Saved predictions JSON to: {args.predictions_file}")
-            except Exception as e:
-                print(f"Failed to save predictions JSON: {e}")
         
     except Exception as e:
         print(f"Error occurred: {e}")

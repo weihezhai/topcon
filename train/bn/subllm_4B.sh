@@ -1,14 +1,14 @@
 #!/bin/bash
 #SBATCH --partition=gpu
 #SBATCH --qos=gpu
-#SBATCH --gres=gpu:2
-#SBATCH --mem=120G
+#SBATCH --gres=gpu:1
+#SBATCH --mem=100G
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=wzhai2@sheffield.ac.uk
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --job-name=cpted_all_8b_balanced
-#SBATCH --output=./logs/cpted_all_8b_balanced.%j.out
-#SBATCH --time=01-10:00:00
+#SBATCH --job-name=4b_cpt_llm_balanced
+#SBATCH --output=./logs/4b_cpt_llm_balanced.%j.out
+#SBATCH --time=0-15:00:00
 
 # Load necessary modules
 # module load Anaconda3/2024.02-1
@@ -24,7 +24,4 @@ source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 
 # Run the preprocessing script using the runner
 # You can modify these parameters as needed
-# python 8B_8000_two_a100_all.py --detailed_eval
-
-# Run
-python 8B_8000_two_a100_all.py --detailed_eval
+python 4B_8000_two_a100_llm.py --detailed_eval

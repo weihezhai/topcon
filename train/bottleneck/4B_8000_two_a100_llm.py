@@ -483,10 +483,10 @@ def main():
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
         parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
-        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/acr24wz/src/iclr/mineru/balanced/llm/", help="Path to the folder containing training jsons")
-        parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/acr24wz/topcon/balanced_labels.json", help="Path to the file containing labels")
+        parser.add_argument("--data_folder", type=str, default="/home/ubuntu/h100-utah/src/iclr/mineru/balanced/llm/", help="Path to the folder containing training jsons")
+        parser.add_argument("--labels_file", type=str, default="/home/ubuntu/h100-utah/topcon/balanced_labels.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/cpt_model/balanced/finetuned/llm", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--output_dir", type=str, default="/home/ubuntu/h100-utah/model/bn/llm", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=8000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         args = parser.parse_args()
@@ -519,7 +519,7 @@ def main():
         MAX_LENGTH = args.max_length
         
         # Model directories
-        BASE_MODEL_CACHE = "/mnt/parscratch/users/acr24wz/etu/topcon/qwen3_4B/cpt_model/cpt_4b_base"  # Where to cache the downloaded model
+        BASE_MODEL_CACHE = "/home/ubuntu/h100-utah/model/balanced/llm"  # Where to cache the downloaded model
 
         # If in evaluation mode, use the fine-tuned model directory
         if args.eval:

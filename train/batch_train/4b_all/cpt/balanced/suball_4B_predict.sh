@@ -27,4 +27,8 @@ source /mnt/parscratch/users/acr24wz/envs/py310/bin/activate
 # python 4B_8000_two_a100_all.py --detailed_eval
 
 # Run
-python 4B_8000_two_a100_all_prediction.py --detailed_eval --eval --predictions_file ./logs/predictions_4b.json
+python euro_4B_8000_two_a100_llm.py \
+    --detailed_eval \
+    --eval \
+    --metadata_files /ceph/hpc/home/euweihez/topcon/d2025d08-005-users/iclr2024/iclr2024.json /ceph/hpc/home/euweihez/topcon/d2025d08-005-users/iclr2025/iclr2025.json 
+

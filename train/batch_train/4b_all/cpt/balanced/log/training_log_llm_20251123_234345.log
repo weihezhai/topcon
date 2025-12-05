@@ -1,0 +1,6 @@
+usage: euro_4B_8000_two_a100_llm.py [-h] [--eval] [--detailed_eval] [--debug] [--model_name MODEL_NAME] [--data_folder DATA_FOLDER]
+                                    [--labe================================================================================
+End time: 2025-11-23 23:43:45.443072
+Log saved to: ./log/training_log_llm_20251123_234345.log
+                                   [--max_length MAX_LENGTH] [--gpu_ids GPU_IDS [GPU_IDS ...]]
+euro_4B_8000_two_a100_llm.py: error: unrecognized arguments:      

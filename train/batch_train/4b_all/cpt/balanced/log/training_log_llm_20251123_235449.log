@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/ceph/hpc/home/euweihez/topcon/train/batch_train/4b_all/cpt/balanced/euro_4B_8000_two_a100_llm.py", line 636, in main
+    dataset = dataset_builder.load_dataset_with_ids()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/ceph/hpc/home/euweihez/topcon/train/batch_train/4b_all/cpt/balanced/dataset_builder_new_explain.py", line 451, in load_dataset_with_ids
+    for paper_id in sorted(os.listdir(self.data_folder)):
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/ceph/hpc/home/euweihez/topcon/balanced/llm/'
+ first time...
+Error occurred: [Errno 2] No such file or directory: '/ceph/hpc/home/euweihez/topcon/balanced/llm/'
+================================================================================
+End time: 2025-11-23 23:54:52.099596
+Log saved to: ./log/training_log_llm_20251123_235449.log

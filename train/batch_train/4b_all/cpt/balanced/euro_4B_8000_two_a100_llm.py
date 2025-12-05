@@ -34,7 +34,7 @@ import numpy as np
 import torch.nn as nn
 
 # Import the dataset builder
-from dataset_builder_new import TextDatasetBuilder
+from dataset_builder_new_explain import TextDatasetBuilder
 from datasets import load_from_disk
 
 from contextlib import contextmanager
@@ -483,10 +483,11 @@ def main():
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
         parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
-        parser.add_argument("--data_folder", type=str, default="/ceph/hpc/home/euweihez/topcon/balanced/llm/", help="Path to the folder containing training jsons")
+        parser.add_argument("--data_folder", type=str, default="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/data_src/balanced/balanced_llm", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/ceph/hpc/home/euweihez/topcon/balanced_labels.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
-        parser.add_argument("--output_dir", type=str, default="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/finetuned/llm", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--metadata_files", type=str, nargs='+', default=None, help="Path(s) to the metadata json file(s) containing review scores")
+        parser.add_argument("--output_dir", type=str, default="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/models/qwen3_4b/qwen3_4B/cpt_model/balanced/finetuned/all", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=8000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         args = parser.parse_args()
@@ -514,6 +515,7 @@ def main():
         DATA_FOLDER = args.data_folder
         LABELS_FILE = args.labels_file
         STATISTICS_FILE = args.statistics_file
+        METADATA_FILES = args.metadata_files
         # TITLES_FILE = args.titles_file
         OUTPUT_DIR = args.output_dir
         MAX_LENGTH = args.max_length
@@ -582,6 +584,8 @@ def main():
         cache_suffix = "llm_mineru_all"
         if STATISTICS_FILE:
             cache_suffix += "_with_stats"
+        if METADATA_FILES:
+            cache_suffix += "_with_meta"
         # if TITLES_FILE:
         #     cache_suffix += "_with_titles"
         PROCESSED_DATASET_CACHE = f"/ceph/hpc/data/d2025d08-005-users/data_src/cache/processed_dataset/balanced/{cache_suffix}"
@@ -598,6 +602,7 @@ def main():
                     DATA_FOLDER, 
                     LABELS_FILE, 
                     statistics_file=STATISTICS_FILE,
+                    metadata_files=METADATA_FILES,
                     # titles_file=TITLES_FILE,
                     max_length=MAX_LENGTH
                 )
@@ -609,6 +614,7 @@ def main():
                     DATA_FOLDER, 
                     LABELS_FILE, 
                     statistics_file=STATISTICS_FILE,
+                    metadata_files=METADATA_FILES,
                     # titles_file=TITLES_FILE,
                     max_length=MAX_LENGTH
                 )
@@ -623,6 +629,7 @@ def main():
                 DATA_FOLDER, 
                 LABELS_FILE, 
                 statistics_file=STATISTICS_FILE,
+                metadata_files=METADATA_FILES,
                 # titles_file=TITLES_FILE,
                 max_length=MAX_LENGTH
             )
@@ -637,6 +644,7 @@ def main():
         print(f"  Data folder: {DATA_FOLDER}")
         print(f"  Labels file: {LABELS_FILE}")
         print(f"  Statistics file: {STATISTICS_FILE if STATISTICS_FILE else 'Not provided'}")
+        print(f"  Metadata files: {METADATA_FILES if METADATA_FILES else 'Not provided'}")
         # print(f"  Titles file: {TITLES_FILE if TITLES_FILE else 'Not provided'}")
         print(f"  Max length: {MAX_LENGTH}")
         
@@ -669,18 +677,22 @@ def main():
         # Tokenize datasets using the new approach
         print("Tokenizing datasets...")
         
+        # Get column names to remove (all original columns)
+        cols_to_remove = train_dataset.column_names
+        print(f"Columns to remove after tokenization: {cols_to_remove}")
+
         train_dataset = train_dataset.map(
             lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
             batched=True,
             batch_size=100,  # Process in smaller batches
-            remove_columns=['text', 'labels']  # Remove original columns
+            remove_columns=cols_to_remove  # Remove original columns including new metadata
         )
         
         eval_dataset = eval_dataset.map(
             lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
             batched=True,
             batch_size=100,  # Process in smaller batches
-            remove_columns=['text', 'labels']  # Remove original columns
+            remove_columns=cols_to_remove  # Remove original columns including new metadata
         )
         
         # Also tokenize the small eval dataset for periodic evaluation
@@ -688,7 +700,7 @@ def main():
             lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
             batched=True,
             batch_size=100,
-            remove_columns=['text', 'labels']
+            remove_columns=cols_to_remove
         )
         
         print("Tokenization complete")
@@ -756,7 +768,7 @@ def main():
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
                 learning_rate=2e-5,
-                warmup_ratio=0.1, # 10 percent of total steps
+                warmup_ratio=0.1,
                 weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,

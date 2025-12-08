@@ -1,0 +1,9 @@
+Starting Task ID: 1
+Initializing Qwen Client with model: qwen3-vl-8b-instruct
+Using Data Root: /ceph/hpc/home/euweihez/topcon/d2025d08-005-users/data_src/balanced/balanced_llm
+Found existing output file /ceph/hpc/home/euweihez/topcon/d2025d08-005-users/img_description/llm/image_descriptions_1.json, loading to resume...
+--- SHARD INFO ---
+Job ID: 1 / 4
+Processing indices: 880 to 1760 (Total: 880 papers)
+Outputting to: /ceph/hpc/home/euweihez/topcon/d2025d08-005-users/img_description/llm/image_descriptions_1.json
+------------------

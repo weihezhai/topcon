@@ -483,11 +483,11 @@ def main():
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
         parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
-        parser.add_argument("--data_folder", type=str, default="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/data_src/balanced/balanced_llm", help="Path to the folder containing training jsons")
-        parser.add_argument("--labels_file", type=str, default="/ceph/hpc/home/euweihez/topcon/balanced_labels.json", help="Path to the file containing labels")
+        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/balanced_llm", help="Path to the folder containing training jsons")
+        parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/topcon/balanced_labels.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
-        parser.add_argument("--img_desc_file", type=str, default='/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/img_description/llm/image_descriptions_MERGED.json', help="Path to the image descriptions JSON file for vision-language support")
-        parser.add_argument("--output_dir", type=str, default="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/models/qwen3_4b/qwen3_4b_img/llm", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--img_desc_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/img_desimage_descriptions_llm.json', help="Path to the image descriptions JSON file for vision-language support")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_4b/orig/ft/llm", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=12000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         args = parser.parse_args()
@@ -520,7 +520,7 @@ def main():
         MAX_LENGTH = args.max_length
         
         # Model directories
-        BASE_MODEL_CACHE = "/ceph/hpc/data/d2025d08-005-users/models/qwen3-4B-orig"  # Where to cache the downloaded model
+        BASE_MODEL_CACHE = "/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_4b/orig"  # Where to cache the downloaded model
 
         # If in evaluation mode, use the fine-tuned model directory
         if args.eval:
@@ -585,7 +585,7 @@ def main():
             cache_suffix += "_with_stats"
         if IMG_DESC_FILE:
             cache_suffix += "_with_img_desc"
-        PROCESSED_DATASET_CACHE = f"/ceph/hpc/data/d2025d08-005-users/data_src/cache/processed_dataset/balanced/{cache_suffix}"
+        PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/dataset_cache/balanced/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
         
         # Check if processed dataset exists by looking for the dataset_info.json file

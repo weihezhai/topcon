@@ -1,3 +1,6 @@
+#: This file extends the original training script by incorporating metadata
+#: (e.g., soundness, presentations) to support bottleneck-focused explanations.
+
 import os
 import sys
 import argparse

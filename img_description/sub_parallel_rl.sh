@@ -18,9 +18,9 @@ module load Python/3.12.3-GCCcore-13.3.0
 export DASHSCOPE_API_KEY="sk-5e081662e553472788958c33a522dde2"
 
 # 3. Define paths
-SCRIPT_PATH="/ceph/hpc/home/euweihez/topcon/img_description/evaluate_image_api_sharded.py"
-DATA_ROOT="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/data_src/balanced/balanced_cv"
-OUTPUT_BASE="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/img_description/cv/image_descriptions.json"
+SCRIPT_PATH="/ceph/hpc/home/euweihez/topcon/img_description/evaluate_image_api_sharded_rl.py"
+DATA_ROOT="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/data_src/balanced/balanced_rl/rl/balanced_rl"
+OUTPUT_BASE="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/img_description/rl/image_descriptions.json"
 
 # 4. Create log dir if not exists
 mkdir -p logs
@@ -34,7 +34,7 @@ echo "Starting Task ID: $SLURM_ARRAY_TASK_ID"
 uv run $SCRIPT_PATH \
     --data_root "$DATA_ROOT" \
     --output_file "$OUTPUT_BASE" \
-    --model_name "qwen3-vl-8b-instruct" \
+    --model_name "qwen3-vl-30b-a3b-instruct" \
     --shard_id $SLURM_ARRAY_TASK_ID \
     --num_shards 4
 

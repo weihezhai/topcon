@@ -124,7 +124,7 @@ def main():
     args = parser.parse_args()
 
     # Setup logging with unique name per shard
-    log_file = f"image_generation_shard_{args.shard_id}.log"
+    log_file = f"image_generation_shard_{args.shard_id}_rl.log"
     sys.stdout = TeeOutput(log_file)
 
     # Modify output filename to be unique per shard

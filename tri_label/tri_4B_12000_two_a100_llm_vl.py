@@ -735,7 +735,7 @@ def main():
         print(f"Sample input_ids type: {type(sample['input_ids'])}")
         print(f"Sample input_ids length: {len(sample['input_ids'])}")
         print(f"Sample labels type: {type(sample['labels'])}")
-        print(f"Sample labels value: {sample['labels']}")
+        print(f"Sample labels last 20 values: {sample['labels'][-20:]}")
         
         # Load model with automatic device mapping for multi-GPU
         print("Loading model with automatic device mapping across GPUs...")

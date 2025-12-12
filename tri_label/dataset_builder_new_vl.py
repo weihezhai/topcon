@@ -97,6 +97,14 @@ class TextDatasetBuilder:
         """Convert score to 3-class label"""
         if score is None:
             return None
+            
+        # Handle case where score is a list [mean, std]
+        if isinstance(score, list):
+            if len(score) > 0:
+                score = score[0]
+            else:
+                return None
+                
         if score < 5.4:
             return 0 # No / Reject
         elif score > 6.2:

@@ -1,0 +1,3211 @@
+Initializing Qwen Client with model: qwen3-vl-8b-instruct
+Using Data Root: /ceph/hpc/home/euweihez/topcon/d2025d08-005-users/data_src/balanced/balanced_th/th/balanced_theory
+--- SHARD INFO ---
+Job ID: 0 / 4
+Processing indices: 0 to 494 (Total: 494 papers)
+Outputting to: /ceph/hpc/home/euweihez/topcon/d2025d08-005-users/img_description/th/image_descriptions_0.json
+------------------
+[014CgNPAGy] figure_5.jpg -> classified as: Plots / Charts
+[014CgNPAGy] figure_6.jpg -> classified as: Plots / Charts
+[014CgNPAGy] figure_2.jpg -> classified as: Plots / Charts
+[014CgNPAGy] figure_3.jpg -> classified as: Plots / Charts
+[014CgNPAGy] figure_4.jpg -> classified as: Plots / Charts
+[014CgNPAGy] figure_1.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_19.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_23.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_5.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_6.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_9.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_22.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_18.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_13.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_15.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_2.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_20.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_11.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_7.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_3.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_4.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_17.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_1.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_8.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_12.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_25.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_21.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_26.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_14.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_16.jpg -> classified as: Plots / Charts
+[03OkC0LKDD] figure_10.jpg -> classified as: Plots / Charts
+[06lrITXVAx] figure_2.jpg -> classified as: Plots / Charts
+[06lrITXVAx] figure_3.jpg -> classified as: Plots / Charts
+[06lrITXVAx] figure_1.jpg -> classified as: Plots / Charts
+[0GZ1Bq4Tfr] figure_5.jpg -> classified as: Plots / Charts
+[0GZ1Bq4Tfr] figure_2.jpg -> classified as: Plots / Charts
+[0GZ1Bq4Tfr] figure_(b)_Relative_improvements.jpg -> classified as: Plots / Charts
+[0GZ1Bq4Tfr] figure_4.jpg -> classified as: Plots / Charts
+[0GZ1Bq4Tfr] figure_1.jpg -> classified as: Plots / Charts
+[0NAVeUm7sk] figure_5.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_6.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_9.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_13.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_15.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_2.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_11.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_7.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_3.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_4.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_1.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_8.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_12.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_14.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_16.jpg -> classified as: Qualitative Examples
+[0NAVeUm7sk] figure_10.jpg -> classified as: Qualitative Examples
+[0Pu0H7y3gg] figure_2.jpg -> classified as: Plots / Charts
+[0Pu0H7y3gg] figure_3.jpg -> classified as: Plots / Charts
+[0Pu0H7y3gg] figure_4.jpg -> classified as: Plots / Charts
+[0Pu0H7y3gg] figure_1.jpg -> classified as: Architecture Diagram
+[0T49QbSOho] figure_2.jpg -> classified as: Plots / Charts
+[0T49QbSOho] figure_1.jpg -> classified as: Plots / Charts
+[0UO1mH3Iwv] figure_5.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_6.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_9.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_13.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_15.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_2.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_11.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_7.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_3.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_4.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_17.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_1.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_8.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_12.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_14.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_16.jpg -> classified as: Qualitative Examples
+[0UO1mH3Iwv] figure_10.jpg -> classified as: Qualitative Examples
+[0er6aOyXUD] figure_19.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[0er6aOyXUD] figure_5.jpg -> classified as: Plots / Charts
+[0er6aOyXUD] figure_6.jpg -> classified as: Plots / Charts
+[0er6aOyXUD] figure_9.jpg -> classified as: Plots / Charts
+[0er6aOyXUD] figure_15.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[0er6aOyXUD] figure_2.jpg -> classified as: Plots / Charts
+[0er6aOyXUD] figure_11.jpg -> classified as: Plots / Charts
+[0er6aOyXUD] figure_7.jpg -> classified as: Plots / Charts
+[0er6aOyXUD] figure_3.jpg -> classified as: Plots / Charts
+[0er6aOyXUD] figure_4.jpg -> classified as: Plots / Charts
+[0er6aOyXUD] figure_17.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[0er6aOyXUD] figure_1.jpg -> classified as: Qualitative Examples
+[0er6aOyXUD] figure_8.jpg -> classified as: Plots / Charts
+[0er6aOyXUD] figure_12.jpg -> classified as: Plots / Charts
+[0er6aOyXUD] figure_14.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[0er6aOyXUD] figure_16.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[0er6aOyXUD] figure_10.jpg -> classified as: Plots / Charts
+[0ez68a5UqI] figure_1.jpg -> classified as: Architecture Diagram
+[0fhzSFsGUT] figure_(d)_Norm_ratios.jpg -> classified as: Plots / Charts
+[0fhzSFsGUT] figure_(b)_Cosine_similarities_1.jpg -> classified as: Plots / Charts
+[0fhzSFsGUT] figure_(b)_Cosine_similarities.jpg -> classified as: Plots / Charts
+[0fhzSFsGUT] figure_2.jpg -> classified as: Architecture Diagram
+[0fhzSFsGUT] figure_(d)_Cosine_similarities.jpg -> classified as: Plots / Charts
+[0fhzSFsGUT] figure_3.jpg -> classified as: Architecture Diagram
+[0fhzSFsGUT] figure_4.jpg -> classified as: Plots / Charts
+[0fhzSFsGUT] figure_(a)_Cosine_similarities.jpg -> classified as: Plots / Charts
+[0fhzSFsGUT] figure_1.jpg -> classified as: Plots / Charts
+[0fhzSFsGUT] figure_(a)_Cosine_similarity.jpg -> classified as: Plots / Charts
+[0fwJMANq9P] figure_5.jpg -> classified as: Plots / Charts
+[0fwJMANq9P] figure_2.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[0fwJMANq9P] figure_3.jpg -> classified as: Architecture Diagram
+[0fwJMANq9P] figure_4.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[0fwJMANq9P] figure_1.jpg -> classified as: Qualitative Examples
+[0gDQgwjoX0] figure_5.jpg -> classified as: Plots / Charts
+[0gDQgwjoX0] figure_6.jpg -> classified as: Plots / Charts
+[0gDQgwjoX0] figure_2.jpg -> classified as: Plots / Charts
+[0gDQgwjoX0] figure_7.jpg -> classified as: Plots / Charts
+[0gDQgwjoX0] figure_3.jpg -> classified as: Plots / Charts
+[0gDQgwjoX0] figure_4.jpg -> classified as: Qualitative Examples
+[0gDQgwjoX0] figure_1.jpg -> classified as: Plots / Charts
+[0gDQgwjoX0] figure_8.jpg -> classified as: Qualitative Examples
+[0h6v4SpLCY] figure_2.jpg -> classified as: Plots / Charts
+[0h6v4SpLCY] figure_1.jpg -> classified as: Plots / Charts
+[0i6Z9N5MLY] figure_1.jpg -> classified as: Plots / Charts
+[0jmFRA64Vw] figure_5.jpg -> classified as: Plots / Charts
+[0jmFRA64Vw] figure_6.jpg -> classified as: Plots / Charts
+[0jmFRA64Vw] figure_9.jpg -> classified as: Plots / Charts
+[0jmFRA64Vw] figure_13.jpg -> classified as: Plots / Charts
+[0jmFRA64Vw] figure_15.jpg -> classified as: Plots / Charts
+[0jmFRA64Vw] figure_11.jpg -> classified as: Plots / Charts
+[0jmFRA64Vw] figure_3.jpg -> classified as: Plots / Charts
+[0jmFRA64Vw] figure_1.jpg -> classified as: Plots / Charts
+[0jmFRA64Vw] figure_8.jpg -> classified as: Plots / Charts
+[0jmFRA64Vw] figure_14.jpg -> classified as: Plots / Charts
+[0jmFRA64Vw] figure_10.jpg -> classified as: Plots / Charts
+[0jsfesDZDq] figure_5.jpg -> classified as: Plots / Charts
+[0jsfesDZDq] figure_6.jpg -> classified as: Architecture Diagram
+[0jsfesDZDq] figure_9.jpg -> classified as: Plots / Charts
+[0jsfesDZDq] figure_13.jpg -> classified as: Plots / Charts
+[0jsfesDZDq] figure_2.jpg -> classified as: Architecture Diagram
+[0jsfesDZDq] figure_11.jpg -> classified as: Plots / Charts
+[0jsfesDZDq] figure_7.jpg -> classified as: Plots / Charts
+[0jsfesDZDq] figure_3.jpg -> classified as: Plots / Charts
+[0jsfesDZDq] figure_4.jpg -> classified as: Plots / Charts
+[0jsfesDZDq] figure_1.jpg -> classified as: Architecture Diagram
+[0jsfesDZDq] figure_8.jpg -> classified as: Plots / Charts
+[0jsfesDZDq] figure_12.jpg -> classified as: Plots / Charts
+[0jsfesDZDq] figure_10.jpg -> classified as: Plots / Charts
+[0kWd8SJq8d] figure_5.jpg -> classified as: Plots / Charts
+[0kWd8SJq8d] figure_6.jpg -> classified as: Plots / Charts
+[0kWd8SJq8d] figure_9.jpg -> classified as: Plots / Charts
+[0kWd8SJq8d] figure_2.jpg -> classified as: Plots / Charts
+[0kWd8SJq8d] figure_11.jpg -> classified as: Plots / Charts
+[0kWd8SJq8d] figure_7.jpg -> classified as: Plots / Charts
+[0kWd8SJq8d] figure_3.jpg -> classified as: Plots / Charts
+[0kWd8SJq8d] figure_4.jpg -> classified as: Plots / Charts
+[0kWd8SJq8d] figure_1.jpg -> classified as: Plots / Charts
+[0kWd8SJq8d] figure_8.jpg -> classified as: Plots / Charts
+[0kWd8SJq8d] figure_10.jpg -> classified as: Plots / Charts
+[0nxocR2qx4] figure_5.jpg -> classified as: Plots / Charts
+[0nxocR2qx4] figure_2.jpg -> classified as: Plots / Charts
+[0nxocR2qx4] figure_3.jpg -> classified as: Plots / Charts
+[0nxocR2qx4] figure_4.jpg -> classified as: Architecture Diagram
+[0nxocR2qx4] figure_1.jpg -> classified as: Architecture Diagram
+[0rXGGYNVAw] figure_5.jpg -> classified as: Plots / Charts
+[0rXGGYNVAw] figure_6.jpg -> classified as: Plots / Charts
+[0rXGGYNVAw] figure_2.jpg -> classified as: Plots / Charts
+[0rXGGYNVAw] figure_7.jpg -> classified as: Plots / Charts
+[0rXGGYNVAw] figure_3.jpg -> classified as: Plots / Charts
+[0rXGGYNVAw] figure_4.jpg -> classified as: Plots / Charts
+[0rXGGYNVAw] figure_(a)_Divergences_in.jpg -> classified as: Plots / Charts
+[0rXGGYNVAw] figure_1.jpg -> classified as: Plots / Charts
+[0sO2euxhUQ] figure_5.jpg -> classified as: Plots / Charts
+[0sO2euxhUQ] figure_6.jpg -> classified as: Plots / Charts
+[0sO2euxhUQ] figure_9.jpg -> classified as: Plots / Charts
+[0sO2euxhUQ] figure_13.jpg -> classified as: Plots / Charts
+[0sO2euxhUQ] figure_15.jpg -> classified as: Plots / Charts
+[0sO2euxhUQ] figure_2.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[0sO2euxhUQ] figure_11.jpg -> classified as: Plots / Charts
+[0sO2euxhUQ] figure_7.jpg -> classified as: Plots / Charts
+[0sO2euxhUQ] figure_3.jpg -> classified as: Architecture Diagram
+[0sO2euxhUQ] figure_4.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[0sO2euxhUQ] figure_17.jpg -> classified as: Plots / Charts
+[0sO2euxhUQ] figure_1.jpg -> classified as: Architecture Diagram
+[0sO2euxhUQ] figure_12.jpg -> classified as: Plots / Charts
+[0sO2euxhUQ] figure_14.jpg -> classified as: Plots / Charts
+[0sO2euxhUQ] figure_16.jpg -> classified as: Qualitative Examples
+[0sO2euxhUQ] figure_10.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_5.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_6.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_9.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_13.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_15.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_2.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_11.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_7.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_3.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_4.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_1.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_8.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_12.jpg -> classified as: Plots / Charts
+[0tAn34IkXI] figure_10.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_5.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_6.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_9.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_13.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_15.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_2.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_11.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_7.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_3.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_1.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_8.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_12.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_14.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_16.jpg -> classified as: Plots / Charts
+[0uI5415ry7] figure_10.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_19.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_23.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_24.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_5.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_6.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_9.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_22.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_18.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_13.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_15.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_2.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_20.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_11.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_7.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_3.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_4.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_17.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_1.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_8.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_12.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_25.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_21.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_14.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_16.jpg -> classified as: Plots / Charts
+[0uRc3CfJIQ] figure_10.jpg -> classified as: Plots / Charts
+[0wmfzWPAFu] figure_2.jpg -> classified as: Plots / Charts
+[0wmfzWPAFu] figure_3.jpg -> classified as: Plots / Charts
+[0wmfzWPAFu] figure_1.jpg -> classified as: Plots / Charts
+[0xLWPdObG1] figure_5.jpg -> classified as: Plots / Charts
+[0xLWPdObG1] figure_6.jpg -> classified as: Plots / Charts
+[0xLWPdObG1] figure_2.jpg -> classified as: Plots / Charts
+[0xLWPdObG1] figure_7.jpg -> classified as: Plots / Charts
+[0xLWPdObG1] figure_3.jpg -> classified as: Plots / Charts
+[0xLWPdObG1] figure_4.jpg -> classified as: Plots / Charts
+[0xLWPdObG1] figure_1.jpg -> classified as: Architecture Diagram
+[0xLWPdObG1] figure_8.jpg -> classified as: Plots / Charts
+[10eQ4Cfh8p] figure_1.jpg -> classified as: Architecture Diagram
+[15dVqf7VXR] figure_1.jpg -> classified as: Architecture Diagram
+[17pVDnpwwl] figure_19.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_23.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_24.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_5.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_6.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_9.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_22.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_18.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_13.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_15.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_2.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_20.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_11.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_7.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_3.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_4.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_17.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_1.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_8.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_12.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_21.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_14.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_16.jpg -> classified as: Plots / Charts
+[17pVDnpwwl] figure_10.jpg -> classified as: Plots / Charts
+[19ufhreGTj] figure_5.jpg -> classified as: Plots / Charts
+[19ufhreGTj] figure_6.jpg -> classified as: Plots / Charts
+[19ufhreGTj] figure_9.jpg -> classified as: Plots / Charts
+[19ufhreGTj] figure_2.jpg -> classified as: Plots / Charts
+[19ufhreGTj] figure_11.jpg -> classified as: Plots / Charts
+[19ufhreGTj] figure_7.jpg -> classified as: Plots / Charts
+[19ufhreGTj] figure_3.jpg -> classified as: Plots / Charts
+[19ufhreGTj] figure_4.jpg -> classified as: Architecture Diagram
+[19ufhreGTj] figure_1.jpg -> classified as: Plots / Charts
+[19ufhreGTj] figure_8.jpg -> classified as: Plots / Charts
+[19ufhreGTj] figure_12.jpg -> classified as: Plots / Charts
+[19ufhreGTj] figure_10.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_30.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_19.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_23.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_29.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_24.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_5.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_6.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_9.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_22.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_28.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_18.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_13.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_15.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_2.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_20.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_11.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_7.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_3.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_33.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_4.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_31.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_17.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_1.jpg -> classified as: Architecture Diagram
+[1B4juHRAgt] figure_27.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_8.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_12.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_25.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_21.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_26.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_14.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_32.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_16.jpg -> classified as: Plots / Charts
+[1B4juHRAgt] figure_10.jpg -> classified as: Plots / Charts
+[1DEEVAl5QX] figure_2.jpg -> classified as: Plots / Charts
+[1DEEVAl5QX] figure_1.jpg -> classified as: Plots / Charts
+[1DVgysiIt7] figure_5.jpg -> classified as: Qualitative Examples
+[1DVgysiIt7] figure_6.jpg -> classified as: Qualitative Examples
+[1DVgysiIt7] figure_2.jpg -> classified as: Plots / Charts
+[1DVgysiIt7] figure_7.jpg -> classified as: Qualitative Examples
+[1DVgysiIt7] figure_4.jpg -> classified as: Qualitative Examples
+[1DVgysiIt7] figure_1.jpg -> classified as: Architecture Diagram
+[1H90Gb9rJ9] figure_6.jpg -> classified as: Plots / Charts
+[1H90Gb9rJ9] figure_9.jpg -> classified as: Plots / Charts
+[1H90Gb9rJ9] figure_13.jpg -> classified as: Plots / Charts
+[1H90Gb9rJ9] figure_15.jpg -> classified as: Architecture Diagram
+[1H90Gb9rJ9] figure_G.1_ACCELERATING_MP-BASED.jpg -> classified as: Plots / Charts
+[1H90Gb9rJ9] figure_2.jpg -> classified as: Architecture Diagram
+[1H90Gb9rJ9] figure_(d)_Mapping_time.jpg -> classified as: Plots / Charts
+[1H90Gb9rJ9] figure_7.jpg -> classified as: Architecture Diagram
+[1H90Gb9rJ9] figure_3.jpg -> classified as: Architecture Diagram
+[1H90Gb9rJ9] figure_4.jpg -> classified as: Architecture Diagram
+[1H90Gb9rJ9] figure_1.jpg -> classified as: Architecture Diagram
+[1H90Gb9rJ9] figure_8.jpg -> classified as: Architecture Diagram
+[1H90Gb9rJ9] figure_14.jpg -> classified as: Plots / Charts
+[1H90Gb9rJ9] figure_16.jpg -> classified as: Architecture Diagram
+[1HCN4pjTb4] figure_5.jpg -> classified as: Plots / Charts
+[1HCN4pjTb4] figure_2.jpg -> classified as: Plots / Charts
+[1HCN4pjTb4] figure_3.jpg -> classified as: Plots / Charts
+[1HCN4pjTb4] figure_4.jpg -> classified as: Plots / Charts
+[1HCN4pjTb4] figure_1.jpg -> classified as: Plots / Charts
+[1HQZ4QFWi8] figure_(a)_The_ideal.jpg -> classified as: Plots / Charts
+[1HQZ4QFWi8] figure_(b)_The_distributions.jpg -> classified as: Plots / Charts
+[1HQZ4QFWi8] figure_(d)_The_distributions.jpg -> classified as: Plots / Charts
+[1HQZ4QFWi8] figure_5.jpg -> classified as: Plots / Charts
+[1HQZ4QFWi8] figure_2.jpg -> classified as: Architecture Diagram
+[1HQZ4QFWi8] figure_3.jpg -> classified as: Plots / Charts
+[1HQZ4QFWi8] figure_4.jpg -> classified as: Plots / Charts
+[1HQZ4QFWi8] figure_1.jpg -> classified as: Plots / Charts
+[1JuMFjSkpD] figure_2.jpg -> classified as: Plots / Charts
+[1JuMFjSkpD] figure_3.jpg -> classified as: Plots / Charts
+[1JuMFjSkpD] figure_1.jpg -> classified as: Plots / Charts
+[1MHgMGoqsH] figure_5.jpg -> classified as: Plots / Charts
+[1MHgMGoqsH] figure_D1.jpg -> classified as: Architecture Diagram
+[1MHgMGoqsH] figure_E2.jpg -> classified as: Plots / Charts
+[1MHgMGoqsH] figure_2.jpg -> classified as: Plots / Charts
+[1MHgMGoqsH] figure_4.jpg -> classified as: Plots / Charts
+[1MHgMGoqsH] figure_1.jpg -> classified as: Architecture Diagram
+[1MHgMGoqsH] figure_1_1.jpg -> classified as: Architecture Diagram
+[1MHgMGoqsH] figure_E1.jpg -> classified as: Plots / Charts
+[1NHgmKqOzZ] figure_2.jpg -> classified as: Architecture Diagram
+[1NHgmKqOzZ] figure_3.jpg -> classified as: Plots / Charts
+[1NHgmKqOzZ] figure_4.jpg -> classified as: Qualitative Examples
+[1NHgmKqOzZ] figure_1.jpg -> classified as: Plots / Charts
+[1NHgmKqOzZ] figure_A5.jpg -> classified as: Qualitative Examples
+[1NYhrZynvC] figure_5.jpg -> classified as: Plots / Charts
+[1NYhrZynvC] figure_2.jpg -> classified as: Plots / Charts
+[1NYhrZynvC] figure_3.jpg -> classified as: Plots / Charts
+[1NYhrZynvC] figure_4.jpg -> classified as: Plots / Charts
+[1NYhrZynvC] figure_1.jpg -> classified as: Plots / Charts
+[1Nwsqw0sTm] figure_2.jpg -> classified as: Qualitative Examples
+[1Nwsqw0sTm] figure_3.jpg -> classified as: Plots / Charts
+[1Nwsqw0sTm] figure_1.jpg -> classified as: Architecture Diagram
+[1PDz4Ny1N2] figure_5.jpg -> classified as: Plots / Charts
+[1PDz4Ny1N2] figure_6.jpg -> classified as: Plots / Charts
+[1PDz4Ny1N2] figure_2.jpg -> classified as: Architecture Diagram
+[1PDz4Ny1N2] figure_3.jpg -> classified as: Plots / Charts
+[1PDz4Ny1N2] figure_4.jpg -> classified as: Plots / Charts
+[1PDz4Ny1N2] figure_1.jpg -> classified as: Plots / Charts
+[1X1R7P6yzt] figure_5.jpg -> classified as: Plots / Charts
+[1X1R7P6yzt] figure_6.jpg -> classified as: Plots / Charts
+[1X1R7P6yzt] figure_9.jpg -> classified as: Plots / Charts
+[1X1R7P6yzt] figure_13.jpg -> classified as: Plots / Charts
+[1X1R7P6yzt] figure_15.jpg -> classified as: Qualitative Examples
+[1X1R7P6yzt] figure_2.jpg -> classified as: Qualitative Examples
+[1X1R7P6yzt] figure_11.jpg -> classified as: Plots / Charts
+[1X1R7P6yzt] figure_7.jpg -> classified as: Plots / Charts
+[1X1R7P6yzt] figure_3.jpg -> classified as: Plots / Charts
+[1X1R7P6yzt] figure_4.jpg -> classified as: Plots / Charts
+[1X1R7P6yzt] figure_1.jpg -> classified as: Architecture Diagram
+[1X1R7P6yzt] figure_8.jpg -> classified as: Plots / Charts
+[1X1R7P6yzt] figure_12.jpg -> classified as: Plots / Charts
+[1X1R7P6yzt] figure_14.jpg -> classified as: Plots / Charts
+[1X1R7P6yzt] figure_10.jpg -> classified as: Plots / Charts
+[1XarNmzbgG] figure_2.jpg -> classified as: Plots / Charts
+[1XarNmzbgG] figure_3.jpg -> classified as: Plots / Charts
+[1XarNmzbgG] figure_1.jpg -> classified as: Architecture Diagram
+[1bAUywYJTU] figure_19.jpg -> classified as: Qualitative Examples
+[1bAUywYJTU] figure_5.jpg -> classified as: Qualitative Examples
+[1bAUywYJTU] figure_6.jpg -> classified as: Plots / Charts
+[1bAUywYJTU] figure_9.jpg -> classified as: Qualitative Examples
+[1bAUywYJTU] figure_22.jpg -> classified as: Qualitative Examples
+[1bAUywYJTU] figure_18.jpg -> classified as: Qualitative Examples
+[1bAUywYJTU] figure_13.jpg -> classified as: Plots / Charts
+[1bAUywYJTU] figure_15.jpg -> classified as: Plots / Charts
+[1bAUywYJTU] figure_2.jpg -> classified as: Qualitative Examples
+[1bAUywYJTU] figure_20.jpg -> classified as: Plots / Charts
+[1bAUywYJTU] figure_11.jpg -> classified as: Qualitative Examples
+[1bAUywYJTU] figure_TP-VSD_1.jpg -> classified as: Qualitative Examples
+[1bAUywYJTU] figure_“a_DSLR_photo.jpg -> classified as: Qualitative Examples
+[1bAUywYJTU] figure_7.jpg -> classified as: Plots / Charts
+[1bAUywYJTU] figure_3.jpg -> classified as: Plots / Charts
+[1bAUywYJTU] figure_4.jpg -> classified as: Plots / Charts
+[1bAUywYJTU] figure_TP-VSD.jpg -> classified as: Qualitative Examples
+[1bAUywYJTU] figure_1.jpg -> classified as: Qualitative Examples
+[1bAUywYJTU] figure_8.jpg -> classified as: Plots / Charts
+[1bAUywYJTU] figure_12.jpg -> classified as: Plots / Charts
+[1bAUywYJTU] figure_21.jpg -> classified as: Qualitative Examples
+[1bAUywYJTU] figure_14.jpg -> classified as: Plots / Charts
+[1bAUywYJTU] figure_10.jpg -> classified as: Qualitative Examples
+[1hT2fsHbK9] figure_5.jpg -> classified as: Plots / Charts
+[1hT2fsHbK9] figure_6.jpg -> classified as: Architecture Diagram
+[1hT2fsHbK9] figure_9.jpg -> classified as: Plots / Charts
+[1hT2fsHbK9] figure_13.jpg -> classified as: Qualitative Examples
+[1hT2fsHbK9] figure_2.jpg -> classified as: Architecture Diagram
+[1hT2fsHbK9] figure_11.jpg -> classified as: Plots / Charts
+[1hT2fsHbK9] figure_7.jpg -> classified as: Plots / Charts
+[1hT2fsHbK9] figure_3.jpg -> classified as: Plots / Charts
+[1hT2fsHbK9] figure_4.jpg -> classified as: Plots / Charts
+[1hT2fsHbK9] figure_1.jpg -> classified as: Architecture Diagram
+[1hT2fsHbK9] figure_8.jpg -> classified as: Plots / Charts
+[1hT2fsHbK9] figure_12.jpg -> classified as: Plots / Charts
+[1hT2fsHbK9] figure_10.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_5.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_6.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_9.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_13.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_2.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_11.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_7.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_3.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_4.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_1.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_8.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_12.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_14.jpg -> classified as: Plots / Charts
+[1ii8idH4tH] figure_10.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_19.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_5.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_6.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_9.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_18.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_13.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_15.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_2.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_11.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_7.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_(b)_Comparison_of.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_3.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_4.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_17.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_1.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_8.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_12.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_21.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_14.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_16.jpg -> classified as: Plots / Charts
+[1jcnvghayD] figure_10.jpg -> classified as: Plots / Charts
+[1lFZusYFHq] figure_5.jpg -> classified as: Plots / Charts
+[1lFZusYFHq] figure_6.jpg -> classified as: Plots / Charts
+[1lFZusYFHq] figure_2.jpg -> classified as: Plots / Charts
+[1lFZusYFHq] figure_7.jpg -> classified as: Plots / Charts
+[1lFZusYFHq] figure_3.jpg -> classified as: Plots / Charts
+[1lFZusYFHq] figure_4.jpg -> classified as: Plots / Charts
+[1mNFsbvo2P] figure_2.jpg -> classified as: Plots / Charts
+[1mNFsbvo2P] figure_3.jpg -> classified as: Plots / Charts
+[1mNFsbvo2P] figure_4.jpg -> classified as: Plots / Charts
+[1mNFsbvo2P] figure_1.jpg -> classified as: Plots / Charts
+[1oIXRWK2WO] figure_5.jpg -> classified as: Plots / Charts
+[1oIXRWK2WO] figure_6.jpg -> classified as: Plots / Charts
+[1oIXRWK2WO] figure_2.jpg -> classified as: Plots / Charts
+[1oIXRWK2WO] figure_7.jpg -> classified as: Plots / Charts
+[1oIXRWK2WO] figure_3.jpg -> classified as: Plots / Charts
+[1oIXRWK2WO] figure_4.jpg -> classified as: Plots / Charts
+[1oIXRWK2WO] figure_1.jpg -> classified as: Architecture Diagram
+[1oIXRWK2WO] figure_8.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_5.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_6.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_9.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_13.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_2.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_11.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_7.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_3.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_4.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_1.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_8.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_12.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_14.jpg -> classified as: Plots / Charts
+[1olDGAXncb] figure_10.jpg -> classified as: Plots / Charts
+[1qDRwhe379] figure_5.jpg -> classified as: Plots / Charts
+[1qDRwhe379] figure_6.jpg -> classified as: Plots / Charts
+[1qDRwhe379] figure_2.jpg -> classified as: Plots / Charts
+[1qDRwhe379] figure_3.jpg -> classified as: Qualitative Examples
+[1qDRwhe379] figure_4.jpg -> classified as: Plots / Charts
+[1qDRwhe379] figure_1.jpg -> classified as: Plots / Charts
+[1v7SRWsYve] figure_5.jpg -> classified as: Plots / Charts
+[1v7SRWsYve] figure_6.jpg -> classified as: Plots / Charts
+[1v7SRWsYve] figure_9.jpg -> classified as: Plots / Charts
+[1v7SRWsYve] figure_13.jpg -> classified as: Plots / Charts
+[1v7SRWsYve] figure_15.jpg -> classified as: Plots / Charts
+[1v7SRWsYve] figure_2.jpg -> classified as: Plots / Charts
+[1v7SRWsYve] figure_11.jpg -> classified as: Plots / Charts
+[1v7SRWsYve] figure_7.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[1v7SRWsYve] figure_3.jpg -> classified as: Plots / Charts
+[1v7SRWsYve] figure_4.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[1v7SRWsYve] figure_1.jpg -> classified as: Plots / Charts
+[1v7SRWsYve] figure_8.jpg -> classified as: Plots / Charts
+[1v7SRWsYve] figure_12.jpg -> classified as: Plots / Charts
+[1v7SRWsYve] figure_14.jpg -> classified as: Plots / Charts
+[1v7SRWsYve] figure_10.jpg -> classified as: Plots / Charts
+[1vrpdV9U3i] figure_D_2.jpg -> classified as: Plots / Charts
+[1vrpdV9U3i] figure_5.jpg -> classified as: Plots / Charts
+[1vrpdV9U3i] figure_D_5.jpg -> classified as: Plots / Charts
+[1vrpdV9U3i] figure_D_3.jpg -> classified as: Plots / Charts
+[1vrpdV9U3i] figure_2.jpg -> classified as: Qualitative Examples
+[1vrpdV9U3i] figure_B.jpg -> classified as: Architecture Diagram
+[1vrpdV9U3i] figure_3.jpg -> classified as: Plots / Charts
+[1vrpdV9U3i] figure_D.jpg -> classified as: Plots / Charts
+[1vrpdV9U3i] figure_4.jpg -> classified as: Plots / Charts
+[1vrpdV9U3i] figure_D_1.jpg -> classified as: Plots / Charts
+[1vrpdV9U3i] figure_1.jpg -> classified as: Plots / Charts
+[1vrpdV9U3i] figure_D_4.jpg -> classified as: Plots / Charts
+[1yJP5TVWih] figure_2.jpg -> classified as: Plots / Charts
+[1yJP5TVWih] figure_3.jpg -> classified as: Plots / Charts
+[1yJP5TVWih] figure_4.jpg -> classified as: Plots / Charts
+[1yJP5TVWih] figure_1.jpg -> classified as: Plots / Charts
+[20KYsQ8Q4Z] figure_5.jpg -> classified as: Plots / Charts
+[20KYsQ8Q4Z] figure_6.jpg -> classified as: Plots / Charts
+[20KYsQ8Q4Z] figure_9.jpg -> classified as: Plots / Charts
+[20KYsQ8Q4Z] figure_2.jpg -> classified as: Plots / Charts
+[20KYsQ8Q4Z] figure_7.jpg -> classified as: Plots / Charts
+[20KYsQ8Q4Z] figure_3.jpg -> classified as: Plots / Charts
+[20KYsQ8Q4Z] figure_4.jpg -> classified as: Plots / Charts
+[20KYsQ8Q4Z] figure_8.jpg -> classified as: Plots / Charts
+[20KYsQ8Q4Z] figure_10.jpg -> classified as: Plots / Charts
+[22pyNMuIoa] figure_5.jpg -> classified as: Qualitative Examples
+[22pyNMuIoa] figure_6.jpg -> classified as: Plots / Charts
+[22pyNMuIoa] figure_2.jpg -> classified as: Plots / Charts
+[22pyNMuIoa] figure_7.jpg -> classified as: Plots / Charts
+[22pyNMuIoa] figure_3.jpg -> classified as: Architecture Diagram
+[22pyNMuIoa] figure_4.jpg -> classified as: Plots / Charts
+[22pyNMuIoa] figure_1.jpg -> classified as: Qualitative Examples
+[22pyNMuIoa] figure_8.jpg -> classified as: Plots / Charts
+[25j2ZEgwTj] figure_2.jpg -> classified as: Plots / Charts
+[25j2ZEgwTj] figure_1.jpg -> classified as: Plots / Charts
+[27SSnLl85x] figure_5.jpg -> classified as: Plots / Charts
+[27SSnLl85x] figure_6.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[27SSnLl85x] figure_9.jpg -> classified as: Plots / Charts
+[27SSnLl85x] figure_2.jpg -> classified as: Plots / Charts
+[27SSnLl85x] figure_7.jpg -> classified as: Plots / Charts
+[27SSnLl85x] figure_3.jpg -> classified as: Architecture Diagram
+[27SSnLl85x] figure_4.jpg -> classified as: Plots / Charts
+[27SSnLl85x] figure_1.jpg -> classified as: Architecture Diagram
+[27SSnLl85x] figure_8.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_19.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_23.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_24.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_5.jpg -> classified as: Architecture Diagram
+[2ATD8a8P3C] figure_6.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_9.jpg -> classified as: Qualitative Examples
+[2ATD8a8P3C] figure_22.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_18.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_13.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_15.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_2.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_20.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_11.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_7.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_3.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_4.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[2ATD8a8P3C] figure_17.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_1.jpg -> classified as: Qualitative Examples
+[2ATD8a8P3C] figure_8.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_12.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_25.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_21.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_26.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_14.jpg -> classified as: Plots / Charts
+[2ATD8a8P3C] figure_16.jpg -> classified as: Plots / Charts
+[2BfZMh9td4] figure_5.jpg -> classified as: Plots / Charts
+[2BfZMh9td4] figure_9.jpg -> classified as: Plots / Charts
+[2BfZMh9td4] figure_2.jpg -> classified as: Plots / Charts
+[2BfZMh9td4] figure_3.jpg -> classified as: Plots / Charts
+[2BfZMh9td4] figure_4.jpg -> classified as: Plots / Charts
+[2BfZMh9td4] figure_1.jpg -> classified as: Architecture Diagram
+[2BfZMh9td4] figure_8.jpg -> classified as: Plots / Charts
+[2BfZMh9td4] figure_10.jpg -> classified as: Plots / Charts
+[2BtFKEeMGo] figure_5.jpg -> classified as: Plots / Charts
+[2BtFKEeMGo] figure_6.jpg -> classified as: Plots / Charts
+[2BtFKEeMGo] figure_2.jpg -> classified as: Plots / Charts
+[2BtFKEeMGo] figure_3.jpg -> classified as: Plots / Charts
+[2BtFKEeMGo] figure_4.jpg -> classified as: Plots / Charts
+[2BtFKEeMGo] figure_1.jpg -> classified as: Plots / Charts
+[2CFagKoXXx] figure_5.jpg -> classified as: Qualitative Examples
+[2CFagKoXXx] figure_6.jpg -> classified as: Plots / Charts
+[2CFagKoXXx] figure_2.jpg -> classified as: Plots / Charts
+[2CFagKoXXx] figure_3.jpg -> classified as: Qualitative Examples
+[2CFagKoXXx] figure_4.jpg -> classified as: Plots / Charts
+[2CFagKoXXx] figure_1.jpg -> classified as: Architecture Diagram
+[2FAPahXyVh] figure_5.jpg -> classified as: Architecture Diagram
+[2FAPahXyVh] figure_6.jpg -> classified as: Plots / Charts
+[2FAPahXyVh] figure_15.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[2FAPahXyVh] figure_2.jpg -> classified as: Qualitative Examples
+[2FAPahXyVh] figure_11.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[2FAPahXyVh] figure_7.jpg -> classified as: Plots / Charts
+[2FAPahXyVh] figure_3.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[2FAPahXyVh] figure_4.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[2FAPahXyVh] figure_17.jpg -> classified as: Plots / Charts
+[2FAPahXyVh] figure_1.jpg -> classified as: Architecture Diagram
+[2FAPahXyVh] figure_8.jpg -> classified as: Plots / Charts
+[2FAPahXyVh] figure_12.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[2FAPahXyVh] figure_14.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[2FAPahXyVh] figure_10.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[2GwMazl9ND] figure_5.jpg -> classified as: Plots / Charts
+[2GwMazl9ND] figure_6.jpg -> classified as: Plots / Charts
+[2GwMazl9ND] figure_2.jpg -> classified as: Plots / Charts
+[2GwMazl9ND] figure_3.jpg -> classified as: Plots / Charts
+[2GwMazl9ND] figure_4.jpg -> classified as: Plots / Charts
+[2GwMazl9ND] figure_1.jpg -> classified as: Plots / Charts
+[2KWZjdFwmh] figure_2.jpg -> classified as: Plots / Charts
+[2KWZjdFwmh] figure_3.jpg -> classified as: Plots / Charts
+[2KWZjdFwmh] figure_1.jpg -> classified as: Plots / Charts
+[2NpAw2QJBY] figure_5.jpg -> classified as: Plots / Charts
+[2NpAw2QJBY] figure_6.jpg -> classified as: Plots / Charts
+[2NpAw2QJBY] figure_9.jpg -> classified as: Plots / Charts
+[2NpAw2QJBY] figure_2.jpg -> classified as: Architecture Diagram
+[2NpAw2QJBY] figure_11.jpg -> classified as: Plots / Charts
+[2NpAw2QJBY] figure_7.jpg -> classified as: Plots / Charts
+[2NpAw2QJBY] figure_3.jpg -> classified as: Architecture Diagram
+[2NpAw2QJBY] figure_4.jpg -> classified as: Qualitative Examples
+[2NpAw2QJBY] figure_1.jpg -> classified as: Architecture Diagram
+[2NpAw2QJBY] figure_8.jpg -> classified as: Plots / Charts
+[2NpAw2QJBY] figure_10.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_19.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_5.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_6.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_9.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_18.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_13.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_15.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_2.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_20.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_11.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_7.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_3.jpg -> classified as: Architecture Diagram
+[2OegVbwvY2] figure_4.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_17.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_1.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_8.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_12.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_21.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_(a)_Effects_of.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_14.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_16.jpg -> classified as: Plots / Charts
+[2OegVbwvY2] figure_10.jpg -> classified as: Plots / Charts
+[2PKZtPMyvI] figure_2.jpg -> classified as: Plots / Charts
+[2PKZtPMyvI] figure_3.jpg -> classified as: Plots / Charts
+[2PKZtPMyvI] figure_4.jpg -> classified as: Plots / Charts
+[2PKZtPMyvI] figure_1.jpg -> classified as: Plots / Charts
+[2Pup7olzxj] figure_5.jpg -> classified as: Plots / Charts
+[2Pup7olzxj] figure_6.jpg -> classified as: Plots / Charts
+[2Pup7olzxj] figure_9.jpg -> classified as: Plots / Charts
+[2Pup7olzxj] figure_2.jpg -> classified as: Plots / Charts
+[2Pup7olzxj] figure_7.jpg -> classified as: Plots / Charts
+[2Pup7olzxj] figure_3.jpg -> classified as: Plots / Charts
+[2Pup7olzxj] figure_4.jpg -> classified as: Plots / Charts
+[2Pup7olzxj] figure_1.jpg -> classified as: Architecture Diagram
+[2Pup7olzxj] figure_8.jpg -> classified as: Plots / Charts
+[2Pup7olzxj] figure_10.jpg -> classified as: Architecture Diagram
+[2Q8gTck8Uq] figure_5.jpg -> classified as: Plots / Charts
+[2Q8gTck8Uq] figure_6.jpg -> classified as: Architecture Diagram
+[2Q8gTck8Uq] figure_9.jpg -> classified as: Plots / Charts
+[2Q8gTck8Uq] figure_13.jpg -> classified as: Plots / Charts
+[2Q8gTck8Uq] figure_15.jpg -> classified as: Plots / Charts
+[2Q8gTck8Uq] figure_2.jpg -> classified as: Plots / Charts
+[2Q8gTck8Uq] figure_11.jpg -> classified as: Plots / Charts
+[2Q8gTck8Uq] figure_7.jpg -> classified as: Plots / Charts
+[2Q8gTck8Uq] figure_3.jpg -> classified as: Plots / Charts
+[2Q8gTck8Uq] figure_4.jpg -> classified as: Plots / Charts
+[2Q8gTck8Uq] figure_1.jpg -> classified as: Plots / Charts
+[2Q8gTck8Uq] figure_8.jpg -> classified as: Plots / Charts
+[2Q8gTck8Uq] figure_12.jpg -> classified as: Plots / Charts
+[2Q8gTck8Uq] figure_14.jpg -> classified as: Plots / Charts
+[2Q8gTck8Uq] figure_10.jpg -> classified as: Plots / Charts
+[2XwBIcywWM] figure_5.jpg -> classified as: Qualitative Examples
+[2XwBIcywWM] figure_6.jpg -> classified as: Plots / Charts
+[2XwBIcywWM] figure_2.jpg -> classified as: Plots / Charts
+[2XwBIcywWM] figure_3.jpg -> classified as: Plots / Charts
+[2XwBIcywWM] figure_4.jpg -> classified as: Plots / Charts
+[2XwBIcywWM] figure_1.jpg -> classified as: Architecture Diagram
+[2ZK8zyIt7o] figure_19.jpg -> classified as: Qualitative Examples
+[2ZK8zyIt7o] figure_5.jpg -> classified as: Plots / Charts
+[2ZK8zyIt7o] figure_6.jpg -> classified as: Qualitative Examples
+[2ZK8zyIt7o] figure_9.jpg -> classified as: Architecture Diagram
+[2ZK8zyIt7o] figure_18.jpg -> classified as: Qualitative Examples
+[2ZK8zyIt7o] figure_13.jpg -> classified as: Qualitative Examples
+[2ZK8zyIt7o] figure_15.jpg -> classified as: Plots / Charts
+[2ZK8zyIt7o] figure_2.jpg -> classified as: Plots / Charts
+[2ZK8zyIt7o] figure_11.jpg -> classified as: Qualitative Examples
+[2ZK8zyIt7o] figure_7.jpg -> classified as: Plots / Charts
+[2ZK8zyIt7o] figure_3.jpg -> classified as: Qualitative Examples
+[2ZK8zyIt7o] figure_4.jpg -> classified as: Plots / Charts
+[2ZK8zyIt7o] figure_17.jpg -> classified as: Qualitative Examples
+[2ZK8zyIt7o] figure_1.jpg -> classified as: Qualitative Examples
+[2ZK8zyIt7o] figure_The_scene_depicts.jpg -> classified as: Qualitative Examples
+[2ZK8zyIt7o] figure_8.jpg -> classified as: Qualitative Examples
+[2ZK8zyIt7o] figure_14.jpg -> classified as: Plots / Charts
+[2ZK8zyIt7o] figure_16.jpg -> classified as: Qualitative Examples
+[2ZK8zyIt7o] figure_10.jpg -> classified as: Qualitative Examples
+[2cRzmWXK9N] figure_5.jpg -> classified as: Plots / Charts
+[2cRzmWXK9N] figure_6.jpg -> classified as: Plots / Charts
+[2cRzmWXK9N] figure_2.jpg -> classified as: Plots / Charts
+[2cRzmWXK9N] figure_7.jpg -> classified as: Plots / Charts
+[2cRzmWXK9N] figure_3.jpg -> classified as: Plots / Charts
+[2cRzmWXK9N] figure_4.jpg -> classified as: Plots / Charts
+[2cRzmWXK9N] figure_1.jpg -> classified as: Plots / Charts
+[2dhxxIKhqz] figure_A7.jpg -> classified as: Plots / Charts
+[2dhxxIKhqz] figure_A8.jpg -> classified as: Qualitative Examples
+[2dhxxIKhqz] figure_2.jpg -> classified as: Architecture Diagram
+[2dhxxIKhqz] figure_3.jpg -> classified as: Plots / Charts
+[2dhxxIKhqz] figure_4.jpg -> classified as: Plots / Charts
+[2dhxxIKhqz] figure_A6.jpg -> classified as: Plots / Charts
+[2dhxxIKhqz] figure_1.jpg -> classified as: Plots / Charts
+[2dhxxIKhqz] figure_A5.jpg -> classified as: Plots / Charts
+[2ev44Srmt9] figure_2.jpg -> classified as: Plots / Charts
+[2ev44Srmt9] figure_3.jpg -> classified as: Plots / Charts
+[2ev44Srmt9] figure_1.jpg -> classified as: Plots / Charts
+[2gwo9cjOEz] figure_(d)_Test_loss_1.jpg -> classified as: Plots / Charts
+[2gwo9cjOEz] figure_5.jpg -> classified as: Plots / Charts
+[2gwo9cjOEz] figure_6.jpg -> classified as: Plots / Charts
+[2gwo9cjOEz] figure_(a)_Training_loss.jpg -> classified as: Plots / Charts
+[2gwo9cjOEz] figure_(d)_Test_loss.jpg -> classified as: Plots / Charts
+[2gwo9cjOEz] figure_9.jpg -> classified as: Plots / Charts
+[2gwo9cjOEz] figure_(b)_Training_loss.jpg -> classified as: Plots / Charts
+[2gwo9cjOEz] figure_2.jpg -> classified as: Plots / Charts
+[2gwo9cjOEz] figure_7.jpg -> classified as: Plots / Charts
+[2gwo9cjOEz] figure_3.jpg -> classified as: Architecture Diagram
+[2gwo9cjOEz] figure_4.jpg -> classified as: Plots / Charts
+[2gwo9cjOEz] figure_(b)_Test_loss.jpg -> classified as: Plots / Charts
+[2gwo9cjOEz] figure_1.jpg -> classified as: Plots / Charts
+[2gwo9cjOEz] figure_8.jpg -> classified as: Plots / Charts
+[2kGKsyhtvh] figure_5.jpg -> classified as: Plots / Charts
+[2kGKsyhtvh] figure_6.jpg -> classified as: Plots / Charts
+[2kGKsyhtvh] figure_2.jpg -> classified as: Plots / Charts
+[2kGKsyhtvh] figure_7.jpg -> classified as: Plots / Charts
+[2kGKsyhtvh] figure_3.jpg -> classified as: Plots / Charts
+[2kGKsyhtvh] figure_4.jpg -> classified as: Plots / Charts
+[2kGKsyhtvh] figure_1.jpg -> classified as: Architecture Diagram
+[2kGKsyhtvh] figure_8.jpg -> classified as: Plots / Charts
+[2kje23LSOE] figure_5.jpg -> classified as: Plots / Charts
+[2kje23LSOE] figure_6.jpg -> classified as: Plots / Charts
+[2kje23LSOE] figure_9.jpg -> classified as: Plots / Charts
+[2kje23LSOE] figure_2.jpg -> classified as: Plots / Charts
+[2kje23LSOE] figure_11.jpg -> classified as: Plots / Charts
+[2kje23LSOE] figure_7.jpg -> classified as: Plots / Charts
+[2kje23LSOE] figure_3.jpg -> classified as: Plots / Charts
+[2kje23LSOE] figure_4.jpg -> classified as: Plots / Charts
+[2kje23LSOE] figure_1.jpg -> classified as: Plots / Charts
+[2kje23LSOE] figure_8.jpg -> classified as: Plots / Charts
+[2kje23LSOE] figure_10.jpg -> classified as: Plots / Charts
+[2oWRumm67L] figure_5.jpg -> classified as: Plots / Charts
+[2oWRumm67L] figure_6.jpg -> classified as: Plots / Charts
+[2oWRumm67L] figure_Step_3.jpg -> classified as: Architecture Diagram
+[2oWRumm67L] figure_2.jpg -> classified as: Architecture Diagram
+[2oWRumm67L] figure_7.jpg -> classified as: Plots / Charts
+[2oWRumm67L] figure_3.jpg -> classified as: Architecture Diagram
+[2oWRumm67L] figure_4.jpg -> classified as: Architecture Diagram
+[2oWRumm67L] figure_1.jpg -> classified as: Architecture Diagram
+[2oWRumm67L] figure_Step_1.jpg -> classified as: Architecture Diagram
+[2rBLbNJwBm] figure_5.jpg -> classified as: Plots / Charts
+[2rBLbNJwBm] figure_6.jpg -> classified as: Plots / Charts
+[2rBLbNJwBm] figure_2.jpg -> classified as: Plots / Charts
+[2rBLbNJwBm] figure_7.jpg -> classified as: Plots / Charts
+[2rBLbNJwBm] figure_3.jpg -> classified as: Plots / Charts
+[2rBLbNJwBm] figure_4.jpg -> classified as: Plots / Charts
+[2rBLbNJwBm] figure_1.jpg -> classified as: Plots / Charts
+[2rBLbNJwBm] figure_8.jpg -> classified as: Plots / Charts
+[2xvisNIfdw] figure_5.jpg -> classified as: Plots / Charts
+[2xvisNIfdw] figure_6.jpg -> classified as: Plots / Charts
+[2xvisNIfdw] figure_2.jpg -> classified as: Plots / Charts
+[2xvisNIfdw] figure_3.jpg -> classified as: Plots / Charts
+[2xvisNIfdw] figure_4.jpg -> classified as: Plots / Charts
+[2xvisNIfdw] figure_1.jpg -> classified as: Plots / Charts
+[2yqAzFPT4F] figure_5.jpg -> classified as: Plots / Charts
+[2yqAzFPT4F] figure_6.jpg -> classified as: Plots / Charts
+[2yqAzFPT4F] figure_2.jpg -> classified as: Architecture Diagram
+[2yqAzFPT4F] figure_3.jpg -> classified as: Qualitative Examples
+[2yqAzFPT4F] figure_4.jpg -> classified as: Plots / Charts
+[2yqAzFPT4F] figure_1.jpg -> classified as: Architecture Diagram
+[2yqAzFPT4F] figure_8.jpg -> classified as: Qualitative Examples
+[30L0rr9W8A] figure_5.jpg -> classified as: Plots / Charts
+[30L0rr9W8A] figure_6.jpg -> classified as: Plots / Charts
+[30L0rr9W8A] figure_2.jpg -> classified as: Architecture Diagram
+[30L0rr9W8A] figure_7.jpg -> classified as: Plots / Charts
+[30L0rr9W8A] figure_3.jpg -> classified as: Plots / Charts
+[30L0rr9W8A] figure_4.jpg -> classified as: Plots / Charts
+[30L0rr9W8A] figure_1.jpg -> classified as: Architecture Diagram
+[328vch6tRs] figure_5.jpg -> classified as: Plots / Charts
+[328vch6tRs] figure_6.jpg -> classified as: Architecture Diagram
+[328vch6tRs] figure_9.jpg -> classified as: Plots / Charts
+[328vch6tRs] figure_13.jpg -> classified as: Plots / Charts
+[328vch6tRs] figure_2.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[328vch6tRs] figure_11.jpg -> classified as: Plots / Charts
+[328vch6tRs] figure_7.jpg -> classified as: Plots / Charts
+[328vch6tRs] figure_3.jpg -> classified as: Plots / Charts
+[328vch6tRs] figure_4.jpg -> classified as: Plots / Charts
+[328vch6tRs] figure_1.jpg -> classified as: Architecture Diagram
+[328vch6tRs] figure_8.jpg -> classified as: Plots / Charts
+[328vch6tRs] figure_12.jpg -> classified as: Plots / Charts
+[328vch6tRs] figure_10.jpg -> classified as: Plots / Charts
+[33XGfHLtZg] figure_5.jpg -> classified as: Plots / Charts
+[33XGfHLtZg] figure_6.jpg -> classified as: Plots / Charts
+[33XGfHLtZg] figure_2.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[33XGfHLtZg] figure_3.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[33XGfHLtZg] figure_4.jpg -> classified as: Plots / Charts
+[33XGfHLtZg] figure_1.jpg -> classified as: Plots / Charts
+[36L7W3ri4U] figure_Figure_${__textbf.jpg -> classified as: Plots / Charts
+[36L7W3ri4U] figure_5.jpg -> classified as: Plots / Charts
+[36L7W3ri4U] figure_6.jpg -> classified as: Plots / Charts
+[36L7W3ri4U] figure_9.jpg -> classified as: Plots / Charts
+[36L7W3ri4U] figure_2.jpg -> classified as: Plots / Charts
+[36L7W3ri4U] figure_7.jpg -> classified as: Plots / Charts
+[36L7W3ri4U] figure_3.jpg -> classified as: Plots / Charts
+[36L7W3ri4U] figure_1.jpg -> classified as: Plots / Charts
+[36L7W3ri4U] figure_8.jpg -> classified as: Plots / Charts
+[39VR7gVEJs] figure_A_2.jpg -> classified as: Plots / Charts
+[39VR7gVEJs] figure_A.jpg -> classified as: Plots / Charts
+[39VR7gVEJs] figure_A_1.jpg -> classified as: Plots / Charts
+[39VR7gVEJs] figure_B.jpg -> classified as: Plots / Charts
+[39VR7gVEJs] figure_B_1.jpg -> classified as: Plots / Charts
+[39VR7gVEJs] figure_1.jpg -> classified as: Plots / Charts
+[3EWTEy9MTM] figure_5.jpg -> classified as: Plots / Charts
+[3EWTEy9MTM] figure_6.jpg -> classified as: Plots / Charts
+[3EWTEy9MTM] figure_2.jpg -> classified as: Plots / Charts
+[3EWTEy9MTM] figure_7.jpg -> classified as: Plots / Charts
+[3EWTEy9MTM] figure_3.jpg -> classified as: Plots / Charts
+[3EWTEy9MTM] figure_4.jpg -> classified as: Plots / Charts
+[3EWTEy9MTM] figure_1.jpg -> classified as: Plots / Charts
+[3JjJezzVkT] figure_2.jpg -> classified as: Plots / Charts
+[3JjJezzVkT] figure_3.jpg -> classified as: Plots / Charts
+[3JjJezzVkT] figure_1.jpg -> classified as: Plots / Charts
+[3JsU5QXNru] figure_5.jpg -> classified as: Qualitative Examples
+[3JsU5QXNru] figure_6.jpg -> classified as: Qualitative Examples
+[3JsU5QXNru] figure_2.jpg -> classified as: Plots / Charts
+[3JsU5QXNru] figure_7.jpg -> classified as: Qualitative Examples
+[3JsU5QXNru] figure_3.jpg -> classified as: Plots / Charts
+[3JsU5QXNru] figure_4.jpg -> classified as: Qualitative Examples
+[3JsU5QXNru] figure_1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[3JsU5QXNru] figure_8.jpg -> classified as: Qualitative Examples
+[3K3s9qxSn7] figure_5.jpg -> classified as: Plots / Charts
+[3K3s9qxSn7] figure_6.jpg -> classified as: Plots / Charts
+[3K3s9qxSn7] figure_9.jpg -> classified as: Plots / Charts
+[3K3s9qxSn7] figure_2.jpg -> classified as: Architecture Diagram
+[3K3s9qxSn7] figure_7.jpg -> classified as: Plots / Charts
+[3K3s9qxSn7] figure_3.jpg -> classified as: Plots / Charts
+[3K3s9qxSn7] figure_4.jpg -> classified as: Plots / Charts
+[3K3s9qxSn7] figure_1.jpg -> classified as: Architecture Diagram
+[3K3s9qxSn7] figure_8.jpg -> classified as: Plots / Charts
+[3Mia9aFpgo] figure_5.jpg -> classified as: Qualitative Examples
+[3Mia9aFpgo] figure_6.jpg -> classified as: Plots / Charts
+[3Mia9aFpgo] figure_2.jpg -> classified as: Architecture Diagram
+[3Mia9aFpgo] figure_3.jpg -> classified as: Plots / Charts
+[3Mia9aFpgo] figure_4.jpg -> classified as: Plots / Charts
+[3Mia9aFpgo] figure_1.jpg -> classified as: Plots / Charts
+[3Mia9aFpgo] figure_8.jpg -> classified as: Plots / Charts
+[3NnfJnbJT2] figure_5.jpg -> classified as: Plots / Charts
+[3NnfJnbJT2] figure_6.jpg -> classified as: Plots / Charts
+[3NnfJnbJT2] figure_9.jpg -> classified as: Plots / Charts
+[3NnfJnbJT2] figure_2.jpg -> classified as: Plots / Charts
+[3NnfJnbJT2] figure_11.jpg -> classified as: Plots / Charts
+[3NnfJnbJT2] figure_7.jpg -> classified as: Plots / Charts
+[3NnfJnbJT2] figure_3.jpg -> classified as: Plots / Charts
+[3NnfJnbJT2] figure_4.jpg -> classified as: Plots / Charts
+[3NnfJnbJT2] figure_1.jpg -> classified as: Plots / Charts
+[3NnfJnbJT2] figure_8.jpg -> classified as: Plots / Charts
+[3NnfJnbJT2] figure_10.jpg -> classified as: Qualitative Examples
+[3OyaXFQuDl] figure_19.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_5.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_6.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_9.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_22.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_18.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_13.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_15.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_2.jpg -> classified as: Architecture Diagram
+[3OyaXFQuDl] figure_20.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_11.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_7.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_3.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_4.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_17.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_1.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_8.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_12.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_21.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_14.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_16.jpg -> classified as: Plots / Charts
+[3OyaXFQuDl] figure_10.jpg -> classified as: Plots / Charts
+[3PWYAlAQxv] figure_5.jpg -> classified as: Plots / Charts
+[3PWYAlAQxv] figure_6.jpg -> classified as: Plots / Charts
+[3PWYAlAQxv] figure_9.jpg -> classified as: Plots / Charts
+[3PWYAlAQxv] figure_2.jpg -> classified as: Plots / Charts
+[3PWYAlAQxv] figure_11.jpg -> classified as: Plots / Charts
+[3PWYAlAQxv] figure_7.jpg -> classified as: Plots / Charts
+[3PWYAlAQxv] figure_3.jpg -> classified as: Plots / Charts
+[3PWYAlAQxv] figure_4.jpg -> classified as: Plots / Charts
+[3PWYAlAQxv] figure_1.jpg -> classified as: Plots / Charts
+[3PWYAlAQxv] figure_8.jpg -> classified as: Plots / Charts
+[3PWYAlAQxv] figure_12.jpg -> classified as: Plots / Charts
+[3PWYAlAQxv] figure_10.jpg -> classified as: Plots / Charts
+[3QR230r11w] figure_5.jpg -> classified as: Plots / Charts
+[3QR230r11w] figure_6.jpg -> classified as: Plots / Charts
+[3QR230r11w] figure_9.jpg -> classified as: Plots / Charts
+[3QR230r11w] figure_2.jpg -> classified as: Plots / Charts
+[3QR230r11w] figure_7.jpg -> classified as: Plots / Charts
+[3QR230r11w] figure_3.jpg -> classified as: Plots / Charts
+[3QR230r11w] figure_4.jpg -> classified as: Plots / Charts
+[3QR230r11w] figure_1.jpg -> classified as: Architecture Diagram
+[3QR230r11w] figure_8.jpg -> classified as: Plots / Charts
+[3QR230r11w] figure_10.jpg -> classified as: Plots / Charts
+[3R9hsn1wAS] figure_5.jpg -> classified as: Architecture Diagram
+[3R9hsn1wAS] figure_6.jpg -> classified as: Plots / Charts
+[3R9hsn1wAS] figure_9.jpg -> classified as: Architecture Diagram
+[3R9hsn1wAS] figure_18.jpg -> classified as: Qualitative Examples
+[3R9hsn1wAS] figure_13.jpg -> classified as: Plots / Charts
+[3R9hsn1wAS] figure_15.jpg -> classified as: Plots / Charts
+[3R9hsn1wAS] figure_2.jpg -> classified as: Architecture Diagram
+[3R9hsn1wAS] figure_11.jpg -> classified as: Plots / Charts
+[3R9hsn1wAS] figure_7.jpg -> classified as: Architecture Diagram
+[3R9hsn1wAS] figure_3.jpg -> classified as: Architecture Diagram
+[3R9hsn1wAS] figure_17.jpg -> classified as: Qualitative Examples
+[3R9hsn1wAS] figure_1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[3R9hsn1wAS] figure_8.jpg -> classified as: Plots / Charts
+[3R9hsn1wAS] figure_12.jpg -> classified as: Plots / Charts
+[3R9hsn1wAS] figure_14.jpg -> classified as: Plots / Charts
+[3R9hsn1wAS] figure_16.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[3R9hsn1wAS] figure_10.jpg -> classified as: Plots / Charts
+[3SJE1WLB4M] figure_2.jpg -> classified as: Plots / Charts
+[3SJE1WLB4M] figure_3.jpg -> classified as: Plots / Charts
+[3SJE1WLB4M] figure_1.jpg -> classified as: Plots / Charts
+[3a505tMjGE] figure_5.jpg -> classified as: Plots / Charts
+[3a505tMjGE] figure_6.jpg -> classified as: Plots / Charts
+[3a505tMjGE] figure_9.jpg -> classified as: Plots / Charts
+[3a505tMjGE] figure_2.jpg -> classified as: Plots / Charts
+[3a505tMjGE] figure_7.jpg -> classified as: Architecture Diagram
+[3a505tMjGE] figure_3.jpg -> classified as: Plots / Charts
+[3a505tMjGE] figure_4.jpg -> classified as: Plots / Charts
+[3a505tMjGE] figure_1.jpg -> classified as: Plots / Charts
+[3a505tMjGE] figure_8.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_5.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_6.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_9.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_13.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_2.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_11.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_7.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_3.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_4.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_1.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_8.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_12.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_14.jpg -> classified as: Plots / Charts
+[3aZCPl3ZvR] figure_10.jpg -> classified as: Plots / Charts
+[3bV46RKWVA] figure_5.jpg -> classified as: Plots / Charts
+[3bV46RKWVA] figure_2.jpg -> classified as: Plots / Charts
+[3bV46RKWVA] figure_3.jpg -> classified as: Plots / Charts
+[3bV46RKWVA] figure_4.jpg -> classified as: Plots / Charts
+[3bV46RKWVA] figure_1.jpg -> classified as: Plots / Charts
+[3cgMU3TyyE] figure_5.jpg -> classified as: Plots / Charts
+[3cgMU3TyyE] figure_6.jpg -> classified as: Qualitative Examples
+[3cgMU3TyyE] figure_9.jpg -> classified as: Plots / Charts
+[3cgMU3TyyE] figure_2.jpg -> classified as: Qualitative Examples
+[3cgMU3TyyE] figure_7.jpg -> classified as: Plots / Charts
+[3cgMU3TyyE] figure_3.jpg -> classified as: Plots / Charts
+[3cgMU3TyyE] figure_4.jpg -> classified as: Plots / Charts
+[3cgMU3TyyE] figure_1.jpg -> classified as: Plots / Charts
+[3cgMU3TyyE] figure_8.jpg -> classified as: Architecture Diagram
+[3cgMU3TyyE] figure_(a)_conversation_transitions.jpg -> classified as: Plots / Charts
+[3cgMU3TyyE] figure_10.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_5.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_6.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_9.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_13.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_15.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_2.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_11.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_7.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_3.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_4.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_17.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_1.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_8.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_12.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_14.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_16.jpg -> classified as: Plots / Charts
+[3emaMXjdkF] figure_10.jpg -> classified as: Plots / Charts
+[3fEKavFsnv] figure_5.jpg -> classified as: Plots / Charts
+[3fEKavFsnv] figure_6.jpg -> classified as: Plots / Charts
+[3fEKavFsnv] figure_9.jpg -> classified as: Plots / Charts
+[3fEKavFsnv] figure_13.jpg -> classified as: Qualitative Examples
+[3fEKavFsnv] figure_2.jpg -> classified as: Plots / Charts
+[3fEKavFsnv] figure_11.jpg -> classified as: Qualitative Examples
+[3fEKavFsnv] figure_7.jpg -> classified as: Qualitative Examples
+[3fEKavFsnv] figure_3.jpg -> classified as: Plots / Charts
+[3fEKavFsnv] figure_4.jpg -> classified as: Plots / Charts
+[3fEKavFsnv] figure_1.jpg -> classified as: Plots / Charts
+[3fEKavFsnv] figure_8.jpg -> classified as: Plots / Charts
+[3fEKavFsnv] figure_12.jpg -> classified as: Qualitative Examples
+[3fEKavFsnv] figure_14.jpg -> classified as: Qualitative Examples
+[3fEKavFsnv] figure_10.jpg -> classified as: Plots / Charts
+[3gwNb8qZDr] figure_4_A_DEEP.jpg -> classified as: Plots / Charts
+[3gwNb8qZDr] figure_A1.jpg -> classified as: Plots / Charts
+[3gwNb8qZDr] figure_6.jpg -> classified as: Plots / Charts
+[3gwNb8qZDr] figure_A2.jpg -> classified as: Plots / Charts
+[3gwNb8qZDr] figure_2.jpg -> classified as: Plots / Charts
+[3gwNb8qZDr] figure_7.jpg -> classified as: Plots / Charts
+[3gwNb8qZDr] figure_3.jpg -> classified as: Architecture Diagram
+[3gwNb8qZDr] figure_4.jpg -> classified as: Plots / Charts
+[3gwNb8qZDr] figure_1.jpg -> classified as: Qualitative Examples
+[3mdCet7vVv] figure_3.jpg -> classified as: Plots / Charts
+[3mdCet7vVv] figure_4.jpg -> classified as: Plots / Charts
+[3mdCet7vVv] figure_1.jpg -> classified as: Architecture Diagram
+[3n6DYH3cIP] figure_2.jpg -> classified as: Architecture Diagram
+[3n6DYH3cIP] figure_1.jpg -> classified as: Architecture Diagram
+[3nPFco1EKt] figure_S1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[3nPFco1EKt] figure_5.jpg -> classified as: Plots / Charts
+[3nPFco1EKt] figure_6.jpg -> classified as: Plots / Charts
+[3nPFco1EKt] figure_S2.jpg -> classified as: Plots / Charts
+[3nPFco1EKt] figure_S6.jpg -> classified as: Plots / Charts
+[3nPFco1EKt] figure_2.jpg -> classified as: Plots / Charts
+[3nPFco1EKt] figure_S5.jpg -> classified as: Plots / Charts
+[3nPFco1EKt] figure_3.jpg -> classified as: Plots / Charts
+[3nPFco1EKt] figure_S7.jpg -> classified as: Plots / Charts
+[3nPFco1EKt] figure_S4.jpg -> classified as: Plots / Charts
+[3nPFco1EKt] figure_4.jpg -> classified as: Plots / Charts
+[3nPFco1EKt] figure_2_1.jpg -> classified as: Plots / Charts
+[3nPFco1EKt] figure_1.jpg -> classified as: Architecture Diagram
+[3nPFco1EKt] figure_S3.jpg -> classified as: Plots / Charts
+[3tM1l5tSbv] figure_5.jpg -> classified as: Plots / Charts
+[3tM1l5tSbv] figure_6.jpg -> classified as: Plots / Charts
+[3tM1l5tSbv] figure_2.jpg -> classified as: Architecture Diagram
+[3tM1l5tSbv] figure_3.jpg -> classified as: Plots / Charts
+[3tM1l5tSbv] figure_4.jpg -> classified as: Plots / Charts
+[3tM1l5tSbv] figure_1.jpg -> classified as: Plots / Charts
+[3xHDeA8Noi] figure_5.jpg -> classified as: Plots / Charts
+[3xHDeA8Noi] figure_6.jpg -> classified as: Plots / Charts
+[3xHDeA8Noi] figure_9.jpg -> classified as: Plots / Charts
+[3xHDeA8Noi] figure_2.jpg -> classified as: Plots / Charts
+[3xHDeA8Noi] figure_11.jpg -> classified as: Plots / Charts
+[3xHDeA8Noi] figure_7.jpg -> classified as: Plots / Charts
+[3xHDeA8Noi] figure_3.jpg -> classified as: Plots / Charts
+[3xHDeA8Noi] figure_1.jpg -> classified as: Plots / Charts
+[3xHDeA8Noi] figure_8.jpg -> classified as: Plots / Charts
+[3xHDeA8Noi] figure_10.jpg -> classified as: Plots / Charts
+[40BTVvYQWZ] figure_5.jpg -> classified as: Plots / Charts
+[40BTVvYQWZ] figure_2.jpg -> classified as: Plots / Charts
+[40BTVvYQWZ] figure_3.jpg -> classified as: Plots / Charts
+[40BTVvYQWZ] figure_4.jpg -> classified as: Plots / Charts
+[40BTVvYQWZ] figure_1.jpg -> classified as: Plots / Charts
+[41WIgfdd5o] figure_5.jpg -> classified as: Plots / Charts
+[41WIgfdd5o] figure_6.jpg -> classified as: Architecture Diagram
+[41WIgfdd5o] figure_2.jpg -> classified as: Architecture Diagram
+[41WIgfdd5o] figure_7.jpg -> classified as: Plots / Charts
+[41WIgfdd5o] figure_3.jpg -> classified as: Qualitative Examples
+[41WIgfdd5o] figure_4.jpg -> classified as: Architecture Diagram
+[41WIgfdd5o] figure_1.jpg -> classified as: Qualitative Examples
+[41WIgfdd5o] figure_8.jpg -> classified as: Plots / Charts
+[421D67DY3i] figure_5.jpg -> classified as: Plots / Charts
+[421D67DY3i] figure_2.jpg -> classified as: Plots / Charts
+[421D67DY3i] figure_3.jpg -> classified as: Plots / Charts
+[421D67DY3i] figure_4.jpg -> classified as: Plots / Charts
+[421D67DY3i] figure_1.jpg -> classified as: Plots / Charts
+[44IKUSdbUD] figure_2.jpg -> classified as: Plots / Charts
+[44IKUSdbUD] figure_1.jpg -> classified as: Architecture Diagram
+[46tjvA75h6] figure_2.jpg -> classified as: Qualitative Examples
+[46tjvA75h6] figure_3.jpg -> classified as: Plots / Charts
+[46tjvA75h6] figure_1.jpg -> classified as: Qualitative Examples
+[47hDbAMLbc] figure_1.jpg -> classified as: Plots / Charts
+[488A64eOf6] figure_5.jpg -> classified as: Plots / Charts
+[488A64eOf6] figure_2.jpg -> classified as: Plots / Charts
+[488A64eOf6] figure_3.jpg -> classified as: Plots / Charts
+[488A64eOf6] figure_4.jpg -> classified as: Plots / Charts
+[488A64eOf6] figure_1.jpg -> classified as: Plots / Charts
+[49v8meXjHS] figure_5.jpg -> classified as: Architecture Diagram
+[49v8meXjHS] figure_6.jpg -> classified as: Plots / Charts
+[49v8meXjHS] figure_3.jpg -> classified as: Plots / Charts
+[49v8meXjHS] figure_unnamed_figure.jpg -> classified as: Plots / Charts
+[49v8meXjHS] figure_4.jpg -> classified as: Plots / Charts
+[49v8meXjHS] figure_(b)_Mean_error.jpg -> classified as: Plots / Charts
+[4BFzTrIjPN] figure_5.jpg -> classified as: Plots / Charts
+[4BFzTrIjPN] figure_6.jpg -> classified as: Plots / Charts
+[4BFzTrIjPN] figure_9.jpg -> classified as: Plots / Charts
+[4BFzTrIjPN] figure_2.jpg -> classified as: Plots / Charts
+[4BFzTrIjPN] figure_11.jpg -> classified as: Architecture Diagram
+[4BFzTrIjPN] figure_3.jpg -> classified as: Plots / Charts
+[4BFzTrIjPN] figure_4.jpg -> classified as: Plots / Charts
+[4BFzTrIjPN] figure_1.jpg -> classified as: Plots / Charts
+[4BFzTrIjPN] figure_8.jpg -> classified as: Plots / Charts
+[4BFzTrIjPN] figure_12.jpg -> classified as: Architecture Diagram
+[4BFzTrIjPN] figure_10.jpg -> classified as: Plots / Charts
+[4FUa5dxiiA] figure_5.jpg -> classified as: Plots / Charts
+[4FUa5dxiiA] figure_6.jpg -> classified as: Plots / Charts
+[4FUa5dxiiA] figure_2.jpg -> classified as: Plots / Charts
+[4FUa5dxiiA] figure_7.jpg -> classified as: Plots / Charts
+[4FUa5dxiiA] figure_4.jpg -> classified as: Plots / Charts
+[4FUa5dxiiA] figure_1.jpg -> classified as: Plots / Charts
+[4FUa5dxiiA] figure_8.jpg -> classified as: Plots / Charts
+[4FVGowGzQb] figure_5.jpg -> classified as: Plots / Charts
+[4FVGowGzQb] figure_6.jpg -> classified as: Qualitative Examples
+[4FVGowGzQb] figure_2.jpg -> classified as: Plots / Charts
+[4FVGowGzQb] figure_7.jpg -> classified as: Qualitative Examples
+[4FVGowGzQb] figure_3.jpg -> classified as: Plots / Charts
+[4FVGowGzQb] figure_4.jpg -> classified as: Plots / Charts
+[4FVGowGzQb] figure_1.jpg -> classified as: Plots / Charts
+[4GT9uTsAJE] figure_2.jpg -> classified as: Plots / Charts
+[4GT9uTsAJE] figure_1.jpg -> classified as: Plots / Charts
+[4Hd7u3LHlZ] figure_2.jpg -> classified as: Architecture Diagram
+[4Hv5DLTJLF] figure_2.jpg -> classified as: Plots / Charts
+[4Hv5DLTJLF] figure_3.jpg -> classified as: Plots / Charts
+[4Hv5DLTJLF] figure_1.jpg -> classified as: Architecture Diagram
+[4JbrdrHxYy] figure_5.jpg -> classified as: Qualitative Examples
+[4JbrdrHxYy] figure_6.jpg -> classified as: Plots / Charts
+[4JbrdrHxYy] figure_9.jpg -> classified as: Plots / Charts
+[4JbrdrHxYy] figure_13.jpg -> classified as: Qualitative Examples
+[4JbrdrHxYy] figure_2.jpg -> classified as: Qualitative Examples
+[4JbrdrHxYy] figure_Ground_Truth_Top-10.jpg -> classified as: Qualitative Examples
+[4JbrdrHxYy] figure_11.jpg -> classified as: Qualitative Examples
+[4JbrdrHxYy] figure_3.jpg -> classified as: Architecture Diagram
+[4JbrdrHxYy] figure_4.jpg -> classified as: Plots / Charts
+[4JbrdrHxYy] figure_1.jpg -> classified as: Qualitative Examples
+[4JbrdrHxYy] figure_8.jpg -> classified as: Qualitative Examples
+[4JbrdrHxYy] figure_12.jpg -> classified as: Qualitative Examples
+[4JbrdrHxYy] figure_14.jpg -> classified as: Qualitative Examples
+[4JbrdrHxYy] figure_10.jpg -> classified as: Qualitative Examples
+[4NgxI6Z74n] figure_2.jpg -> classified as: Plots / Charts
+[4NgxI6Z74n] figure_1.jpg -> classified as: Plots / Charts
+[4NgxI6Z74n] figure_Listing_1__Pseudocode.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[4PlbIfmX9o] figure_5.jpg -> classified as: Architecture Diagram
+[4PlbIfmX9o] figure_6.jpg -> classified as: Plots / Charts
+[4PlbIfmX9o] figure_9.jpg -> classified as: Architecture Diagram
+[4PlbIfmX9o] figure_2.jpg -> classified as: Architecture Diagram
+[4PlbIfmX9o] figure_7.jpg -> classified as: Architecture Diagram
+[4PlbIfmX9o] figure_3.jpg -> classified as: Qualitative Examples
+[4PlbIfmX9o] figure_4.jpg -> classified as: Architecture Diagram
+[4PlbIfmX9o] figure_1.jpg -> classified as: Architecture Diagram
+[4PlbIfmX9o] figure_8.jpg -> classified as: Architecture Diagram
+[4PlbIfmX9o] figure_10.jpg -> classified as: Plots / Charts
+[4Po8d9GAfQ] figure_5.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[4Po8d9GAfQ] figure_2.jpg -> classified as: Plots / Charts
+[4Po8d9GAfQ] figure_7.jpg -> classified as: Plots / Charts
+[4Po8d9GAfQ] figure_3.jpg -> classified as: Plots / Charts
+[4Po8d9GAfQ] figure_1.jpg -> classified as: Architecture Diagram
+[4Y4hPWUppN] figure_2.jpg -> classified as: Plots / Charts
+[4Y4hPWUppN] figure_3.jpg -> classified as: Qualitative Examples
+[4Y4hPWUppN] figure_4.jpg -> classified as: Plots / Charts
+[4Y4hPWUppN] figure_1.jpg -> classified as: Architecture Diagram
+[4YzVF9isgD] figure_5.jpg -> classified as: Qualitative Examples
+[4YzVF9isgD] figure_6.jpg -> classified as: Qualitative Examples
+[4YzVF9isgD] figure_2.jpg -> classified as: Architecture Diagram
+[4YzVF9isgD] figure_3.jpg -> classified as: Qualitative Examples
+[4YzVF9isgD] figure_4.jpg -> classified as: Qualitative Examples
+[4YzVF9isgD] figure_1.jpg -> classified as: Qualitative Examples
+[4ZX2a3OKEV] figure_5.jpg -> classified as: Plots / Charts
+[4ZX2a3OKEV] figure_6.jpg -> classified as: Plots / Charts
+[4ZX2a3OKEV] figure_9.jpg -> classified as: Plots / Charts
+[4ZX2a3OKEV] figure_2.jpg -> classified as: Plots / Charts
+[4ZX2a3OKEV] figure_7.jpg -> classified as: Plots / Charts
+[4ZX2a3OKEV] figure_3.jpg -> classified as: Plots / Charts
+[4ZX2a3OKEV] figure_4.jpg -> classified as: Plots / Charts
+[4ZX2a3OKEV] figure_1.jpg -> classified as: Plots / Charts
+[4ZX2a3OKEV] figure_8.jpg -> classified as: Plots / Charts
+[4ZX2a3OKEV] figure_10.jpg -> classified as: Plots / Charts
+[4aywmeb97I] figure_2.jpg -> classified as: Plots / Charts
+[4aywmeb97I] figure_3.jpg -> classified as: Plots / Charts
+[4aywmeb97I] figure_4.jpg -> classified as: Plots / Charts
+[4aywmeb97I] figure_1.jpg -> classified as: Plots / Charts
+[4bLXfRd0CX] figure_5.jpg -> classified as: Plots / Charts
+[4bLXfRd0CX] figure_6.jpg -> classified as: Plots / Charts
+[4bLXfRd0CX] figure_2.jpg -> classified as: Plots / Charts
+[4bLXfRd0CX] figure_3.jpg -> classified as: Plots / Charts
+[4bLXfRd0CX] figure_4.jpg -> classified as: Plots / Charts
+[4bLXfRd0CX] figure_1.jpg -> classified as: Plots / Charts
+[4g0PUEAHg0] figure_5.jpg -> classified as: Plots / Charts
+[4g0PUEAHg0] figure_6.jpg -> classified as: Plots / Charts
+[4g0PUEAHg0] figure_9.jpg -> classified as: Plots / Charts
+[4g0PUEAHg0] figure_13.jpg -> classified as: Plots / Charts
+[4g0PUEAHg0] figure_15.jpg -> classified as: Architecture Diagram
+[4g0PUEAHg0] figure_2.jpg -> classified as: Plots / Charts
+[4g0PUEAHg0] figure_11.jpg -> classified as: Plots / Charts
+[4g0PUEAHg0] figure_7.jpg -> classified as: Plots / Charts
+[4g0PUEAHg0] figure_3.jpg -> classified as: Plots / Charts
+[4g0PUEAHg0] figure_4.jpg -> classified as: Plots / Charts
+[4g0PUEAHg0] figure_1.jpg -> classified as: Architecture Diagram
+[4g0PUEAHg0] figure_8.jpg -> classified as: Plots / Charts
+[4g0PUEAHg0] figure_14.jpg -> classified as: Plots / Charts
+[4g0PUEAHg0] figure_10.jpg -> classified as: Plots / Charts
+[4ihkxIeTFH] figure_1.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_19.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_23.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_5.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_6.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_9.jpg -> classified as: Qualitative Examples
+[4jBL79L5QS] figure_22.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_18.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_13.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_15.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_2.jpg -> classified as: Architecture Diagram
+[4jBL79L5QS] figure_20.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_11.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_7.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_3.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_4.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_17.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_1.jpg -> classified as: Architecture Diagram
+[4jBL79L5QS] figure_8.jpg -> classified as: Qualitative Examples
+[4jBL79L5QS] figure_12.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_21.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_14.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_16.jpg -> classified as: Plots / Charts
+[4jBL79L5QS] figure_10.jpg -> classified as: Qualitative Examples
+[4ktJJBvvUd] figure_2.jpg -> classified as: Qualitative Examples
+[4ktJJBvvUd] figure_3.jpg -> classified as: Plots / Charts
+[4ktJJBvvUd] figure_4.jpg -> classified as: Architecture Diagram
+[4ktJJBvvUd] figure_1.jpg -> classified as: Architecture Diagram
+[4pRwkYpa2u] figure_1.jpg -> classified as: Architecture Diagram
+[4qFIkOhq24] figure_5.jpg -> classified as: Plots / Charts
+[4qFIkOhq24] figure_13.jpg -> classified as: Plots / Charts
+[4qFIkOhq24] figure_15.jpg -> classified as: Plots / Charts
+[4qFIkOhq24] figure_2.jpg -> classified as: Plots / Charts
+[4qFIkOhq24] figure_11.jpg -> classified as: Plots / Charts
+[4qFIkOhq24] figure_3.jpg -> classified as: Plots / Charts
+[4qFIkOhq24] figure_4.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[4qFIkOhq24] figure_1.jpg -> classified as: Plots / Charts
+[4qFIkOhq24] figure_8.jpg -> classified as: Plots / Charts
+[4qFIkOhq24] figure_12.jpg -> classified as: Plots / Charts
+[4qFIkOhq24] figure_14.jpg -> classified as: Plots / Charts
+[4qh6nurdYt] figure_5.jpg -> classified as: Plots / Charts
+[4qh6nurdYt] figure_6.jpg -> classified as: Plots / Charts
+[4qh6nurdYt] figure_9.jpg -> classified as: Plots / Charts
+[4qh6nurdYt] figure_2.jpg -> classified as: Plots / Charts
+[4qh6nurdYt] figure_7.jpg -> classified as: Plots / Charts
+[4qh6nurdYt] figure_3.jpg -> classified as: Plots / Charts
+[4qh6nurdYt] figure_4.jpg -> classified as: Plots / Charts
+[4qh6nurdYt] figure_7_1.jpg -> classified as: Plots / Charts
+[4qh6nurdYt] figure_1.jpg -> classified as: Architecture Diagram
+[4rEI2JdHH6] figure_5.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_6.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_9.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_13.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_15.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_2.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_11.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_7.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_3.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_4.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[4rEI2JdHH6] figure_8.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_12.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_14.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_16.jpg -> classified as: Plots / Charts
+[4rEI2JdHH6] figure_10.jpg -> classified as: Plots / Charts
+[4sJ2FYE65U] figure_5.jpg -> classified as: Plots / Charts
+[4sJ2FYE65U] figure_6.jpg -> classified as: Plots / Charts
+[4sJ2FYE65U] figure_2.jpg -> classified as: Architecture Diagram
+[4sJ2FYE65U] figure_7.jpg -> classified as: Plots / Charts
+[4sJ2FYE65U] figure_3.jpg -> classified as: Plots / Charts
+[4sJ2FYE65U] figure_4.jpg -> classified as: Plots / Charts
+[4sJ2FYE65U] figure_1.jpg -> classified as: Architecture Diagram
+[4sJ2FYE65U] figure_8.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_(b)_Prediction_set.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_5.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_9.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_13.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_15.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_2.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_11.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_7.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_3.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_4.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_1.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_8.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_12.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_14.jpg -> classified as: Plots / Charts
+[4vPVBh3fhz] figure_16.jpg -> classified as: Plots / Charts
+[4vzGQcVUG8] figure_2.jpg -> classified as: Plots / Charts
+[4vzGQcVUG8] figure_3.jpg -> classified as: Plots / Charts
+[4vzGQcVUG8] figure_4.jpg -> classified as: Plots / Charts
+[4vzGQcVUG8] figure_1.jpg -> classified as: Plots / Charts
+[4xWQS2z77v] figure_5.jpg -> classified as: Plots / Charts
+[4xWQS2z77v] figure_6.jpg -> classified as: Plots / Charts
+[4xWQS2z77v] figure_9.jpg -> classified as: Plots / Charts
+[4xWQS2z77v] figure_2.jpg -> classified as: Plots / Charts
+[4xWQS2z77v] figure_7.jpg -> classified as: Plots / Charts
+[4xWQS2z77v] figure_3.jpg -> classified as: Plots / Charts
+[4xWQS2z77v] figure_4.jpg -> classified as: Plots / Charts
+[4xWQS2z77v] figure_1.jpg -> classified as: Plots / Charts
+[4xWQS2z77v] figure_8.jpg -> classified as: Plots / Charts
+[4y3GDTFv70] figure_2.jpg -> classified as: Plots / Charts
+[4y3GDTFv70] figure_3.jpg -> classified as: Architecture Diagram
+[4y3GDTFv70] figure_1.jpg -> classified as: Plots / Charts
+[52UtL8uA35] figure_5.jpg -> classified as: Plots / Charts
+[52UtL8uA35] figure_6.jpg -> classified as: Plots / Charts
+[52UtL8uA35] figure_2.jpg -> classified as: Plots / Charts
+[52UtL8uA35] figure_3.jpg -> classified as: Qualitative Examples
+[52UtL8uA35] figure_4.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[52UtL8uA35] figure_1.jpg -> classified as: Plots / Charts
+[562B7aLi5X] figure_2.jpg -> classified as: Plots / Charts
+[562B7aLi5X] figure_3.jpg -> classified as: Plots / Charts
+[562B7aLi5X] figure_1.jpg -> classified as: Plots / Charts
+[57iQSl2G2Q] figure_5.jpg -> classified as: Architecture Diagram
+[57iQSl2G2Q] figure_6.jpg -> classified as: Plots / Charts
+[57iQSl2G2Q] figure_9.jpg -> classified as: Plots / Charts
+[57iQSl2G2Q] figure_2.jpg -> classified as: Plots / Charts
+[57iQSl2G2Q] figure_7.jpg -> classified as: Plots / Charts
+[57iQSl2G2Q] figure_3.jpg -> classified as: Architecture Diagram
+[57iQSl2G2Q] figure_4.jpg -> classified as: Plots / Charts
+[57iQSl2G2Q] figure_1.jpg -> classified as: Architecture Diagram
+[57iQSl2G2Q] figure_8.jpg -> classified as: Plots / Charts
+[58KF6ne6d4] figure_5.jpg -> classified as: Plots / Charts
+[58KF6ne6d4] figure_2.jpg -> classified as: Plots / Charts
+[58KF6ne6d4] figure_3.jpg -> classified as: Plots / Charts
+[58KF6ne6d4] figure_4.jpg -> classified as: Plots / Charts
+[58KF6ne6d4] figure_1.jpg -> classified as: Plots / Charts
+[5BXWhVbHAK] figure_2.jpg -> classified as: Qualitative Examples
+[5BXWhVbHAK] figure_4.jpg -> classified as: Plots / Charts
+[5EuAMDMPRK] figure_5.jpg -> classified as: Plots / Charts
+[5EuAMDMPRK] figure_6.jpg -> classified as: Plots / Charts
+[5EuAMDMPRK] figure_9.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[5EuAMDMPRK] figure_13.jpg -> classified as: Plots / Charts
+[5EuAMDMPRK] figure_2.jpg -> classified as: Architecture Diagram
+[5EuAMDMPRK] figure_11.jpg -> classified as: Plots / Charts
+[5EuAMDMPRK] figure_7.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[5EuAMDMPRK] figure_3.jpg -> classified as: Plots / Charts
+[5EuAMDMPRK] figure_4.jpg -> classified as: Plots / Charts
+[5EuAMDMPRK] figure_12.jpg -> classified as: Plots / Charts
+[5EuAMDMPRK] figure_10.jpg -> classified as: Plots / Charts
+[5FKIynMPV6] figure_2.jpg -> classified as: Plots / Charts
+[5FKIynMPV6] figure_1.jpg -> classified as: Plots / Charts
+[5G9PrHERql] figure_5.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[5G9PrHERql] figure_6.jpg -> classified as: Plots / Charts
+[5G9PrHERql] figure_2.jpg -> classified as: Architecture Diagram
+[5G9PrHERql] figure_7.jpg -> classified as: Qualitative Examples
+[5G9PrHERql] figure_3.jpg -> classified as: Architecture Diagram
+[5G9PrHERql] figure_4.jpg -> classified as: Qualitative Examples
+[5G9PrHERql] figure_1.jpg -> classified as: Plots / Charts
+[5GZuEZDmUE] figure_5.jpg -> classified as: Plots / Charts
+[5GZuEZDmUE] figure_6.jpg -> classified as: Plots / Charts
+[5GZuEZDmUE] figure_2.jpg -> classified as: Plots / Charts
+[5GZuEZDmUE] figure_7.jpg -> classified as: Plots / Charts
+[5GZuEZDmUE] figure_3.jpg -> classified as: Architecture Diagram
+[5GZuEZDmUE] figure_4.jpg -> classified as: Plots / Charts
+[5GZuEZDmUE] figure_1.jpg -> classified as: Plots / Charts
+[5GZuEZDmUE] figure_8.jpg -> classified as: Plots / Charts
+[5K0fmGnFqP] figure_5.jpg -> classified as: Plots / Charts
+[5K0fmGnFqP] figure_6.jpg -> classified as: Plots / Charts
+[5K0fmGnFqP] figure_2.jpg -> classified as: Plots / Charts
+[5K0fmGnFqP] figure_7.jpg -> classified as: Plots / Charts
+[5K0fmGnFqP] figure_3.jpg -> classified as: Plots / Charts
+[5K0fmGnFqP] figure_4.jpg -> classified as: Plots / Charts
+[5K0fmGnFqP] figure_1.jpg -> classified as: Architecture Diagram
+[5K0fmGnFqP] figure_8.jpg -> classified as: Plots / Charts
+[5KUiMKRebi] figure_5.jpg -> classified as: Plots / Charts
+[5KUiMKRebi] figure_9.jpg -> classified as: Plots / Charts
+[5KUiMKRebi] figure_13.jpg -> classified as: Plots / Charts
+[5KUiMKRebi] figure_15.jpg -> classified as: Plots / Charts
+[5KUiMKRebi] figure_2.jpg -> classified as: Plots / Charts
+[5KUiMKRebi] figure_11.jpg -> classified as: Plots / Charts
+[5KUiMKRebi] figure_7.jpg -> classified as: Architecture Diagram
+[5KUiMKRebi] figure_3.jpg -> classified as: Plots / Charts
+[5KUiMKRebi] figure_4.jpg -> classified as: Plots / Charts
+[5KUiMKRebi] figure_1.jpg -> classified as: Plots / Charts
+[5KUiMKRebi] figure_8.jpg -> classified as: Plots / Charts
+[5KUiMKRebi] figure_12.jpg -> classified as: Plots / Charts
+[5KUiMKRebi] figure_14.jpg -> classified as: Plots / Charts
+[5KUiMKRebi] figure_10.jpg -> classified as: Plots / Charts
+[5KgKa96PUG] figure_5.jpg -> classified as: Plots / Charts
+[5KgKa96PUG] figure_6.jpg -> classified as: Plots / Charts
+[5KgKa96PUG] figure_2.jpg -> classified as: Plots / Charts
+[5KgKa96PUG] figure_7.jpg -> classified as: Plots / Charts
+[5KgKa96PUG] figure_3.jpg -> classified as: Plots / Charts
+[5KgKa96PUG] figure_4.jpg -> classified as: Plots / Charts
+[5KgKa96PUG] figure_1.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_5.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_6.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_9.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_13.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_2.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_11.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_7.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_3.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_4.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_1.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_8.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_12.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_14.jpg -> classified as: Plots / Charts
+[5Lt6sBoemN] figure_10.jpg -> classified as: Plots / Charts
+[5M0ic2RxQZ] figure_1.jpg -> classified as: Plots / Charts
+[5MNJKgaj54] figure_2.jpg -> classified as: Architecture Diagram
+[5MNJKgaj54] figure_3.jpg -> classified as: Plots / Charts
+[5MNJKgaj54] figure_1.jpg -> classified as: Qualitative Examples
+[5Nn2BLV7SB] figure_5.jpg -> classified as: Qualitative Examples
+[5Nn2BLV7SB] figure_2.jpg -> classified as: Architecture Diagram
+[5Nn2BLV7SB] figure_(a)_Comparison_Results.jpg -> classified as: Plots / Charts
+[5Nn2BLV7SB] figure_7.jpg -> classified as: Architecture Diagram
+[5Nn2BLV7SB] figure_3.jpg -> classified as: Plots / Charts
+[5Nn2BLV7SB] figure_4.jpg -> classified as: Plots / Charts
+[5Nn2BLV7SB] figure_(c)_Comparison_Results.jpg -> classified as: Plots / Charts
+[5Nn2BLV7SB] figure_8.jpg -> classified as: Plots / Charts
+[5WPQIVgWCg] figure_2.jpg -> classified as: Plots / Charts
+[5WPQIVgWCg] figure_3.jpg -> classified as: Plots / Charts
+[5WPQIVgWCg] figure_4.jpg -> classified as: Plots / Charts
+[5WPQIVgWCg] figure_1.jpg -> classified as: Plots / Charts
+[5Y9NT6lW21] figure_5.jpg -> classified as: Plots / Charts
+[5Y9NT6lW21] figure_2.jpg -> classified as: Plots / Charts
+[5Y9NT6lW21] figure_3.jpg -> classified as: Plots / Charts
+[5Y9NT6lW21] figure_4.jpg -> classified as: Plots / Charts
+[5Y9NT6lW21] figure_1.jpg -> classified as: Plots / Charts
+[5ep85sakT3] figure_2.jpg -> classified as: Plots / Charts
+[5ep85sakT3] figure_3.jpg -> classified as: Plots / Charts
+[5ep85sakT3] figure_4.jpg -> classified as: Plots / Charts
+[5ep85sakT3] figure_1.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S18.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S15.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S1.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S11.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S20.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S34.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_5.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S38.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_6.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S24.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S2.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S9.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S36.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_9.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S29.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S30.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S28.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S6.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S33.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_(a)_Parameter_displacement.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_2.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S26.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S8.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S21.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S5.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S22.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_7.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S25.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_3.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S7.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S4.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S35.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S23.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S13.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_4.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S32.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S19.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S14.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_1.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S16.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_8.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S27.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S17.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S12.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S3.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S10.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_S37.jpg -> classified as: Plots / Charts
+[5jWsW08zUh] figure_10.jpg -> classified as: Plots / Charts
+[5nldnvvHfw] figure_5.jpg -> classified as: Plots / Charts
+[5nldnvvHfw] figure_2.jpg -> classified as: Plots / Charts
+[5nldnvvHfw] figure_4.jpg -> classified as: Plots / Charts
+[5nldnvvHfw] figure_1.jpg -> classified as: Plots / Charts
+[5sPgOyyjG5] figure_5.jpg -> classified as: Plots / Charts
+[5sPgOyyjG5] figure_6.jpg -> classified as: Plots / Charts
+[5sPgOyyjG5] figure_2.jpg -> classified as: Plots / Charts
+[5sPgOyyjG5] figure_7.jpg -> classified as: Plots / Charts
+[5sPgOyyjG5] figure_3.jpg -> classified as: Plots / Charts
+[5sPgOyyjG5] figure_4.jpg -> classified as: Plots / Charts
+[5sPgOyyjG5] figure_1.jpg -> classified as: Plots / Charts
+[5t57omGVMw] figure_5.jpg -> classified as: Plots / Charts
+[5t57omGVMw] figure_6.jpg -> classified as: Plots / Charts
+[5t57omGVMw] figure_2.jpg -> classified as: Plots / Charts
+[5t57omGVMw] figure_3.jpg -> classified as: Plots / Charts
+[5t57omGVMw] figure_4.jpg -> classified as: Plots / Charts
+[5t57omGVMw] figure_1.jpg -> classified as: Plots / Charts
+[5uUr3WFmyZ] figure_2.jpg -> classified as: Plots / Charts
+[5uUr3WFmyZ] figure_3.jpg -> classified as: Plots / Charts
+[5uUr3WFmyZ] figure_1.jpg -> classified as: Plots / Charts
+[5vXDQ65dzH] figure_5.jpg -> classified as: Plots / Charts
+[5vXDQ65dzH] figure_6.jpg -> classified as: Plots / Charts
+[5vXDQ65dzH] figure_2.jpg -> classified as: Plots / Charts
+[5vXDQ65dzH] figure_7.jpg -> classified as: Plots / Charts
+[5vXDQ65dzH] figure_3.jpg -> classified as: Plots / Charts
+[5vXDQ65dzH] figure_4.jpg -> classified as: Plots / Charts
+[5vXDQ65dzH] figure_1.jpg -> classified as: Architecture Diagram
+[5xKixQzhDE] figure_2.jpg -> classified as: Plots / Charts
+[5xKixQzhDE] figure_3.jpg -> classified as: Qualitative Examples
+[5xKixQzhDE] figure_4.jpg -> classified as: Plots / Charts
+[5xKixQzhDE] figure_1.jpg -> classified as: Architecture Diagram
+[636M0nNbPs] figure_5.jpg -> classified as: Qualitative Examples
+[636M0nNbPs] figure_6.jpg -> classified as: Qualitative Examples
+[636M0nNbPs] figure_Describe_the_following.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[636M0nNbPs] figure_Can_you_describe.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[636M0nNbPs] figure_3.jpg -> classified as: Plots / Charts
+[636M0nNbPs] figure_4.jpg -> classified as: Qualitative Examples
+[636M0nNbPs] figure_1.jpg -> classified as: Plots / Charts
+[66arKkGiFy] figure_5.jpg -> classified as: Qualitative Examples
+[66arKkGiFy] figure_6.jpg -> classified as: Qualitative Examples
+[66arKkGiFy] figure_9.jpg -> classified as: Qualitative Examples
+[66arKkGiFy] figure_2.jpg -> classified as: Plots / Charts
+[66arKkGiFy] figure_7.jpg -> classified as: Qualitative Examples
+[66arKkGiFy] figure_3.jpg -> classified as: Qualitative Examples
+[66arKkGiFy] figure_4.jpg -> classified as: Qualitative Examples
+[66arKkGiFy] figure_1.jpg -> classified as: Plots / Charts
+[66arKkGiFy] figure_8.jpg -> classified as: Qualitative Examples
+[68J0pJFCi3] figure_2.jpg -> classified as: Architecture Diagram
+[68J0pJFCi3] figure_3.jpg -> classified as: Plots / Charts
+[68J0pJFCi3] figure_4.jpg -> classified as: Plots / Charts
+[68J0pJFCi3] figure_1.jpg -> classified as: Architecture Diagram
+[6CGBfHtFRM] figure_1.jpg -> classified as: Plots / Charts
+[6CIGhcJYJH] figure_5.jpg -> classified as: Plots / Charts
+[6CIGhcJYJH] figure_2.jpg -> classified as: Plots / Charts
+[6CIGhcJYJH] figure_3.jpg -> classified as: Plots / Charts
+[6CIGhcJYJH] figure_1.jpg -> classified as: Plots / Charts
+[6EUtjXAvmj] figure_19.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_24.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_5.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_6.jpg -> classified as: Plots / Charts
+[6EUtjXAvmj] figure_9.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_22.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_18.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_13.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_15.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_2.jpg -> classified as: Plots / Charts
+[6EUtjXAvmj] figure_20.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_11.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_7.jpg -> classified as: Plots / Charts
+[6EUtjXAvmj] figure_3.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_unnamed_figure.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_4.jpg -> classified as: Plots / Charts
+[6EUtjXAvmj] figure_17.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_1.jpg -> classified as: Architecture Diagram
+[6EUtjXAvmj] figure_27.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_8.jpg -> classified as: Plots / Charts
+[6EUtjXAvmj] figure_12.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_25.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_21.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_26.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_14.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_16.jpg -> classified as: Qualitative Examples
+[6EUtjXAvmj] figure_10.jpg -> classified as: Qualitative Examples
+[6Gb7VfTKY7] figure_2.jpg -> classified as: Architecture Diagram
+[6Gb7VfTKY7] figure_1.jpg -> classified as: Plots / Charts
+[6HfNB34x9I] figure_5.jpg -> classified as: Architecture Diagram
+[6HfNB34x9I] figure_2.jpg -> classified as: Architecture Diagram
+[6HfNB34x9I] figure_3.jpg -> classified as: Plots / Charts
+[6HfNB34x9I] figure_4.jpg -> classified as: Qualitative Examples
+[6HfNB34x9I] figure_1.jpg -> classified as: Qualitative Examples
+[6N8TW504aa] figure_5.jpg -> classified as: Plots / Charts
+[6N8TW504aa] figure_6.jpg -> classified as: Plots / Charts
+[6N8TW504aa] figure_9.jpg -> classified as: Plots / Charts
+[6N8TW504aa] figure_2.jpg -> classified as: Architecture Diagram
+[6N8TW504aa] figure_7.jpg -> classified as: Plots / Charts
+[6N8TW504aa] figure_3.jpg -> classified as: Architecture Diagram
+[6N8TW504aa] figure_4.jpg -> classified as: Architecture Diagram
+[6N8TW504aa] figure_1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[6N8TW504aa] figure_8.jpg -> classified as: Plots / Charts
+[6N8TW504aa] figure_10.jpg -> classified as: Plots / Charts
+[6PjS5RnxeK] figure_5.jpg -> classified as: Plots / Charts
+[6PjS5RnxeK] figure_2.jpg -> classified as: Plots / Charts
+[6PjS5RnxeK] figure_3.jpg -> classified as: Plots / Charts
+[6PjS5RnxeK] figure_4.jpg -> classified as: Plots / Charts
+[6PjS5RnxeK] figure_1.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_19.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_5.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_6.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_9.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_22.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_18.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_13.jpg -> classified as: Architecture Diagram
+[6Vl9Uvxocp] figure_15.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_2.jpg -> classified as: Architecture Diagram
+[6Vl9Uvxocp] figure_20.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_11.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_7.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_3.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_4.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_17.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_1.jpg -> classified as: Architecture Diagram
+[6Vl9Uvxocp] figure_8.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_12.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_21.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_14.jpg -> classified as: Qualitative Examples
+[6Vl9Uvxocp] figure_16.jpg -> classified as: Plots / Charts
+[6Vl9Uvxocp] figure_10.jpg -> classified as: Plots / Charts
+[6Z8rZlKpNT] figure_5.jpg -> classified as: Plots / Charts
+[6Z8rZlKpNT] figure_6.jpg -> classified as: Plots / Charts
+[6Z8rZlKpNT] figure_2.jpg -> classified as: Plots / Charts
+[6Z8rZlKpNT] figure_3.jpg -> classified as: Plots / Charts
+[6Z8rZlKpNT] figure_4.jpg -> classified as: Plots / Charts
+[6Z8rZlKpNT] figure_1.jpg -> classified as: Architecture Diagram
+[6cFcw1Rxww] figure_5.jpg -> classified as: Plots / Charts
+[6cFcw1Rxww] figure_6.jpg -> classified as: Plots / Charts
+[6cFcw1Rxww] figure_9.jpg -> classified as: Plots / Charts
+[6cFcw1Rxww] figure_13.jpg -> classified as: Plots / Charts
+[6cFcw1Rxww] figure_15.jpg -> classified as: Plots / Charts
+[6cFcw1Rxww] figure_2.jpg -> classified as: Architecture Diagram
+[6cFcw1Rxww] figure_11.jpg -> classified as: Plots / Charts
+[6cFcw1Rxww] figure_7.jpg -> classified as: Plots / Charts
+[6cFcw1Rxww] figure_3.jpg -> classified as: Architecture Diagram
+[6cFcw1Rxww] figure_4.jpg -> classified as: Architecture Diagram
+[6cFcw1Rxww] figure_17.jpg -> classified as: Plots / Charts
+[6cFcw1Rxww] figure_1.jpg -> classified as: Architecture Diagram
+[6cFcw1Rxww] figure_8.jpg -> classified as: Plots / Charts
+[6cFcw1Rxww] figure_12.jpg -> classified as: Plots / Charts
+[6cFcw1Rxww] figure_14.jpg -> classified as: Plots / Charts
+[6cFcw1Rxww] figure_16.jpg -> classified as: Plots / Charts
+[6cFcw1Rxww] figure_10.jpg -> classified as: Plots / Charts
+[6fFd8QaPVx] figure_5.jpg -> classified as: Plots / Charts
+[6fFd8QaPVx] figure_6.jpg -> classified as: Plots / Charts
+[6fFd8QaPVx] figure_2.jpg -> classified as: Architecture Diagram
+[6fFd8QaPVx] figure_7.jpg -> classified as: Plots / Charts
+[6fFd8QaPVx] figure_3.jpg -> classified as: Plots / Charts
+[6fFd8QaPVx] figure_4.jpg -> classified as: Architecture Diagram
+[6fFd8QaPVx] figure_1.jpg -> classified as: Architecture Diagram
+[6gUrqzDNsQ] figure_5.jpg -> classified as: Qualitative Examples
+[6gUrqzDNsQ] figure_6.jpg -> classified as: Qualitative Examples
+[6gUrqzDNsQ] figure_2.jpg -> classified as: Architecture Diagram
+[6gUrqzDNsQ] figure_3.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[6gUrqzDNsQ] figure_4.jpg -> classified as: Qualitative Examples
+[6gUrqzDNsQ] figure_1.jpg -> classified as: Architecture Diagram
+[6hvtSLkKeZ] figure_5.jpg -> classified as: Architecture Diagram
+[6hvtSLkKeZ] figure_6.jpg -> classified as: Architecture Diagram
+[6hvtSLkKeZ] figure_9.jpg -> classified as: Plots / Charts
+[6hvtSLkKeZ] figure_2.jpg -> classified as: Architecture Diagram
+[6hvtSLkKeZ] figure_7.jpg -> classified as: Architecture Diagram
+[6hvtSLkKeZ] figure_3.jpg -> classified as: Architecture Diagram
+[6hvtSLkKeZ] figure_4.jpg -> classified as: Architecture Diagram
+[6hvtSLkKeZ] figure_1.jpg -> classified as: Architecture Diagram
+[6hvtSLkKeZ] figure_8.jpg -> classified as: Plots / Charts
+[6ifeGfWxtX] figure_2.jpg -> classified as: Plots / Charts
+[6ifeGfWxtX] figure_3.jpg -> classified as: Plots / Charts
+[6ifeGfWxtX] figure_1.jpg -> classified as: Plots / Charts
+[6jA1R0Z1G2] figure_5.jpg -> classified as: Plots / Charts
+[6jA1R0Z1G2] figure_6.jpg -> classified as: Plots / Charts
+[6jA1R0Z1G2] figure_9.jpg -> classified as: Plots / Charts
+[6jA1R0Z1G2] figure_2.jpg -> classified as: Plots / Charts
+[6jA1R0Z1G2] figure_7.jpg -> classified as: Plots / Charts
+[6jA1R0Z1G2] figure_3.jpg -> classified as: Plots / Charts
+[6jA1R0Z1G2] figure_4.jpg -> classified as: Plots / Charts
+[6jA1R0Z1G2] figure_1.jpg -> classified as: Plots / Charts
+[6jA1R0Z1G2] figure_8.jpg -> classified as: Plots / Charts
+[6jxUsDAdAu] figure_1.jpg -> classified as: Plots / Charts
+[6qUUgw9bAZ] figure_5.jpg -> classified as: Plots / Charts
+[6qUUgw9bAZ] figure_6.jpg -> classified as: Plots / Charts
+[6qUUgw9bAZ] figure_9.jpg -> classified as: Plots / Charts
+[6qUUgw9bAZ] figure_2.jpg -> classified as: Qualitative Examples
+[6qUUgw9bAZ] figure_7.jpg -> classified as: Plots / Charts
+[6qUUgw9bAZ] figure_3.jpg -> classified as: Plots / Charts
+[6qUUgw9bAZ] figure_4.jpg -> classified as: Plots / Charts
+[6qUUgw9bAZ] figure_1.jpg -> classified as: Plots / Charts
+[6qUUgw9bAZ] figure_8.jpg -> classified as: Plots / Charts
+[6qUUgw9bAZ] figure_10.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_5.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_6.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_9.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_13.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_15.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_2.jpg -> classified as: Qualitative Examples
+[6rEcB9m9AI] figure_11.jpg -> classified as: Qualitative Examples
+[6rEcB9m9AI] figure_7.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_3.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_4.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_17.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_1.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_8.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_12.jpg -> classified as: Qualitative Examples
+[6rEcB9m9AI] figure_14.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_16.jpg -> classified as: Plots / Charts
+[6rEcB9m9AI] figure_10.jpg -> classified as: Plots / Charts
+[6tqgL8VluV] figure_1.jpg -> classified as: Plots / Charts
+[6wOmHdwCC4] figure_2.jpg -> classified as: Architecture Diagram
+[6wOmHdwCC4] figure_3.jpg -> classified as: Plots / Charts
+[6wOmHdwCC4] figure_4.jpg -> classified as: Plots / Charts
+[6wOmHdwCC4] figure_1.jpg -> classified as: Plots / Charts
+[6yENDA7J4G] figure_5.jpg -> classified as: Plots / Charts
+[6yENDA7J4G] figure_6.jpg -> classified as: Architecture Diagram
+[6yENDA7J4G] figure_9.jpg -> classified as: Architecture Diagram
+[6yENDA7J4G] figure_13.jpg -> classified as: Plots / Charts
+[6yENDA7J4G] figure_(b)_Visualization_of.jpg -> classified as: Plots / Charts
+[6yENDA7J4G] figure_2.jpg -> classified as: Architecture Diagram
+[6yENDA7J4G] figure_11.jpg -> classified as: Plots / Charts
+[6yENDA7J4G] figure_7.jpg -> classified as: Plots / Charts
+[6yENDA7J4G] figure_3.jpg -> classified as: Architecture Diagram
+[6yENDA7J4G] figure_4.jpg -> classified as: Plots / Charts
+[6yENDA7J4G] figure_8.jpg -> classified as: Architecture Diagram
+[6yENDA7J4G] figure_12.jpg -> classified as: Plots / Charts
+[6yENDA7J4G] figure_10.jpg -> classified as: Architecture Diagram
+[70rlVBPX6Y] figure_5.jpg -> classified as: Plots / Charts
+[70rlVBPX6Y] figure_3.jpg -> classified as: Plots / Charts
+[70rlVBPX6Y] figure_4.jpg -> classified as: Architecture Diagram
+[70rlVBPX6Y] figure_1.jpg -> classified as: Plots / Charts
+[760br3YEtY] figure_5.jpg -> classified as: Qualitative Examples
+[760br3YEtY] figure_2.jpg -> classified as: Plots / Charts
+[760br3YEtY] figure_3.jpg -> classified as: Plots / Charts
+[760br3YEtY] figure_4.jpg -> classified as: Plots / Charts
+[760br3YEtY] figure_A6.jpg -> classified as: Plots / Charts
+[760br3YEtY] figure_1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[7AB077M4TY] figure_5.jpg -> classified as: Plots / Charts
+[7AB077M4TY] figure_6.jpg -> classified as: Plots / Charts
+[7AB077M4TY] figure_9.jpg -> classified as: Plots / Charts
+[7AB077M4TY] figure_13.jpg -> classified as: Plots / Charts
+[7AB077M4TY] figure_2.jpg -> classified as: Plots / Charts
+[7AB077M4TY] figure_11.jpg -> classified as: Plots / Charts
+[7AB077M4TY] figure_7.jpg -> classified as: Plots / Charts
+[7AB077M4TY] figure_3.jpg -> classified as: Plots / Charts
+[7AB077M4TY] figure_4.jpg -> classified as: Plots / Charts
+[7AB077M4TY] figure_1.jpg -> classified as: Architecture Diagram
+[7AB077M4TY] figure_8.jpg -> classified as: Plots / Charts
+[7AB077M4TY] figure_12.jpg -> classified as: Plots / Charts
+[7AB077M4TY] figure_14.jpg -> classified as: Plots / Charts
+[7AB077M4TY] figure_10.jpg -> classified as: Plots / Charts
+[7BDUTI6aS7] figure_2.jpg -> classified as: Architecture Diagram
+[7BDUTI6aS7] figure_1.jpg -> classified as: Plots / Charts
+[7BmSz3jE7C] figure_5.jpg -> classified as: Plots / Charts
+[7BmSz3jE7C] figure_6.jpg -> classified as: Plots / Charts
+[7BmSz3jE7C] figure_2.jpg -> classified as: Plots / Charts
+[7BmSz3jE7C] figure_3.jpg -> classified as: Plots / Charts
+[7BmSz3jE7C] figure_4.jpg -> classified as: Plots / Charts
+[7BmSz3jE7C] figure_1.jpg -> classified as: Plots / Charts
+[7Dub7UXTXN] figure_5.jpg -> classified as: Plots / Charts
+[7Dub7UXTXN] figure_6.jpg -> classified as: Plots / Charts
+[7Dub7UXTXN] figure_9.jpg -> classified as: Plots / Charts
+[7Dub7UXTXN] figure_2.jpg -> classified as: Plots / Charts
+[7Dub7UXTXN] figure_7.jpg -> classified as: Plots / Charts
+[7Dub7UXTXN] figure_3.jpg -> classified as: Plots / Charts
+[7Dub7UXTXN] figure_4.jpg -> classified as: Plots / Charts
+[7Dub7UXTXN] figure_1.jpg -> classified as: Qualitative Examples
+[7Dub7UXTXN] figure_8.jpg -> classified as: Plots / Charts
+[7ENakslm9J] figure_2.jpg -> classified as: Plots / Charts
+[7ENakslm9J] figure_1.jpg -> classified as: Plots / Charts
+[7FHSPd3SRE] figure_5.jpg -> classified as: Plots / Charts
+[7FHSPd3SRE] figure_6.jpg -> classified as: Plots / Charts
+[7FHSPd3SRE] figure_9.jpg -> classified as: Architecture Diagram
+[7FHSPd3SRE] figure_13.jpg -> classified as: Plots / Charts
+[7FHSPd3SRE] figure_15.jpg -> classified as: Plots / Charts
+[7FHSPd3SRE] figure_2.jpg -> classified as: Plots / Charts
+[7FHSPd3SRE] figure_11.jpg -> classified as: Qualitative Examples
+[7FHSPd3SRE] figure_7.jpg -> classified as: Architecture Diagram
+[7FHSPd3SRE] figure_3.jpg -> classified as: Plots / Charts
+[7FHSPd3SRE] figure_4.jpg -> classified as: Qualitative Examples
+[7FHSPd3SRE] figure_1.jpg -> classified as: Architecture Diagram
+[7FHSPd3SRE] figure_8.jpg -> classified as: Architecture Diagram
+[7FHSPd3SRE] figure_12.jpg -> classified as: Plots / Charts
+[7FHSPd3SRE] figure_14.jpg -> classified as: Plots / Charts
+[7FHSPd3SRE] figure_10.jpg -> classified as: Plots / Charts
+[7HdtLgsvys] figure_5.jpg -> classified as: Plots / Charts
+[7HdtLgsvys] figure_6.jpg -> classified as: Plots / Charts
+[7HdtLgsvys] figure_2.jpg -> classified as: Plots / Charts
+[7HdtLgsvys] figure_7.jpg -> classified as: Plots / Charts
+[7HdtLgsvys] figure_3.jpg -> classified as: Plots / Charts
+[7HdtLgsvys] figure_4.jpg -> classified as: Plots / Charts
+[7HdtLgsvys] figure_1.jpg -> classified as: Plots / Charts
+[7HdtLgsvys] figure_8.jpg -> classified as: Plots / Charts
+[7Hf4Wtc8uW] figure_2.jpg -> classified as: Plots / Charts
+[7Hf4Wtc8uW] figure_3.jpg -> classified as: Plots / Charts
+[7Hf4Wtc8uW] figure_4.jpg -> classified as: Plots / Charts
+[7Hf4Wtc8uW] figure_1.jpg -> classified as: Architecture Diagram
+[7IP7dvswE5] figure_5.jpg -> classified as: Plots / Charts
+[7IP7dvswE5] figure_2.jpg -> classified as: Architecture Diagram
+[7IP7dvswE5] figure_3.jpg -> classified as: Plots / Charts
+[7IP7dvswE5] figure_4.jpg -> classified as: Architecture Diagram
+[7IP7dvswE5] figure_(c)_The_frequency.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_19.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_5.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_6.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_9.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_18.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_13.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_15.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_2.jpg -> classified as: Architecture Diagram
+[7IzeL0kflu] figure_11.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_7.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_3.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_4.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_17.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_1.jpg -> classified as: Architecture Diagram
+[7IzeL0kflu] figure_8.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_12.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_14.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_(b)_IQM_time.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_16.jpg -> classified as: Plots / Charts
+[7IzeL0kflu] figure_10.jpg -> classified as: Plots / Charts
+[7JhGdZvW4T] figure_5.jpg -> classified as: Plots / Charts
+[7JhGdZvW4T] figure_6.jpg -> classified as: Plots / Charts
+[7JhGdZvW4T] figure_9.jpg -> classified as: Plots / Charts
+[7JhGdZvW4T] figure_13.jpg -> classified as: Plots / Charts
+[7JhGdZvW4T] figure_2.jpg -> classified as: Plots / Charts
+[7JhGdZvW4T] figure_7.jpg -> classified as: Plots / Charts
+[7JhGdZvW4T] figure_3.jpg -> classified as: Plots / Charts
+[7JhGdZvW4T] figure_4.jpg -> classified as: Plots / Charts
+[7JhGdZvW4T] figure_1.jpg -> classified as: Architecture Diagram
+[7JhGdZvW4T] figure_8.jpg -> classified as: Plots / Charts
+[7JhGdZvW4T] figure_12.jpg -> classified as: Plots / Charts
+[7JhGdZvW4T] figure_14.jpg -> classified as: Plots / Charts
+[7JhGdZvW4T] figure_10.jpg -> classified as: Plots / Charts
+[7QI7tVrh2c] figure_5.jpg -> classified as: Plots / Charts
+[7QI7tVrh2c] figure_6.jpg -> classified as: Plots / Charts
+[7QI7tVrh2c] figure_2.jpg -> classified as: Plots / Charts
+[7QI7tVrh2c] figure_3.jpg -> classified as: Plots / Charts
+[7QI7tVrh2c] figure_4.jpg -> classified as: Plots / Charts
+[7QI7tVrh2c] figure_1.jpg -> classified as: Plots / Charts
+[7TZYM6Hm9p] figure_5.jpg -> classified as: Plots / Charts
+[7TZYM6Hm9p] figure_2.jpg -> classified as: Plots / Charts
+[7TZYM6Hm9p] figure_3.jpg -> classified as: Plots / Charts
+[7TZYM6Hm9p] figure_4.jpg -> classified as: Plots / Charts
+[7TZYM6Hm9p] figure_1.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_19.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_5.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_6.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_9.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_18.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_13.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_15.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_2.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_20.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_11.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_7.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_3.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_4.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_17.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_1.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_8.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_12.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_14.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_16.jpg -> classified as: Plots / Charts
+[7W4rbphLht] figure_10.jpg -> classified as: Plots / Charts
+[7XgKAabsPp] figure_5.jpg -> classified as: Plots / Charts
+[7XgKAabsPp] figure_6.jpg -> classified as: Plots / Charts
+[7XgKAabsPp] figure_9.jpg -> classified as: Plots / Charts
+[7XgKAabsPp] figure_2.jpg -> classified as: Plots / Charts
+[7XgKAabsPp] figure_7.jpg -> classified as: Plots / Charts
+[7XgKAabsPp] figure_3.jpg -> classified as: Plots / Charts
+[7XgKAabsPp] figure_4.jpg -> classified as: Plots / Charts
+[7XgKAabsPp] figure_1.jpg -> classified as: Architecture Diagram
+[7XgKAabsPp] figure_8.jpg -> classified as: Plots / Charts
+[7YKV7zkNpX] figure_2.jpg -> classified as: Plots / Charts
+[7YKV7zkNpX] figure_1.jpg -> classified as: Plots / Charts
+[7ZToWPWUlO] figure_5.jpg -> classified as: Plots / Charts
+[7ZToWPWUlO] figure_6.jpg -> classified as: Plots / Charts
+[7ZToWPWUlO] figure_2.jpg -> classified as: Qualitative Examples
+[7ZToWPWUlO] figure_7.jpg -> classified as: Plots / Charts
+[7ZToWPWUlO] figure_3.jpg -> classified as: Qualitative Examples
+[7ZToWPWUlO] figure_4.jpg -> classified as: Architecture Diagram
+[7ZToWPWUlO] figure_1.jpg -> classified as: Plots / Charts
+[7ZToWPWUlO] figure_8.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_5.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_6.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_18.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_13.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_15.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_2.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_11.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_7.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_3.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_4.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_17.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_1.jpg -> classified as: Architecture Diagram
+[7avlrpzWqo] figure_12.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_14.jpg -> classified as: Plots / Charts
+[7avlrpzWqo] figure_16.jpg -> classified as: Qualitative Examples
+[7avlrpzWqo] figure_10.jpg -> classified as: Plots / Charts
+[7dPrT34fHF] figure_2.jpg -> classified as: Architecture Diagram
+[7dPrT34fHF] figure_1.jpg -> classified as: Qualitative Examples
+[7f5hNhzVAe] figure_5.jpg -> classified as: Plots / Charts
+[7f5hNhzVAe] figure_6.jpg -> classified as: Plots / Charts
+[7f5hNhzVAe] figure_2.jpg -> classified as: Architecture Diagram
+[7f5hNhzVAe] figure_7.jpg -> classified as: Architecture Diagram
+[7f5hNhzVAe] figure_3.jpg -> classified as: Plots / Charts
+[7f5hNhzVAe] figure_4.jpg -> classified as: Plots / Charts
+[7gLfQT52Nn] figure_5.jpg -> classified as: Plots / Charts
+[7gLfQT52Nn] figure_6.jpg -> classified as: Qualitative Examples
+[7gLfQT52Nn] figure_9.jpg -> classified as: Plots / Charts
+[7gLfQT52Nn] figure_(b)_Cosine_similarity.jpg -> classified as: Plots / Charts
+[7gLfQT52Nn] figure_2.jpg -> classified as: Qualitative Examples
+[7gLfQT52Nn] figure_7.jpg -> classified as: Plots / Charts
+[7gLfQT52Nn] figure_3.jpg -> classified as: Plots / Charts
+[7gLfQT52Nn] figure_4.jpg -> classified as: Plots / Charts
+[7gLfQT52Nn] figure_1.jpg -> classified as: Plots / Charts
+[7gLfQT52Nn] figure_8.jpg -> classified as: Plots / Charts
+[7hqNl9nP81] figure_5.jpg -> classified as: Plots / Charts
+[7hqNl9nP81] figure_2.jpg -> classified as: Qualitative Examples
+[7hqNl9nP81] figure_3.jpg -> classified as: Plots / Charts
+[7hqNl9nP81] figure_4.jpg -> classified as: Plots / Charts
+[7hqNl9nP81] figure_1.jpg -> classified as: Plots / Charts
+[7j5KWl7VtF] figure_5.jpg -> classified as: Plots / Charts
+[7j5KWl7VtF] figure_6.jpg -> classified as: Plots / Charts
+[7j5KWl7VtF] figure_2.jpg -> classified as: Plots / Charts
+[7j5KWl7VtF] figure_7.jpg -> classified as: Plots / Charts
+[7j5KWl7VtF] figure_3.jpg -> classified as: Plots / Charts
+[7j5KWl7VtF] figure_4.jpg -> classified as: Plots / Charts
+[7j5KWl7VtF] figure_1.jpg -> classified as: Plots / Charts
+[7jWiBAWG0b] figure_2.jpg -> classified as: Architecture Diagram
+[7jWiBAWG0b] figure_1.jpg -> classified as: Plots / Charts
+[7lUdo8Vuqa] figure_2.jpg -> classified as: Plots / Charts
+[7lUdo8Vuqa] figure_3.jpg -> classified as: Qualitative Examples
+[7lUdo8Vuqa] figure_1.jpg -> classified as: Plots / Charts
+[7liN6uHAQZ] figure_5.jpg -> classified as: Plots / Charts
+[7liN6uHAQZ] figure_6.jpg -> classified as: Plots / Charts
+[7liN6uHAQZ] figure_2.jpg -> classified as: Plots / Charts
+[7liN6uHAQZ] figure_3.jpg -> classified as: Plots / Charts
+[7liN6uHAQZ] figure_4.jpg -> classified as: Plots / Charts
+[7liN6uHAQZ] figure_1.jpg -> classified as: Plots / Charts
+[7liN6uHAQZ] figure_8.jpg -> classified as: Plots / Charts
+[7lpDn2MhM2] figure_5.jpg -> classified as: Qualitative Examples
+[7lpDn2MhM2] figure_6.jpg -> classified as: Plots / Charts
+[7lpDn2MhM2] figure_2.jpg -> classified as: Architecture Diagram
+[7lpDn2MhM2] figure_7.jpg -> classified as: Plots / Charts
+[7lpDn2MhM2] figure_3.jpg -> classified as: Plots / Charts
+[7lpDn2MhM2] figure_4.jpg -> classified as: Plots / Charts
+[7lpDn2MhM2] figure_1.jpg -> classified as: Plots / Charts
+[7nyJBVCTGQ] figure_5.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[7nyJBVCTGQ] figure_6.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[7nyJBVCTGQ] figure_2.jpg -> classified as: Plots / Charts
+[7nyJBVCTGQ] figure_7.jpg -> classified as: Plots / Charts
+[7nyJBVCTGQ] figure_4.jpg -> classified as: Plots / Charts
+[7nyJBVCTGQ] figure_1.jpg -> classified as: Architecture Diagram
+[7suavRDxe8] figure_5.jpg -> classified as: Plots / Charts
+[7suavRDxe8] figure_6.jpg -> classified as: Plots / Charts
+[7suavRDxe8] figure_2.jpg -> classified as: Qualitative Examples
+[7suavRDxe8] figure_7.jpg -> classified as: Plots / Charts
+[7suavRDxe8] figure_3.jpg -> classified as: Architecture Diagram
+[7suavRDxe8] figure_4.jpg -> classified as: Plots / Charts
+[7suavRDxe8] figure_1.jpg -> classified as: Qualitative Examples
+[7visV100Ms] figure_5.jpg -> classified as: Plots / Charts
+[7visV100Ms] figure_6.jpg -> classified as: Plots / Charts
+[7visV100Ms] figure_2.jpg -> classified as: Architecture Diagram
+[7visV100Ms] figure_7.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[7visV100Ms] figure_3.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[7visV100Ms] figure_4.jpg -> classified as: Plots / Charts
+[7visV100Ms] figure_1.jpg -> classified as: Plots / Charts
+[7visV100Ms] figure_8.jpg -> classified as: Plots / Charts
+[7visV100Ms] figure_10.jpg -> classified as: Plots / Charts
+[84fOBZlOiV] figure_5.jpg -> classified as: Plots / Charts
+[84fOBZlOiV] figure_2.jpg -> classified as: Plots / Charts
+[84fOBZlOiV] figure_3.jpg -> classified as: Plots / Charts
+[84fOBZlOiV] figure_4.jpg -> classified as: Plots / Charts
+[84fOBZlOiV] figure_1.jpg -> classified as: Plots / Charts
+[85VWxAwsaF] figure_5.jpg -> classified as: Plots / Charts
+[85VWxAwsaF] figure_6.jpg -> classified as: Qualitative Examples
+[85VWxAwsaF] figure_2.jpg -> classified as: Qualitative Examples
+[85VWxAwsaF] figure_3.jpg -> classified as: Qualitative Examples
+[85VWxAwsaF] figure_4.jpg -> classified as: Plots / Charts
+[85VWxAwsaF] figure_1.jpg -> classified as: Qualitative Examples
+[86zAUE80pP] figure_5.jpg -> classified as: Plots / Charts
+[86zAUE80pP] figure_6.jpg -> classified as: Plots / Charts
+[86zAUE80pP] figure_9.jpg -> classified as: Plots / Charts
+[86zAUE80pP] figure_2.jpg -> classified as: Plots / Charts
+[86zAUE80pP] figure_7.jpg -> classified as: Plots / Charts
+[86zAUE80pP] figure_3.jpg -> classified as: Plots / Charts
+[86zAUE80pP] figure_4.jpg -> classified as: Plots / Charts
+[86zAUE80pP] figure_1.jpg -> classified as: Plots / Charts
+[86zAUE80pP] figure_8.jpg -> classified as: Plots / Charts
+[87XbxDnPqj] figure_5.jpg -> classified as: Plots / Charts
+[87XbxDnPqj] figure_6.jpg -> classified as: Plots / Charts
+[87XbxDnPqj] figure_2.jpg -> classified as: Qualitative Examples
+[87XbxDnPqj] figure_3.jpg -> classified as: Qualitative Examples
+[87XbxDnPqj] figure_4.jpg -> classified as: Plots / Charts
+[87XbxDnPqj] figure_1.jpg -> classified as: Plots / Charts
+[8BAkNCqpGW] figure_2.jpg -> classified as: Plots / Charts
+[8BAkNCqpGW] figure_3.jpg -> classified as: Plots / Charts
+[8BAkNCqpGW] figure_1.jpg -> classified as: Architecture Diagram
+[8GMUa79ZKc] figure_6.jpg -> classified as: Plots / Charts
+[8GMUa79ZKc] figure_9.jpg -> classified as: Architecture Diagram
+[8GMUa79ZKc] figure_2.jpg -> classified as: Architecture Diagram
+[8GMUa79ZKc] figure_7.jpg -> classified as: Qualitative Examples
+[8GMUa79ZKc] figure_3.jpg -> classified as: Architecture Diagram
+[8GMUa79ZKc] figure_4.jpg -> classified as: Architecture Diagram
+[8GMUa79ZKc] figure_1.jpg -> classified as: Plots / Charts
+[8GMUa79ZKc] figure_8.jpg -> classified as: Architecture Diagram
+[8HuLgtjqOD] figure_2.jpg -> classified as: Plots / Charts
+[8HuLgtjqOD] figure_3.jpg -> classified as: Plots / Charts
+[8HuLgtjqOD] figure_4.jpg -> classified as: Plots / Charts
+[8HuLgtjqOD] figure_1.jpg -> classified as: Plots / Charts
+[8Ju0VmvMCW] figure_5.jpg -> classified as: Plots / Charts
+[8Ju0VmvMCW] figure_6.jpg -> classified as: Plots / Charts
+[8Ju0VmvMCW] figure_9.jpg -> classified as: Qualitative Examples
+[8Ju0VmvMCW] figure_18.jpg -> classified as: Plots / Charts
+[8Ju0VmvMCW] figure_13.jpg -> classified as: Qualitative Examples
+[8Ju0VmvMCW] figure_15.jpg -> classified as: Plots / Charts
+[8Ju0VmvMCW] figure_2.jpg -> classified as: Plots / Charts
+[8Ju0VmvMCW] figure_11.jpg -> classified as: Qualitative Examples
+[8Ju0VmvMCW] figure_7.jpg -> classified as: Qualitative Examples
+[8Ju0VmvMCW] figure_3.jpg -> classified as: Qualitative Examples
+[8Ju0VmvMCW] figure_4.jpg -> classified as: Plots / Charts
+[8Ju0VmvMCW] figure_17.jpg -> classified as: Qualitative Examples
+[8Ju0VmvMCW] figure_1.jpg -> classified as: Plots / Charts
+[8Ju0VmvMCW] figure_8.jpg -> classified as: Qualitative Examples
+[8Ju0VmvMCW] figure_12.jpg -> classified as: Qualitative Examples
+[8Ju0VmvMCW] figure_14.jpg -> classified as: Qualitative Examples
+[8Ju0VmvMCW] figure_16.jpg -> classified as: Plots / Charts
+[8Ju0VmvMCW] figure_10.jpg -> classified as: Qualitative Examples
+[8NiTKmEzJV] figure_2.jpg -> classified as: Plots / Charts
+[8NiTKmEzJV] figure_3.jpg -> classified as: Plots / Charts
+[8NiTKmEzJV] figure_4.jpg -> classified as: Plots / Charts
+[8NiTKmEzJV] figure_1.jpg -> classified as: Plots / Charts
+[8QkpCRio53] figure_5.jpg -> classified as: Plots / Charts
+[8QkpCRio53] figure_2.jpg -> classified as: Plots / Charts
+[8QkpCRio53] figure_3.jpg -> classified as: Plots / Charts
+[8QkpCRio53] figure_4.jpg -> classified as: Architecture Diagram
+[8QkpCRio53] figure_1.jpg -> classified as: Plots / Charts
+[8ZW3oLNE0c] figure_5.jpg -> classified as: Architecture Diagram
+[8ZW3oLNE0c] figure_6.jpg -> classified as: Architecture Diagram
+[8ZW3oLNE0c] figure_2.jpg -> classified as: Architecture Diagram
+[8ZW3oLNE0c] figure_7.jpg -> classified as: Plots / Charts
+[8ZW3oLNE0c] figure_3.jpg -> classified as: Architecture Diagram
+[8ZW3oLNE0c] figure_4.jpg -> classified as: Architecture Diagram
+[8ZW3oLNE0c] figure_1.jpg -> classified as: Architecture Diagram
+[8aKygnbEFX] figure_(b)_Comparison_of.jpg -> classified as: Plots / Charts
+[8aKygnbEFX] figure_3.jpg -> classified as: Plots / Charts
+[8aKygnbEFX] figure_(c)_Hybrid_fine-tuning.jpg -> classified as: Plots / Charts
+[8dN7gApKm3] figure_5.jpg -> classified as: Plots / Charts
+[8dN7gApKm3] figure_6.jpg -> classified as: Plots / Charts
+[8dN7gApKm3] figure_9.jpg -> classified as: Qualitative Examples
+[8dN7gApKm3] figure_2.jpg -> classified as: Plots / Charts
+[8dN7gApKm3] figure_7.jpg -> classified as: Plots / Charts
+[8dN7gApKm3] figure_3.jpg -> classified as: Plots / Charts
+[8dN7gApKm3] figure_4.jpg -> classified as: Plots / Charts
+[8dN7gApKm3] figure_1.jpg -> classified as: Plots / Charts
+[8dN7gApKm3] figure_8.jpg -> classified as: Qualitative Examples
+[8g4XgC8HPF] figure_2.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[8g4XgC8HPF] figure_3.jpg -> classified as: Qualitative Examples
+[8g4XgC8HPF] figure_1.jpg -> classified as: Plots / Charts
+[8hVCcrGaAu] figure_5.jpg -> classified as: Qualitative Examples
+[8hVCcrGaAu] figure_6.jpg -> classified as: Plots / Charts
+[8hVCcrGaAu] figure_9.jpg -> classified as: Qualitative Examples
+[8hVCcrGaAu] figure_18.jpg -> classified as: Plots / Charts
+[8hVCcrGaAu] figure_13.jpg -> classified as: Qualitative Examples
+[8hVCcrGaAu] figure_15.jpg -> classified as: Plots / Charts
+[8hVCcrGaAu] figure_2.jpg -> classified as: Architecture Diagram
+[8hVCcrGaAu] figure_11.jpg -> classified as: Qualitative Examples
+[8hVCcrGaAu] figure_7.jpg -> classified as: Plots / Charts
+[8hVCcrGaAu] figure_3.jpg -> classified as: Plots / Charts
+[8hVCcrGaAu] figure_4.jpg -> classified as: Plots / Charts
+[8hVCcrGaAu] figure_17.jpg -> classified as: Plots / Charts
+[8hVCcrGaAu] figure_1.jpg -> classified as: Architecture Diagram
+[8hVCcrGaAu] figure_8.jpg -> classified as: Qualitative Examples
+[8hVCcrGaAu] figure_12.jpg -> classified as: Qualitative Examples
+[8hVCcrGaAu] figure_14.jpg -> classified as: Plots / Charts
+[8hVCcrGaAu] figure_16.jpg -> classified as: Plots / Charts
+[8hVCcrGaAu] figure_10.jpg -> classified as: Qualitative Examples
+[8j9hz8DVi8] figure_5.jpg -> classified as: Plots / Charts
+[8j9hz8DVi8] figure_2.jpg -> classified as: Plots / Charts
+[8j9hz8DVi8] figure_3.jpg -> classified as: Plots / Charts
+[8j9hz8DVi8] figure_4.jpg -> classified as: Plots / Charts
+[8j9hz8DVi8] figure_1.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_5.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_6.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_9.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_13.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_15.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_2.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_11.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_7.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_3.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_4.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_1.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_8.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_12.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_14.jpg -> classified as: Plots / Charts
+[8muemqlnG3] figure_10.jpg -> classified as: Plots / Charts
+[8oNzf7u5lT] figure_5.jpg -> classified as: Plots / Charts
+[8oNzf7u5lT] figure_2.jpg -> classified as: Qualitative Examples
+[8oNzf7u5lT] figure_3.jpg -> classified as: Qualitative Examples
+[8oNzf7u5lT] figure_4.jpg -> classified as: Architecture Diagram
+[8oNzf7u5lT] figure_1.jpg -> classified as: Architecture Diagram
+[8oZf2SlXEY] figure_2.jpg -> classified as: Architecture Diagram
+[8oZf2SlXEY] figure_3.jpg -> classified as: Qualitative Examples
+[8oZf2SlXEY] figure_1.jpg -> classified as: Architecture Diagram
+[8p3fu56lKc] figure_2.jpg -> classified as: Plots / Charts
+[8p3fu56lKc] figure_1.jpg -> classified as: Plots / Charts
+[8rvqpiTTFv] figure_2.jpg -> classified as: Plots / Charts
+[8rvqpiTTFv] figure_3.jpg -> classified as: Plots / Charts
+[8rvqpiTTFv] figure_1.jpg -> classified as: Plots / Charts
+[8utTlmhw8v] figure_2.jpg -> classified as: Plots / Charts
+[8utTlmhw8v] figure_1.jpg -> classified as: Plots / Charts
+[8wAL9ywQNB] figure_2.jpg -> classified as: Plots / Charts
+[8wAL9ywQNB] figure_1.jpg -> classified as: Plots / Charts
+[8y5Uf6oEiB] figure_5.jpg -> classified as: Plots / Charts
+[8y5Uf6oEiB] figure_6.jpg -> classified as: Plots / Charts
+[8y5Uf6oEiB] figure_(b)_The_true.jpg -> classified as: Plots / Charts
+[8y5Uf6oEiB] figure_9.jpg -> classified as: Plots / Charts
+[8y5Uf6oEiB] figure_2.jpg -> classified as: Qualitative Examples
+[8y5Uf6oEiB] figure_11.jpg -> classified as: Plots / Charts
+[8y5Uf6oEiB] figure_7.jpg -> classified as: Plots / Charts
+[8y5Uf6oEiB] figure_3.jpg -> classified as: Architecture Diagram
+[8y5Uf6oEiB] figure_4.jpg -> classified as: Plots / Charts
+[8y5Uf6oEiB] figure_1.jpg -> classified as: Architecture Diagram
+[8y5Uf6oEiB] figure_12.jpg -> classified as: Plots / Charts
+[8y5Uf6oEiB] figure_10.jpg -> classified as: Plots / Charts
+[8zJRon6k5v] figure_2.jpg -> classified as: Architecture Diagram
+[8zJRon6k5v] figure_3.jpg -> classified as: Plots / Charts
+[8zJRon6k5v] figure_4.jpg -> classified as: Architecture Diagram
+[8zJRon6k5v] figure_1.jpg -> classified as: Architecture Diagram
+[92KV9xAMhF] figure_5.jpg -> classified as: Plots / Charts
+[92KV9xAMhF] figure_2.jpg -> classified as: Qualitative Examples
+[92KV9xAMhF] figure_3.jpg -> classified as: Plots / Charts
+[92KV9xAMhF] figure_4.jpg -> classified as: Plots / Charts
+[92KV9xAMhF] figure_1.jpg -> classified as: Plots / Charts
+[97dJ3Jp5P4] figure_5.jpg -> classified as: Architecture Diagram
+[97dJ3Jp5P4] figure_6.jpg -> classified as: Architecture Diagram
+[97dJ3Jp5P4] figure_2.jpg -> classified as: Plots / Charts
+[97dJ3Jp5P4] figure_7.jpg -> classified as: Plots / Charts
+[97dJ3Jp5P4] figure_3.jpg -> classified as: Plots / Charts
+[97dJ3Jp5P4] figure_4.jpg -> classified as: Plots / Charts
+[97dJ3Jp5P4] figure_1.jpg -> classified as: Plots / Charts
+[97dJ3Jp5P4] figure_8.jpg -> classified as: Plots / Charts
+[97rOQDPmk2] figure_18.jpg -> classified as: Plots / Charts
+[97rOQDPmk2] figure_15.jpg -> classified as: Plots / Charts
+[97rOQDPmk2] figure_2.jpg -> classified as: Plots / Charts
+[97rOQDPmk2] figure_17.jpg -> classified as: Plots / Charts
+[97rOQDPmk2] figure_1.jpg -> classified as: Plots / Charts
+[97rOQDPmk2] figure_14.jpg -> classified as: Plots / Charts
+[97rOQDPmk2] figure_16.jpg -> classified as: Plots / Charts
+[98dyxUoI3q] figure_5.jpg -> classified as: Plots / Charts
+[98dyxUoI3q] figure_6.jpg -> classified as: Qualitative Examples
+[98dyxUoI3q] figure_2.jpg -> classified as: Architecture Diagram
+[98dyxUoI3q] figure_ferent_approaches__(i).jpg -> classified as: Qualitative Examples
+[98dyxUoI3q] figure_3.jpg -> classified as: Qualitative Examples
+[98dyxUoI3q] figure_4.jpg -> classified as: Qualitative Examples
+[98dyxUoI3q] figure_1.jpg -> classified as: Qualitative Examples
+[99YEbiBbdy] figure_5.jpg -> classified as: Architecture Diagram
+[99YEbiBbdy] figure_6.jpg -> classified as: Architecture Diagram
+[99YEbiBbdy] figure_7.jpg -> classified as: Architecture Diagram
+[99YEbiBbdy] figure_4.jpg -> classified as: Qualitative Examples
+[99YEbiBbdy] figure_1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[99YEbiBbdy] figure_8.jpg -> classified as: Plots / Charts
+[99YEbiBbdy] figure_(e)_$(_8.jpg -> classified as: Plots / Charts
+[9BiVepgmWW] figure_5.jpg -> classified as: Plots / Charts
+[9BiVepgmWW] figure_2.jpg -> classified as: Plots / Charts
+[9BiVepgmWW] figure_3.jpg -> classified as: Plots / Charts
+[9BiVepgmWW] figure_4.jpg -> classified as: Plots / Charts
+[9BiVepgmWW] figure_1.jpg -> classified as: Plots / Charts
+[9EfBeXaXf0] figure_2.jpg -> classified as: Plots / Charts
+[9EfBeXaXf0] figure_3.jpg -> classified as: Plots / Charts
+[9EfBeXaXf0] figure_1.jpg -> classified as: Plots / Charts
+[9GJ6JKoCVp] figure_5.jpg -> classified as: Plots / Charts
+[9GJ6JKoCVp] figure_9.jpg -> classified as: Qualitative Examples
+[9GJ6JKoCVp] figure_2.jpg -> classified as: Plots / Charts
+[9GJ6JKoCVp] figure_7.jpg -> classified as: Plots / Charts
+[9GJ6JKoCVp] figure_3.jpg -> classified as: Plots / Charts
+[9GJ6JKoCVp] figure_4.jpg -> classified as: Plots / Charts
+[9GJ6JKoCVp] figure_(b)_Worst_Performing.jpg -> classified as: Qualitative Examples
+[9GJ6JKoCVp] figure_1.jpg -> classified as: Plots / Charts
+[9GJ6JKoCVp] figure_8.jpg -> classified as: Architecture Diagram
+[9GJ6JKoCVp] figure_10.jpg -> classified as: Plots / Charts
+[9GsgCUJtic] figure_5.jpg -> classified as: Plots / Charts
+[9GsgCUJtic] figure_6.jpg -> classified as: Plots / Charts
+[9GsgCUJtic] figure_9.jpg -> classified as: Qualitative Examples
+[9GsgCUJtic] figure_13.jpg -> classified as: Plots / Charts
+[9GsgCUJtic] figure_2.jpg -> classified as: Architecture Diagram
+[9GsgCUJtic] figure_11.jpg -> classified as: Plots / Charts
+[9GsgCUJtic] figure_7.jpg -> classified as: Plots / Charts
+[9GsgCUJtic] figure_3.jpg -> classified as: Plots / Charts
+[9GsgCUJtic] figure_4.jpg -> classified as: Plots / Charts
+[9GsgCUJtic] figure_1.jpg -> classified as: Architecture Diagram
+[9GsgCUJtic] figure_8.jpg -> classified as: Plots / Charts
+[9GsgCUJtic] figure_12.jpg -> classified as: Plots / Charts
+[9GsgCUJtic] figure_10.jpg -> classified as: Plots / Charts
+[9HK2rHNAhd] figure_2.jpg -> classified as: Plots / Charts
+[9HK2rHNAhd] figure_3.jpg -> classified as: Plots / Charts
+[9HK2rHNAhd] figure_4.jpg -> classified as: Plots / Charts
+[9HK2rHNAhd] figure_1.jpg -> classified as: Plots / Charts
+[9KxnxWOBA5] figure_2.jpg -> classified as: Plots / Charts
+[9KxnxWOBA5] figure_3.jpg -> classified as: Architecture Diagram
+[9KxnxWOBA5] figure_1.jpg -> classified as: Plots / Charts
+[9LZna4ryFH] figure_5.jpg -> classified as: Qualitative Examples
+[9LZna4ryFH] figure_6.jpg -> classified as: Qualitative Examples
+[9LZna4ryFH] figure_9.jpg -> classified as: Plots / Charts
+[9LZna4ryFH] figure_13.jpg -> classified as: Qualitative Examples
+[9LZna4ryFH] figure_2.jpg -> classified as: Plots / Charts
+[9LZna4ryFH] figure_11.jpg -> classified as: Qualitative Examples
+[9LZna4ryFH] figure_7.jpg -> classified as: Plots / Charts
+[9LZna4ryFH] figure_3.jpg -> classified as: Architecture Diagram
+[9LZna4ryFH] figure_4.jpg -> classified as: Plots / Charts
+[9LZna4ryFH] figure_1.jpg -> classified as: Architecture Diagram
+[9LZna4ryFH] figure_8.jpg -> classified as: Qualitative Examples
+[9LZna4ryFH] figure_12.jpg -> classified as: Qualitative Examples
+[9LZna4ryFH] figure_10.jpg -> classified as: Plots / Charts
+[9OJflnNu6C] figure_19.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_23.jpg -> classified as: Plots / Charts
+[9OJflnNu6C] figure_24.jpg -> classified as: Plots / Charts
+[9OJflnNu6C] figure_5.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_6.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_9.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_22.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_18.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_13.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_15.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_2.jpg -> classified as: Plots / Charts
+[9OJflnNu6C] figure_20.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_11.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_7.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_3.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_4.jpg -> classified as: Plots / Charts
+[9OJflnNu6C] figure_17.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[9OJflnNu6C] figure_8.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_12.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_21.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_14.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_16.jpg -> classified as: Qualitative Examples
+[9OJflnNu6C] figure_10.jpg -> classified as: Qualitative Examples
+[9OMvtboTJg] figure_5.jpg -> classified as: Plots / Charts
+[9OMvtboTJg] figure_6.jpg -> classified as: Plots / Charts
+[9OMvtboTJg] figure_2.jpg -> classified as: Architecture Diagram
+[9OMvtboTJg] figure_7.jpg -> classified as: Plots / Charts
+[9OMvtboTJg] figure_3.jpg -> classified as: Plots / Charts
+[9OMvtboTJg] figure_4.jpg -> classified as: Plots / Charts
+[9OMvtboTJg] figure_1.jpg -> classified as: Qualitative Examples
+[9OMvtboTJg] figure_8.jpg -> classified as: Plots / Charts
+[9QV7Q9gKl9] figure_5.jpg -> classified as: Plots / Charts
+[9QV7Q9gKl9] figure_6.jpg -> classified as: Plots / Charts
+[9QV7Q9gKl9] figure_2.jpg -> classified as: Architecture Diagram
+[9QV7Q9gKl9] figure_7.jpg -> classified as: Plots / Charts
+[9QV7Q9gKl9] figure_3.jpg -> classified as: Plots / Charts
+[9QV7Q9gKl9] figure_4.jpg -> classified as: Plots / Charts
+[9QV7Q9gKl9] figure_1.jpg -> classified as: Architecture Diagram
+[9SwObx9Jdn] figure_2.jpg -> classified as: Plots / Charts
+[9SwObx9Jdn] figure_3.jpg -> classified as: Plots / Charts
+[9SwObx9Jdn] figure_4.jpg -> classified as: Qualitative Examples
+[9SwObx9Jdn] figure_1.jpg -> classified as: Qualitative Examples
+[9UxC2J7Pup] figure_5.jpg -> classified as: Plots / Charts
+[9UxC2J7Pup] figure_6.jpg -> classified as: Plots / Charts
+[9UxC2J7Pup] figure_2.jpg -> classified as: Plots / Charts
+[9UxC2J7Pup] figure_7.jpg -> classified as: Plots / Charts
+[9UxC2J7Pup] figure_3.jpg -> classified as: Plots / Charts
+[9UxC2J7Pup] figure_4.jpg -> classified as: Plots / Charts
+[9UxC2J7Pup] figure_1.jpg -> classified as: Plots / Charts
+[9UxC2J7Pup] figure_8.jpg -> classified as: Plots / Charts
+[9VGTk2NYjF] figure_2.jpg -> classified as: Plots / Charts
+[9VGTk2NYjF] figure_1.jpg -> classified as: Architecture Diagram
+[9W6KaAcYlr] figure_5.jpg -> classified as: Plots / Charts
+[9W6KaAcYlr] figure_6.jpg -> classified as: Plots / Charts
+[9W6KaAcYlr] figure_9.jpg -> classified as: Plots / Charts
+[9W6KaAcYlr] figure_13.jpg -> classified as: Plots / Charts
+[9W6KaAcYlr] figure_2.jpg -> classified as: Plots / Charts
+[9W6KaAcYlr] figure_11.jpg -> classified as: Plots / Charts
+[9W6KaAcYlr] figure_7.jpg -> classified as: Plots / Charts
+[9W6KaAcYlr] figure_3.jpg -> classified as: Plots / Charts
+[9W6KaAcYlr] figure_4.jpg -> classified as: Plots / Charts
+[9W6KaAcYlr] figure_1.jpg -> classified as: Architecture Diagram
+[9W6KaAcYlr] figure_8.jpg -> classified as: Plots / Charts
+[9W6KaAcYlr] figure_12.jpg -> classified as: Plots / Charts
+[9W6KaAcYlr] figure_14.jpg -> classified as: Plots / Charts
+[9W6KaAcYlr] figure_10.jpg -> classified as: Plots / Charts
+[9XXBsLWMF3] figure_5.jpg -> classified as: Plots / Charts
+[9XXBsLWMF3] figure_2.jpg -> classified as: Architecture Diagram
+[9XXBsLWMF3] figure_4.jpg -> classified as: Plots / Charts
+[9XXBsLWMF3] figure_1.jpg -> classified as: Architecture Diagram
+[9XabBgqFgy] figure_A7.jpg -> classified as: Plots / Charts
+[9XabBgqFgy] figure_5.jpg -> classified as: Plots / Charts
+[9XabBgqFgy] figure_A1.jpg -> classified as: Architecture Diagram
+[9XabBgqFgy] figure_6.jpg -> classified as: Plots / Charts
+[9XabBgqFgy] figure_A2.jpg -> classified as: Plots / Charts
+[9XabBgqFgy] figure_2.jpg -> classified as: Plots / Charts
+[9XabBgqFgy] figure_7.jpg -> classified as: Plots / Charts
+[9XabBgqFgy] figure_3.jpg -> classified as: Plots / Charts
+[9XabBgqFgy] figure_4.jpg -> classified as: Plots / Charts
+[9XabBgqFgy] figure_A6.jpg -> classified as: Plots / Charts
+[9XabBgqFgy] figure_1.jpg -> classified as: Architecture Diagram
+[9XabBgqFgy] figure_A4.jpg -> classified as: Plots / Charts
+[9XabBgqFgy] figure_A5.jpg -> classified as: Plots / Charts
+[9XabBgqFgy] figure_A3.jpg -> classified as: Plots / Charts
+[9c96mGtQVR] figure_1.jpg -> classified as: Architecture Diagram
+[9ccZzuix2D] figure_5.jpg -> classified as: Plots / Charts
+[9ccZzuix2D] figure_6.jpg -> classified as: Plots / Charts
+[9ccZzuix2D] figure_9.jpg -> classified as: Plots / Charts
+[9ccZzuix2D] figure_2.jpg -> classified as: Plots / Charts
+[9ccZzuix2D] figure_11.jpg -> classified as: Plots / Charts
+[9ccZzuix2D] figure_7.jpg -> classified as: Plots / Charts
+[9ccZzuix2D] figure_3.jpg -> classified as: Qualitative Examples
+[9ccZzuix2D] figure_4.jpg -> classified as: Plots / Charts
+[9ccZzuix2D] figure_1.jpg -> classified as: Plots / Charts
+[9ccZzuix2D] figure_8.jpg -> classified as: Plots / Charts
+[9ccZzuix2D] figure_12.jpg -> classified as: Plots / Charts
+[9ccZzuix2D] figure_10.jpg -> classified as: Plots / Charts
+[9h45qxXEx0] figure_5.jpg -> classified as: Plots / Charts
+[9h45qxXEx0] figure_2.jpg -> classified as: Plots / Charts
+[9h45qxXEx0] figure_3.jpg -> classified as: Plots / Charts
+[9h45qxXEx0] figure_4.jpg -> classified as: Plots / Charts
+[9h45qxXEx0] figure_(b)_Debiasing_FedAvg.jpg -> classified as: Plots / Charts
+[9h45qxXEx0] figure_1.jpg -> classified as: Plots / Charts
+[9j1RD9LlWH] figure_5.jpg -> classified as: Plots / Charts
+[9j1RD9LlWH] figure_6.jpg -> classified as: Plots / Charts
+[9j1RD9LlWH] figure_9.jpg -> classified as: Plots / Charts
+[9j1RD9LlWH] figure_2.jpg -> classified as: Plots / Charts
+[9j1RD9LlWH] figure_11.jpg -> classified as: Plots / Charts
+[9j1RD9LlWH] figure_7.jpg -> classified as: Plots / Charts
+[9j1RD9LlWH] figure_3.jpg -> classified as: Plots / Charts
+[9j1RD9LlWH] figure_4.jpg -> classified as: Plots / Charts
+[9j1RD9LlWH] figure_1.jpg -> classified as: Plots / Charts
+[9j1RD9LlWH] figure_8.jpg -> classified as: Plots / Charts
+[9j1RD9LlWH] figure_10.jpg -> classified as: Plots / Charts
+[9kG7TwgLYu] figure_2.jpg -> classified as: Plots / Charts
+[9kG7TwgLYu] figure_3.jpg -> classified as: Architecture Diagram
+[9kG7TwgLYu] figure_4.jpg -> classified as: Plots / Charts
+[9kG7TwgLYu] figure_1.jpg -> classified as: Plots / Charts
+[9mOs2Bxd3Q] figure_5.jpg -> classified as: Plots / Charts
+[9mOs2Bxd3Q] figure_6.jpg -> classified as: Plots / Charts
+[9mOs2Bxd3Q] figure_2.jpg -> classified as: Plots / Charts
+[9mOs2Bxd3Q] figure_3.jpg -> classified as: Plots / Charts
+[9mOs2Bxd3Q] figure_4.jpg -> classified as: Plots / Charts
+[9mOs2Bxd3Q] figure_1.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_30.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_19.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_23.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_29.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_24.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_5.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_6.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_9.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_22.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_28.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_18.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_13.jpg -> classified as: Architecture Diagram
+[9mjZ800m7Y] figure_15.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_2.jpg -> classified as: Architecture Diagram
+[9mjZ800m7Y] figure_20.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_11.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_7.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_34.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_3.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_33.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_4.jpg -> classified as: Architecture Diagram
+[9mjZ800m7Y] figure_31.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_17.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_1.jpg -> classified as: Architecture Diagram
+[9mjZ800m7Y] figure_27.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_8.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_12.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_25.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_21.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_26.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_14.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_32.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_16.jpg -> classified as: Plots / Charts
+[9mjZ800m7Y] figure_10.jpg -> classified as: Plots / Charts
+[9ngFxN83j2] figure_5.jpg -> classified as: Plots / Charts
+[9ngFxN83j2] figure_6.jpg -> classified as: Plots / Charts
+[9ngFxN83j2] figure_9.jpg -> classified as: Plots / Charts
+[9ngFxN83j2] figure_2.jpg -> classified as: Plots / Charts
+[9ngFxN83j2] figure_7.jpg -> classified as: Plots / Charts
+[9ngFxN83j2] figure_3.jpg -> classified as: Plots / Charts
+[9ngFxN83j2] figure_4.jpg -> classified as: Plots / Charts
+[9ngFxN83j2] figure_1.jpg -> classified as: Qualitative Examples
+[9ngFxN83j2] figure_8.jpg -> classified as: Plots / Charts
+[9ngFxN83j2] figure_10.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_30.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_19.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_23.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_29.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_24.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_5.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_6.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_9.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_22.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_28.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_18.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_13.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_15.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_2.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_20.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_11.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_7.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_3.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_4.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_17.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_1.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_27.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_8.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_12.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_25.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_21.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_26.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_14.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_16.jpg -> classified as: Plots / Charts
+[9soA8GWQ9g] figure_10.jpg -> classified as: Plots / Charts
+[9vZ8UjP2Mz] figure_5.jpg -> classified as: Plots / Charts
+[9vZ8UjP2Mz] figure_2.jpg -> classified as: Plots / Charts
+[9vZ8UjP2Mz] figure_3.jpg -> classified as: Plots / Charts
+[9vZ8UjP2Mz] figure_4.jpg -> classified as: Plots / Charts
+[9vZ8UjP2Mz] figure_1.jpg -> classified as: Plots / Charts
+[A0DI5v6m8O] figure_2.jpg -> classified as: Architecture Diagram
+[A0DI5v6m8O] figure_3.jpg -> classified as: Plots / Charts
+[A0DI5v6m8O] figure_4.jpg -> classified as: Plots / Charts
+[A0DI5v6m8O] figure_1.jpg -> classified as: Plots / Charts
+[A4aG3XeIO7] figure_2.jpg -> classified as: Plots / Charts
+[A4aG3XeIO7] figure_3.jpg -> classified as: Plots / Charts
+[A4aG3XeIO7] figure_1.jpg -> classified as: Plots / Charts
+[A8xmyDIZhn] figure_3.jpg -> classified as: Plots / Charts
+[A8xmyDIZhn] figure_1.jpg -> classified as: Plots / Charts
+[AC9FsaVIpk] figure_2.jpg -> classified as: Plots / Charts
+[AC9FsaVIpk] figure_1.jpg -> classified as: Plots / Charts
+[ACfDWffsOP] figure_5.jpg -> classified as: Plots / Charts
+[ACfDWffsOP] figure_6.jpg -> classified as: Plots / Charts
+[ACfDWffsOP] figure_9.jpg -> classified as: Plots / Charts
+[ACfDWffsOP] figure_2.jpg -> classified as: Architecture Diagram
+[ACfDWffsOP] figure_7.jpg -> classified as: Plots / Charts
+[ACfDWffsOP] figure_3.jpg -> classified as: Plots / Charts
+[ACfDWffsOP] figure_4.jpg -> classified as: Plots / Charts
+[ACfDWffsOP] figure_1.jpg -> classified as: Architecture Diagram
+[ACfDWffsOP] figure_8.jpg -> classified as: Plots / Charts
+[ACfDWffsOP] figure_10.jpg -> classified as: Plots / Charts
+[AFAmM5dsFu] figure_5.jpg -> classified as: Plots / Charts
+[AFAmM5dsFu] figure_6.jpg -> classified as: Qualitative Examples
+[AFAmM5dsFu] figure_9.jpg -> classified as: Plots / Charts
+[AFAmM5dsFu] figure_2.jpg -> classified as: Plots / Charts
+[AFAmM5dsFu] figure_7.jpg -> classified as: Plots / Charts
+[AFAmM5dsFu] figure_3.jpg -> classified as: Plots / Charts
+[AFAmM5dsFu] figure_4.jpg -> classified as: Plots / Charts
+[AFAmM5dsFu] figure_1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[AFAmM5dsFu] figure_8.jpg -> classified as: Plots / Charts
+[AJM52ygi6Y] figure_2.jpg -> classified as: Plots / Charts
+[AJM52ygi6Y] figure_1.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_5.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_6.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_9.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_13.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_15.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_2.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_11.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_7.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_3.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_4.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_17.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_1.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_8.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_12.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_14.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_16.jpg -> classified as: Plots / Charts
+[AKAz88zYLB] figure_10.jpg -> classified as: Plots / Charts
+[ALGFFPXWSi] figure_5.jpg -> classified as: Architecture Diagram
+[ALGFFPXWSi] figure_6.jpg -> classified as: Plots / Charts
+[ALGFFPXWSi] figure_9.jpg -> classified as: Architecture Diagram
+[ALGFFPXWSi] figure_2.jpg -> classified as: Architecture Diagram
+[ALGFFPXWSi] figure_11.jpg -> classified as: Plots / Charts
+[ALGFFPXWSi] figure_7.jpg -> classified as: Plots / Charts
+[ALGFFPXWSi] figure_3.jpg -> classified as: Architecture Diagram
+[ALGFFPXWSi] figure_4.jpg -> classified as: Plots / Charts
+[ALGFFPXWSi] figure_1.jpg -> classified as: Plots / Charts
+[ALGFFPXWSi] figure_8.jpg -> classified as: Architecture Diagram
+[ALGFFPXWSi] figure_10.jpg -> classified as: Plots / Charts
+[AMegoEnlpS] figure_5.jpg -> classified as: Plots / Charts
+[AMegoEnlpS] figure_6.jpg -> classified as: Plots / Charts
+[AMegoEnlpS] figure_9.jpg -> classified as: Plots / Charts
+[AMegoEnlpS] figure_2.jpg -> classified as: Plots / Charts
+[AMegoEnlpS] figure_7.jpg -> classified as: Plots / Charts
+[AMegoEnlpS] figure_3.jpg -> classified as: Plots / Charts
+[AMegoEnlpS] figure_4.jpg -> classified as: Plots / Charts
+[AMegoEnlpS] figure_1.jpg -> classified as: Plots / Charts
+[AMegoEnlpS] figure_8.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_5.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_6.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_9.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_13.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_2.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_11.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_7.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_3.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_4.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_1.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_8.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_12.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_14.jpg -> classified as: Plots / Charts
+[ANJxbH4eQQ] figure_10.jpg -> classified as: Plots / Charts
+[APDnmucgID] figure_2.jpg -> classified as: Architecture Diagram
+[APDnmucgID] figure_3.jpg -> classified as: Plots / Charts
+[APDnmucgID] figure_4.jpg -> classified as: Plots / Charts
+[APDnmucgID] figure_1.jpg -> classified as: Plots / Charts
+[ARPrtuzAnQ] figure_2.jpg -> classified as: Plots / Charts
+[ARPrtuzAnQ] figure_3.jpg -> classified as: Plots / Charts
+[ARPrtuzAnQ] figure_4.jpg -> classified as: Plots / Charts
+[ARPrtuzAnQ] figure_1.jpg -> classified as: Plots / Charts
+[AXC9KydyZq] figure_5.jpg -> classified as: Plots / Charts
+[AXC9KydyZq] figure_6.jpg -> classified as: Plots / Charts
+[AXC9KydyZq] figure_9.jpg -> classified as: Qualitative Examples
+[AXC9KydyZq] figure_2.jpg -> classified as: Architecture Diagram
+[AXC9KydyZq] figure_7.jpg -> classified as: Plots / Charts
+[AXC9KydyZq] figure_3.jpg -> classified as: Plots / Charts
+[AXC9KydyZq] figure_4.jpg -> classified as: Plots / Charts
+[AXC9KydyZq] figure_1.jpg -> classified as: Architecture Diagram
+[AXC9KydyZq] figure_8.jpg -> classified as: Plots / Charts
+[AXC9KydyZq] figure_10.jpg -> classified as: Qualitative Examples
+[AY9KyTGcnk] figure_2.jpg -> classified as: Plots / Charts
+[AY9KyTGcnk] figure_1.jpg -> classified as: Plots / Charts
+[AZVmYg3LvS] figure_5.jpg -> classified as: Plots / Charts
+[AZVmYg3LvS] figure_6.jpg -> classified as: Plots / Charts
+[AZVmYg3LvS] figure_2.jpg -> classified as: Plots / Charts
+[AZVmYg3LvS] figure_7.jpg -> classified as: Plots / Charts
+[AZVmYg3LvS] figure_3.jpg -> classified as: Plots / Charts
+[AZVmYg3LvS] figure_4.jpg -> classified as: Plots / Charts
+[AZVmYg3LvS] figure_1.jpg -> classified as: Plots / Charts
+[AbJWZp4THG] figure_5.jpg -> classified as: Plots / Charts
+[AbJWZp4THG] figure_6.jpg -> classified as: Plots / Charts
+[AbJWZp4THG] figure_2.jpg -> classified as: Plots / Charts
+[AbJWZp4THG] figure_7.jpg -> classified as: Plots / Charts
+[AbJWZp4THG] figure_3.jpg -> classified as: Plots / Charts
+[AbJWZp4THG] figure_4.jpg -> classified as: Plots / Charts
+[AbJWZp4THG] figure_1.jpg -> classified as: Plots / Charts
+[AbJWZp4THG] figure_8.jpg -> classified as: Plots / Charts
+[AbXGwqb5Ht] figure_2.jpg -> classified as: Plots / Charts
+[AbXGwqb5Ht] figure_3.jpg -> classified as: Plots / Charts
+[AbXGwqb5Ht] figure_4.jpg -> classified as: Plots / Charts
+[AbXGwqb5Ht] figure_1.jpg -> classified as: Plots / Charts
+[AcSChDWL6V] figure_(a)_Test_performance.jpg -> classified as: Plots / Charts
+[AcSChDWL6V] figure_1.jpg -> classified as: Architecture Diagram
+[AcoXPIPh4A] figure_5.jpg -> classified as: Plots / Charts
+[AcoXPIPh4A] figure_2.jpg -> classified as: Plots / Charts
+[AcoXPIPh4A] figure_3.jpg -> classified as: Plots / Charts
+[AcoXPIPh4A] figure_4.jpg -> classified as: Plots / Charts
+[AcoXPIPh4A] figure_1.jpg -> classified as: Plots / Charts
+[AfhNyr73Ma] figure_2.jpg -> classified as: Plots / Charts
+[AfhNyr73Ma] figure_1.jpg -> classified as: Plots / Charts
+[AfnsTnYphT] figure_2.jpg -> classified as: Plots / Charts
+[AfnsTnYphT] figure_3.jpg -> classified as: Plots / Charts
+[AfnsTnYphT] figure_1.jpg -> classified as: Qualitative Examples
+[AfnsTnYphT] figure_1_1.jpg -> classified as: Plots / Charts
+[AloCXPpq54] figure_5.jpg -> classified as: Plots / Charts
+[AloCXPpq54] figure_6.jpg -> classified as: Plots / Charts
+[AloCXPpq54] figure_2.jpg -> classified as: Plots / Charts
+[AloCXPpq54] figure_7.jpg -> classified as: Plots / Charts
+[AloCXPpq54] figure_3.jpg -> classified as: Architecture Diagram
+[AloCXPpq54] figure_4.jpg -> classified as: Architecture Diagram
+[AloCXPpq54] figure_1.jpg -> classified as: Architecture Diagram
+[AloCXPpq54] figure_8.jpg -> classified as: Plots / Charts
+[Aly68Y5Es0] figure_5.jpg -> classified as: Plots / Charts
+[Aly68Y5Es0] figure_6.jpg -> classified as: Plots / Charts
+[Aly68Y5Es0] figure_9.jpg -> classified as: Plots / Charts
+[Aly68Y5Es0] figure_2.jpg -> classified as: Architecture Diagram
+[Aly68Y5Es0] figure_7.jpg -> classified as: Architecture Diagram
+[Aly68Y5Es0] figure_3.jpg -> classified as: Plots / Charts
+[Aly68Y5Es0] figure_4.jpg -> classified as: Plots / Charts
+[Aly68Y5Es0] figure_1.jpg -> classified as: Qualitative Examples
+[Aly68Y5Es0] figure_8.jpg -> classified as: Plots / Charts
+[Aly68Y5Es0] figure_10.jpg -> classified as: Plots / Charts
+[AmEgWDhmTr] figure_5.jpg -> classified as: Plots / Charts
+[AmEgWDhmTr] figure_6.jpg -> classified as: Plots / Charts
+[AmEgWDhmTr] figure_9.jpg -> classified as: Plots / Charts
+[AmEgWDhmTr] figure_11.jpg -> classified as: Plots / Charts
+[AmEgWDhmTr] figure_7.jpg -> classified as: Plots / Charts
+[AmEgWDhmTr] figure_4.jpg -> classified as: Plots / Charts
+[AmEgWDhmTr] figure_1.jpg -> classified as: Plots / Charts
+[AmEgWDhmTr] figure_8.jpg -> classified as: Plots / Charts
+[AmEgWDhmTr] figure_10.jpg -> classified as: Plots / Charts
+[AnPEfzBstD] figure_5.jpg -> classified as: Plots / Charts
+[AnPEfzBstD] figure_2.jpg -> classified as: Plots / Charts
+[AnPEfzBstD] figure_3.jpg -> classified as: Plots / Charts
+[AnPEfzBstD] figure_4.jpg -> classified as: Plots / Charts
+[AnPEfzBstD] figure_1.jpg -> classified as: Architecture Diagram
+[Antib6Uovh] figure_2.jpg -> classified as: Architecture Diagram
+[Antib6Uovh] figure_3.jpg -> classified as: Plots / Charts
+[Antib6Uovh] figure_4.jpg -> classified as: Qualitative Examples
+[Antib6Uovh] figure_1.jpg -> classified as: Qualitative Examples
+[AoraWUmpLU] figure_5.jpg -> classified as: Plots / Charts
+[AoraWUmpLU] figure_6.jpg -> classified as: Plots / Charts
+[AoraWUmpLU] figure_9.jpg -> classified as: Plots / Charts
+[AoraWUmpLU] figure_13.jpg -> classified as: Plots / Charts
+[AoraWUmpLU] figure_2.jpg -> classified as: Plots / Charts
+[AoraWUmpLU] figure_11.jpg -> classified as: Plots / Charts
+[AoraWUmpLU] figure_7.jpg -> classified as: Plots / Charts
+[AoraWUmpLU] figure_3.jpg -> classified as: Plots / Charts
+[AoraWUmpLU] figure_4.jpg -> classified as: Plots / Charts
+[AoraWUmpLU] figure_1.jpg -> classified as: Plots / Charts
+[AoraWUmpLU] figure_8.jpg -> classified as: Plots / Charts
+[AoraWUmpLU] figure_12.jpg -> classified as: Plots / Charts
+[AoraWUmpLU] figure_14.jpg -> classified as: Plots / Charts
+[AoraWUmpLU] figure_10.jpg -> classified as: Plots / Charts
+[AqHbMV28o7] figure_2.jpg -> classified as: Plots / Charts
+[AqHbMV28o7] figure_3.jpg -> classified as: Plots / Charts
+[AqHbMV28o7] figure_4.jpg -> classified as: Plots / Charts
+[AqHbMV28o7] figure_1.jpg -> classified as: Plots / Charts
+[AqaFgmH87p] figure_5.jpg -> classified as: Plots / Charts
+[AqaFgmH87p] figure_6.jpg -> classified as: Plots / Charts
+[AqaFgmH87p] figure_2.jpg -> classified as: Architecture Diagram
+[AqaFgmH87p] figure_3.jpg -> classified as: Plots / Charts
+[AqaFgmH87p] figure_4.jpg -> classified as: Plots / Charts
+[AqaFgmH87p] figure_1.jpg -> classified as: Plots / Charts
+[ArpwmicoYW] figure_5.jpg -> classified as: Plots / Charts
+[ArpwmicoYW] figure_2.jpg -> classified as: Architecture Diagram
+[ArpwmicoYW] figure_3.jpg -> classified as: Plots / Charts
+[ArpwmicoYW] figure_4.jpg -> classified as: Plots / Charts
+[ArpwmicoYW] figure_1.jpg -> classified as: Plots / Charts
+[AsAy7CROLs] figure_5.jpg -> classified as: Plots / Charts
+[AsAy7CROLs] figure_6.jpg -> classified as: Plots / Charts
+[AsAy7CROLs] figure_2.jpg -> classified as: Plots / Charts
+[AsAy7CROLs] figure_3.jpg -> classified as: Plots / Charts
+[AsAy7CROLs] figure_4.jpg -> classified as: Plots / Charts
+[AsAy7CROLs] figure_1.jpg -> classified as: Plots / Charts
+[AuAj4vRPkv] figure_5.jpg -> classified as: Plots / Charts
+[AuAj4vRPkv] figure_6.jpg -> classified as: Plots / Charts
+[AuAj4vRPkv] figure_2.jpg -> classified as: Plots / Charts
+[AuAj4vRPkv] figure_7.jpg -> classified as: Plots / Charts
+[AuAj4vRPkv] figure_3.jpg -> classified as: Plots / Charts
+[AuAj4vRPkv] figure_4.jpg -> classified as: Plots / Charts
+[AuAj4vRPkv] figure_1.jpg -> classified as: Plots / Charts
+[AuAj4vRPkv] figure_8.jpg -> classified as: Plots / Charts
+[AvmBgiQxxp] figure_5.jpg -> classified as: Qualitative Examples
+[AvmBgiQxxp] figure_6.jpg -> classified as: Plots / Charts
+[AvmBgiQxxp] figure_2.jpg -> classified as: Plots / Charts
+[AvmBgiQxxp] figure_7.jpg -> classified as: Plots / Charts
+[AvmBgiQxxp] figure_3.jpg -> classified as: Plots / Charts
+[AvmBgiQxxp] figure_4.jpg -> classified as: Plots / Charts
+[AvmBgiQxxp] figure_1.jpg -> classified as: Qualitative Examples
+[Ax2yRhCQr1] figure_2.jpg -> classified as: Qualitative Examples
+[Ax2yRhCQr1] figure_3.jpg -> classified as: Plots / Charts
+[Ax2yRhCQr1] figure_4.jpg -> classified as: Plots / Charts
+[Ax2yRhCQr1] figure_1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[Axc3ZD1Nds] figure_19.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_23.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_5.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_9.jpg -> classified as: Architecture Diagram
+[Axc3ZD1Nds] figure_22.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_18.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_13.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_E.1_POSITIONING_CPT-RL.jpg -> classified as: Architecture Diagram
+[Axc3ZD1Nds] figure_15.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_2.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_20.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_11.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_7.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_3.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_4.jpg -> classified as: Architecture Diagram
+[Axc3ZD1Nds] figure_1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[Axc3ZD1Nds] figure_8.jpg -> classified as: Architecture Diagram
+[Axc3ZD1Nds] figure_12.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_21.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_14.jpg -> classified as: Architecture Diagram
+[Axc3ZD1Nds] figure_16.jpg -> classified as: Plots / Charts
+[Axc3ZD1Nds] figure_10.jpg -> classified as: Plots / Charts
+[B0OwtVEejJ] figure_5.jpg -> classified as: Plots / Charts
+[B0OwtVEejJ] figure_2.jpg -> classified as: Qualitative Examples
+[B0OwtVEejJ] figure_3.jpg -> classified as: Plots / Charts
+[B0OwtVEejJ] figure_4.jpg -> classified as: Plots / Charts
+[B0OwtVEejJ] figure_1.jpg -> classified as: Architecture Diagram
+[B0jjj5RiAQ] figure_2.jpg -> classified as: Plots / Charts
+[B0jjj5RiAQ] figure_1.jpg -> classified as: Architecture Diagram
+[B21c9hT1D7] figure_5.jpg -> classified as: Plots / Charts
+[B21c9hT1D7] figure_6.jpg -> classified as: Plots / Charts
+[B21c9hT1D7] figure_2.jpg -> classified as: Plots / Charts
+[B21c9hT1D7] figure_7.jpg -> classified as: Plots / Charts
+[B21c9hT1D7] figure_3.jpg -> classified as: Plots / Charts
+[B21c9hT1D7] figure_4.jpg -> classified as: Plots / Charts
+[B21c9hT1D7] figure_1.jpg -> classified as: Plots / Charts
+[B3E8Y8g9GA] figure_2.jpg -> classified as: Architecture Diagram
+[B3E8Y8g9GA] figure_3.jpg -> classified as: Architecture Diagram
+[B3E8Y8g9GA] figure_4.jpg -> classified as: Qualitative Examples
+[B3E8Y8g9GA] figure_1.jpg -> classified as: Plots / Charts
+[B5PbOsJqt3] figure_19.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_23.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_24.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_5.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_6.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_9.jpg -> classified as: Plots / Charts
+[B5PbOsJqt3] figure_22.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_18.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_15.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_2.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_20.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_7.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_3.jpg -> classified as: Plots / Charts
+[B5PbOsJqt3] figure_4.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_17.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_1.jpg -> classified as: Architecture Diagram
+[B5PbOsJqt3] figure_8.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_12.jpg -> classified as: Plots / Charts
+[B5PbOsJqt3] figure_25.jpg -> classified as: Plots / Charts
+[B5PbOsJqt3] figure_21.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_26.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_14.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_16.jpg -> classified as: Qualitative Examples
+[B5PbOsJqt3] figure_10.jpg -> classified as: Plots / Charts
+[B5Tp4WwZl8] figure_5.jpg -> classified as: Plots / Charts
+[B5Tp4WwZl8] figure_6.jpg -> classified as: Plots / Charts
+[B5Tp4WwZl8] figure_2.jpg -> classified as: Plots / Charts
+[B5Tp4WwZl8] figure_7.jpg -> classified as: Plots / Charts
+[B5Tp4WwZl8] figure_3.jpg -> classified as: Plots / Charts
+[B5Tp4WwZl8] figure_4.jpg -> classified as: Plots / Charts
+[B5Tp4WwZl8] figure_1.jpg -> classified as: Plots / Charts
+[B5iOSxM2I0] figure_1.jpg -> classified as: Architecture Diagram
+[B8aHIDSi7E] figure_2.jpg -> classified as: Plots / Charts
+[B8aHIDSi7E] figure_1.jpg -> classified as: Architecture Diagram
+[BA1eG7vCNb] figure_5.jpg -> classified as: Plots / Charts
+[BA1eG7vCNb] figure_6.jpg -> classified as: Plots / Charts
+[BA1eG7vCNb] figure_9.jpg -> classified as: Plots / Charts
+[BA1eG7vCNb] figure_2.jpg -> classified as: Qualitative Examples
+[BA1eG7vCNb] figure_7.jpg -> classified as: Plots / Charts
+[BA1eG7vCNb] figure_3.jpg -> classified as: Plots / Charts
+[BA1eG7vCNb] figure_4.jpg -> classified as: Qualitative Examples
+[BA1eG7vCNb] figure_1.jpg -> classified as: Qualitative Examples
+[BA1eG7vCNb] figure_8.jpg -> classified as: Qualitative Examples
+[BAX3NXJ6vU] figure_2.jpg -> classified as: Plots / Charts
+[BAX3NXJ6vU] figure_3.jpg -> classified as: Plots / Charts
+[BAX3NXJ6vU] figure_1.jpg -> classified as: Plots / Charts
+[BEpaPHDl9r] figure_5.jpg -> classified as: Plots / Charts
+[BEpaPHDl9r] figure_2.jpg -> classified as: Plots / Charts
+[BEpaPHDl9r] figure_3.jpg -> classified as: Plots / Charts
+[BEpaPHDl9r] figure_4.jpg -> classified as: Plots / Charts
+[BEpaPHDl9r] figure_1.jpg -> classified as: Plots / Charts
+[BEzxYj8mOE] figure_5.jpg -> classified as: Plots / Charts
+[BEzxYj8mOE] figure_6.jpg -> classified as: Plots / Charts
+[BEzxYj8mOE] figure_7.jpg -> classified as: Plots / Charts
+[BEzxYj8mOE] figure_3.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[BEzxYj8mOE] figure_4.jpg -> classified as: Plots / Charts
+[BEzxYj8mOE] figure_1.jpg -> classified as: Architecture Diagram
+[BI1N3lTWtn] figure_5.jpg -> classified as: Plots / Charts
+[BI1N3lTWtn] figure_6.jpg -> classified as: Plots / Charts
+[BI1N3lTWtn] figure_2.jpg -> classified as: Architecture Diagram
+[BI1N3lTWtn] figure_7.jpg -> classified as: Plots / Charts
+[BI1N3lTWtn] figure_3.jpg -> classified as: Plots / Charts
+[BI1N3lTWtn] figure_4.jpg -> classified as: Plots / Charts
+[BI1N3lTWtn] figure_1.jpg -> classified as: Plots / Charts
+[BI1N3lTWtn] figure_8.jpg -> classified as: Plots / Charts
+[BKSeNw2HIr] figure_5.jpg -> classified as: Plots / Charts
+[BKSeNw2HIr] figure_6.jpg -> classified as: Plots / Charts
+[BKSeNw2HIr] figure_2.jpg -> classified as: Plots / Charts
+[BKSeNw2HIr] figure_3.jpg -> classified as: Plots / Charts
+[BKSeNw2HIr] figure_4.jpg -> classified as: Plots / Charts
+[BKSeNw2HIr] figure_1.jpg -> classified as: Plots / Charts
+[BLGQ3oqldb] figure_5.jpg -> classified as: Plots / Charts
+[BLGQ3oqldb] figure_6.jpg -> classified as: Architecture Diagram
+[BLGQ3oqldb] figure_9.jpg -> classified as: Qualitative Examples
+[BLGQ3oqldb] figure_13.jpg -> classified as: Plots / Charts
+[BLGQ3oqldb] figure_2.jpg -> classified as: Architecture Diagram
+[BLGQ3oqldb] figure_11.jpg -> classified as: Architecture Diagram
+[BLGQ3oqldb] figure_7.jpg -> classified as: Architecture Diagram
+[BLGQ3oqldb] figure_4.jpg -> classified as: Plots / Charts
+[BLGQ3oqldb] figure_1.jpg -> classified as: Qualitative Examples
+[BLGQ3oqldb] figure_8.jpg -> classified as: Qualitative Examples
+[BLGQ3oqldb] figure_12.jpg -> classified as: Plots / Charts
+[BLGQ3oqldb] figure_14.jpg -> classified as: Plots / Charts
+[BLGQ3oqldb] figure_10.jpg -> classified as: Qualitative Examples
+[BLg4PeBqsV] figure_5.jpg -> classified as: Plots / Charts
+[BLg4PeBqsV] figure_6.jpg -> classified as: Plots / Charts
+[BLg4PeBqsV] figure_9.jpg -> classified as: Plots / Charts
+[BLg4PeBqsV] figure_2.jpg -> classified as: Plots / Charts
+[BLg4PeBqsV] figure_7.jpg -> classified as: Plots / Charts
+[BLg4PeBqsV] figure_4.jpg -> classified as: Plots / Charts
+[BLg4PeBqsV] figure_8.jpg -> classified as: Plots / Charts
+[BLg4PeBqsV] figure_10.jpg -> classified as: Plots / Charts
+[BMZYh3IyAU] figure_2.jpg -> classified as: Plots / Charts
+[BMZYh3IyAU] figure_3.jpg -> classified as: Plots / Charts
+[BMZYh3IyAU] figure_1.jpg -> classified as: Qualitative Examples
+[BQwsRy1h3U] figure_5.jpg -> classified as: Architecture Diagram
+[BQwsRy1h3U] figure_6.jpg -> classified as: Plots / Charts
+[BQwsRy1h3U] figure_9.jpg -> classified as: Plots / Charts
+[BQwsRy1h3U] figure_2.jpg -> classified as: Architecture Diagram
+[BQwsRy1h3U] figure_7.jpg -> classified as: Plots / Charts
+[BQwsRy1h3U] figure_3.jpg -> classified as: Plots / Charts
+[BQwsRy1h3U] figure_4.jpg -> classified as: Plots / Charts
+[BQwsRy1h3U] figure_1.jpg -> classified as: Plots / Charts
+[BQwsRy1h3U] figure_8.jpg -> classified as: Plots / Charts
+[BTOdzCzSRg] figure_5.jpg -> classified as: Plots / Charts
+[BTOdzCzSRg] figure_6.jpg -> classified as: Plots / Charts
+[BTOdzCzSRg] figure_9.jpg -> classified as: Plots / Charts
+[BTOdzCzSRg] figure_2.jpg -> classified as: Plots / Charts
+[BTOdzCzSRg] figure_7.jpg -> classified as: Plots / Charts
+[BTOdzCzSRg] figure_3.jpg -> classified as: Plots / Charts
+[BTOdzCzSRg] figure_4.jpg -> classified as: Plots / Charts
+[BTOdzCzSRg] figure_1.jpg -> classified as: Plots / Charts
+[BTOdzCzSRg] figure_8.jpg -> classified as: Plots / Charts
+[BTOdzCzSRg] figure_10.jpg -> classified as: Plots / Charts
+[BTcZwitfgX] figure_2.jpg -> classified as: Plots / Charts
+[BTcZwitfgX] figure_3.jpg -> classified as: Plots / Charts
+[BTcZwitfgX] figure_4.jpg -> classified as: Plots / Charts
+[BTcZwitfgX] figure_1.jpg -> classified as: Plots / Charts
+[BUDLe7NIjQ] figure_5.jpg -> classified as: Qualitative Examples
+[BUDLe7NIjQ] figure_6.jpg -> classified as: Qualitative Examples
+[BUDLe7NIjQ] figure_2.jpg -> classified as: Architecture Diagram
+[BUDLe7NIjQ] figure_3.jpg -> classified as: Architecture Diagram
+[BUDLe7NIjQ] figure_4.jpg -> classified as: Architecture Diagram
+[BUDLe7NIjQ] figure_1.jpg -> classified as: Architecture Diagram
+[BUNkXMwfXL] figure_5.jpg -> classified as: Plots / Charts
+[BUNkXMwfXL] figure_6.jpg -> classified as: Plots / Charts
+[BUNkXMwfXL] figure_9.jpg -> classified as: Qualitative Examples
+[BUNkXMwfXL] figure_13.jpg -> classified as: Qualitative Examples
+[BUNkXMwfXL] figure_15.jpg -> classified as: Qualitative Examples
+[BUNkXMwfXL] figure_2.jpg -> classified as: Plots / Charts
+[BUNkXMwfXL] figure_11.jpg -> classified as: Plots / Charts
+[BUNkXMwfXL] figure_7.jpg -> classified as: Qualitative Examples
+[BUNkXMwfXL] figure_3.jpg -> classified as: Plots / Charts
+[BUNkXMwfXL] figure_1.jpg -> classified as: Qualitative Examples
+[BUNkXMwfXL] figure_8.jpg -> classified as: Plots / Charts
+[BUNkXMwfXL] figure_12.jpg -> classified as: Qualitative Examples
+[BUNkXMwfXL] figure_14.jpg -> classified as: Qualitative Examples
+[BUNkXMwfXL] figure_10.jpg -> classified as: Plots / Charts
+[BV1PHbTJzd] figure_5.jpg -> classified as: Plots / Charts
+[BV1PHbTJzd] figure_6.jpg -> classified as: Plots / Charts
+[BV1PHbTJzd] figure_2.jpg -> classified as: Plots / Charts
+[BV1PHbTJzd] figure_7.jpg -> classified as: Plots / Charts
+[BV1PHbTJzd] figure_3.jpg -> classified as: Plots / Charts
+[BV1PHbTJzd] figure_4.jpg -> classified as: Plots / Charts
+[BV1PHbTJzd] figure_1.jpg -> classified as: Architecture Diagram
+[BZrSCv2SBq] figure_5.jpg -> classified as: Plots / Charts
+[BZrSCv2SBq] figure_6.jpg -> classified as: Plots / Charts
+[BZrSCv2SBq] figure_9.jpg -> classified as: Plots / Charts
+[BZrSCv2SBq] figure_2.jpg -> classified as: Plots / Charts
+[BZrSCv2SBq] figure_7.jpg -> classified as: Plots / Charts
+[BZrSCv2SBq] figure_3.jpg -> classified as: Plots / Charts
+[BZrSCv2SBq] figure_4.jpg -> classified as: Plots / Charts
+[BZrSCv2SBq] figure_1.jpg -> classified as: Plots / Charts
+[BZrSCv2SBq] figure_8.jpg -> classified as: Plots / Charts
+[BZz6Zb4bwa] figure_A.jpg -> classified as: Plots / Charts
+[BZz6Zb4bwa] figure_5.jpg -> classified as: Plots / Charts
+[BZz6Zb4bwa] figure_2.jpg -> classified as: Plots / Charts
+[BZz6Zb4bwa] figure_3.jpg -> classified as: Plots / Charts
+[BZz6Zb4bwa] figure_4.jpg -> classified as: Plots / Charts
+[BZz6Zb4bwa] figure_2_1.jpg -> classified as: Plots / Charts
+[BZz6Zb4bwa] figure_1.jpg -> classified as: Plots / Charts
+[BdPvGRvoBC] figure_I.jpg -> classified as: Plots / Charts
+[BdPvGRvoBC] figure_H.jpg -> classified as: Plots / Charts
+[BdPvGRvoBC] figure_2.jpg -> classified as: Plots / Charts
+[BdPvGRvoBC] figure_1.jpg -> classified as: Plots / Charts
+[Bdhro9gxuF] figure_2.jpg -> classified as: Plots / Charts
+[Bdhro9gxuF] figure_1.jpg -> classified as: Plots / Charts
+[BdmVgLMvaf] figure_5.jpg -> classified as: Plots / Charts
+[BdmVgLMvaf] figure_6.jpg -> classified as: Plots / Charts
+[BdmVgLMvaf] figure_9.jpg -> classified as: Plots / Charts
+[BdmVgLMvaf] figure_2.jpg -> classified as: Qualitative Examples
+[BdmVgLMvaf] figure_11.jpg -> classified as: Qualitative Examples
+[BdmVgLMvaf] figure_7.jpg -> classified as: Plots / Charts
+[BdmVgLMvaf] figure_3.jpg -> classified as: Plots / Charts
+[BdmVgLMvaf] figure_4.jpg -> classified as: Qualitative Examples
+[BdmVgLMvaf] figure_1.jpg -> classified as: Architecture Diagram
+[BdmVgLMvaf] figure_8.jpg -> classified as: Plots / Charts
+[BdmVgLMvaf] figure_12.jpg -> classified as: Plots / Charts
+[BdmVgLMvaf] figure_10.jpg -> classified as: Qualitative Examples
+[BegT6Y00Rm] figure_2.jpg -> classified as: Plots / Charts
+[BegT6Y00Rm] figure_3.jpg -> classified as: Plots / Charts
+[BegT6Y00Rm] figure_4.jpg -> classified as: Plots / Charts
+[BegT6Y00Rm] figure_1.jpg -> classified as: Plots / Charts
+[BehxaBcSML] figure_for_for_Gemma-2.jpg -> classified as: Plots / Charts
+[BfH7rtJe1L] figure_5.jpg -> classified as: Architecture Diagram
+[BfH7rtJe1L] figure_6.jpg -> classified as: Plots / Charts
+[BfH7rtJe1L] figure_2.jpg -> classified as: Plots / Charts
+[BfH7rtJe1L] figure_7.jpg -> classified as: Plots / Charts
+[BfH7rtJe1L] figure_3.jpg -> classified as: Plots / Charts
+[BfH7rtJe1L] figure_4.jpg -> classified as: Architecture Diagram
+[BfH7rtJe1L] figure_1.jpg -> classified as: Plots / Charts
+[BfH7rtJe1L] figure_8.jpg -> classified as: Plots / Charts
+[BkR4QG4azn] figure_5.jpg -> classified as: Plots / Charts
+[BkR4QG4azn] figure_6.jpg -> classified as: Qualitative Examples
+[BkR4QG4azn] figure_9.jpg -> classified as: Qualitative Examples
+[BkR4QG4azn] figure_13.jpg -> classified as: Plots / Charts
+[BkR4QG4azn] figure_15.jpg -> classified as: Qualitative Examples
+[BkR4QG4azn] figure_2.jpg -> classified as: Qualitative Examples
+[BkR4QG4azn] figure_11.jpg -> classified as: Plots / Charts
+[BkR4QG4azn] figure_7.jpg -> classified as: Plots / Charts
+[BkR4QG4azn] figure_3.jpg -> classified as: Plots / Charts
+[BkR4QG4azn] figure_4.jpg -> classified as: Plots / Charts
+[BkR4QG4azn] figure_1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[BkR4QG4azn] figure_8.jpg -> classified as: Qualitative Examples
+[BkR4QG4azn] figure_12.jpg -> classified as: Plots / Charts
+[BkR4QG4azn] figure_14.jpg -> classified as: Plots / Charts
+[BkR4QG4azn] figure_10.jpg -> classified as: Qualitative Examples
+[Bl3e8HV9xW] figure_30.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_19.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_23.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_29.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_24.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_5.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_6.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_9.jpg -> classified as: Architecture Diagram
+[Bl3e8HV9xW] figure_22.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_28.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_18.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_13.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_15.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_2.jpg -> classified as: Architecture Diagram
+[Bl3e8HV9xW] figure_20.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_11.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_7.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_3.jpg -> classified as: Architecture Diagram
+[Bl3e8HV9xW] figure_4.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_31.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_17.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_1.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_27.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_8.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_12.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_25.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_21.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_26.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_14.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_32.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_16.jpg -> classified as: Plots / Charts
+[Bl3e8HV9xW] figure_10.jpg -> classified as: Plots / Charts
+[BlCnycxgJQ] figure_2.jpg -> classified as: Plots / Charts
+[BlCnycxgJQ] figure_1.jpg -> classified as: Plots / Charts
+[BlSIKSPhfz] figure_S1.jpg -> classified as: Plots / Charts
+[BlSIKSPhfz] figure_S2.jpg -> classified as: Plots / Charts
+[BlSIKSPhfz] figure_2.jpg -> classified as: Plots / Charts
+[BlSIKSPhfz] figure_S5.jpg -> classified as: Plots / Charts
+[BlSIKSPhfz] figure_3.jpg -> classified as: Plots / Charts
+[BlSIKSPhfz] figure_S4.jpg -> classified as: Plots / Charts
+[BlSIKSPhfz] figure_4.jpg -> classified as: Plots / Charts
+[BlSIKSPhfz] figure_1.jpg -> classified as: Plots / Charts
+[BlSIKSPhfz] figure_S3.jpg -> classified as: Plots / Charts
+[BlkxbI6vzl] figure_5.jpg -> classified as: Plots / Charts
+[BlkxbI6vzl] figure_6.jpg -> classified as: Plots / Charts
+[BlkxbI6vzl] figure_2.jpg -> classified as: Plots / Charts
+[BlkxbI6vzl] figure_3.jpg -> classified as: Qualitative Examples
+[BlkxbI6vzl] figure_4.jpg -> classified as: Plots / Charts
+[BlkxbI6vzl] figure_1.jpg -> classified as: Plots / Charts
+[BoMvv7ypDF] figure_5.jpg -> classified as: Plots / Charts
+[BoMvv7ypDF] figure_6.jpg -> classified as: Plots / Charts
+[BoMvv7ypDF] figure_2.jpg -> classified as: Architecture Diagram
+[BoMvv7ypDF] figure_3.jpg -> classified as: Plots / Charts
+[BoMvv7ypDF] figure_4.jpg -> classified as: Plots / Charts
+[BoMvv7ypDF] figure_1.jpg -> classified as: Architecture Diagram
+[Bpkhu2ExxU] figure_5.jpg -> classified as: Plots / Charts
+[Bpkhu2ExxU] figure_6.jpg -> classified as: Plots / Charts
+[Bpkhu2ExxU] figure_9.jpg -> classified as: Plots / Charts
+[Bpkhu2ExxU] figure_2.jpg -> classified as: Plots / Charts
+[Bpkhu2ExxU] figure_7.jpg -> classified as: Plots / Charts
+[Bpkhu2ExxU] figure_3.jpg -> classified as: Plots / Charts
+[Bpkhu2ExxU] figure_4.jpg -> classified as: Plots / Charts
+[Bpkhu2ExxU] figure_1.jpg -> classified as: Plots / Charts
+[Bpkhu2ExxU] figure_8.jpg -> classified as: Plots / Charts
+[Bpkhu2ExxU] figure_10.jpg -> classified as: Plots / Charts
+[BrjLHbqiYs] figure_5.jpg -> classified as: Qualitative Examples
+[BrjLHbqiYs] figure_6.jpg -> classified as: Plots / Charts
+[BrjLHbqiYs] figure_9.jpg -> classified as: Architecture Diagram
+[BrjLHbqiYs] figure_2.jpg -> classified as: Plots / Charts
+[BrjLHbqiYs] figure_11.jpg -> classified as: Qualitative Examples
+[BrjLHbqiYs] figure_7.jpg -> classified as: Plots / Charts
+[BrjLHbqiYs] figure_3.jpg -> classified as: Plots / Charts
+[BrjLHbqiYs] figure_4.jpg -> classified as: Qualitative Examples
+[BrjLHbqiYs] figure_8.jpg -> classified as: Plots / Charts
+[BrjLHbqiYs] figure_ey_have_trademark.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[BrjLHbqiYs] figure_10.jpg -> classified as: Plots / Charts
+[Bt1vnCnAVS] figure_5.jpg -> classified as: Plots / Charts
+[Bt1vnCnAVS] figure_6.jpg -> classified as: Plots / Charts
+[Bt1vnCnAVS] figure_2.jpg -> classified as: Plots / Charts
+[Bt1vnCnAVS] figure_7.jpg -> classified as: Plots / Charts
+[Bt1vnCnAVS] figure_3.jpg -> classified as: Plots / Charts
+[Bt1vnCnAVS] figure_4.jpg -> classified as: Plots / Charts
+[Bt1vnCnAVS] figure_1.jpg -> classified as: Plots / Charts
+[Bt1vnCnAVS] figure_8.jpg -> classified as: Plots / Charts
+[Bu3JGyfz23] figure_2.jpg -> classified as: Qualitative Examples
+[Bu3JGyfz23] figure_3.jpg -> classified as: Qualitative Examples
+[Bu3JGyfz23] figure_4.jpg -> classified as: Plots / Charts
+[Bu3JGyfz23] figure_1.jpg -> classified as: Plots / Charts
+[BuFNoKBiMs] figure_(a)_Visualization_of.jpg -> classified as: Plots / Charts
+[BuFNoKBiMs] figure_5.jpg -> classified as: Plots / Charts
+[BuFNoKBiMs] figure_(b)_Visualization_of.jpg -> classified as: Plots / Charts
+[BuFNoKBiMs] figure_7.jpg -> classified as: Plots / Charts
+[BuFNoKBiMs] figure_3.jpg -> classified as: Plots / Charts
+[BuFNoKBiMs] figure_4.jpg -> classified as: Plots / Charts
+[BuFNoKBiMs] figure_1.jpg -> classified as: Plots / Charts
+[BuFNoKBiMs] figure_8.jpg -> classified as: Plots / Charts
+[Bvqsas4TYX] figure_5.jpg -> classified as: Plots / Charts
+[Bvqsas4TYX] figure_2.jpg -> classified as: Architecture Diagram
+[Bvqsas4TYX] figure_7.jpg -> classified as: Architecture Diagram
+[Bvqsas4TYX] figure_3.jpg -> classified as: Plots / Charts
+[Bvqsas4TYX] figure_4.jpg -> classified as: Plots / Charts
+[Bvqsas4TYX] figure_1.jpg -> classified as: Plots / Charts
+[BwG8hwohU4] figure_5.jpg -> classified as: Plots / Charts
+[BwG8hwohU4] figure_6.jpg -> classified as: Plots / Charts
+[BwG8hwohU4] figure_(a)_$__{.jpg -> classified as: Plots / Charts
+[BwG8hwohU4] figure_(b)_$__{.jpg -> classified as: Plots / Charts
+[BwG8hwohU4] figure_2.jpg -> classified as: Plots / Charts
+[BwG8hwohU4] figure_3.jpg -> classified as: Plots / Charts
+[BwG8hwohU4] figure_4.jpg -> classified as: Plots / Charts
+[BwG8hwohU4] figure_1.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_5.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_6.jpg -> classified as: Qualitative Examples
+[BxBt8WLfqE] figure_9.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_13.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_15.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_2.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_11.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_3.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_4.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_1.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_1_1.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_8.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_12.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_14.jpg -> classified as: Plots / Charts
+[BxBt8WLfqE] figure_10.jpg -> classified as: Plots / Charts
+[BxHgpC6FNv] figure_5.jpg -> classified as: Plots / Charts
+[BxHgpC6FNv] figure_6.jpg -> classified as: Plots / Charts
+[BxHgpC6FNv] figure_2.jpg -> classified as: Plots / Charts
+[BxHgpC6FNv] figure_7.jpg -> classified as: Plots / Charts
+[BxHgpC6FNv] figure_3.jpg -> classified as: Plots / Charts
+[BxHgpC6FNv] figure_4.jpg -> classified as: Plots / Charts
+[BxHgpC6FNv] figure_1.jpg -> classified as: Plots / Charts
+[ByR3NdDSZB] figure_5.jpg -> classified as: Qualitative Examples
+[ByR3NdDSZB] figure_2.jpg -> classified as: Plots / Charts
+[ByR3NdDSZB] figure_3.jpg -> classified as: Qualitative Examples
+[ByR3NdDSZB] figure_4.jpg -> classified as: Architecture Diagram
+[ByR3NdDSZB] figure_1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[C5w86qtcgY] figure_1.jpg -> classified as: Plots / Charts
+[C85eSjKenO] figure_5.jpg -> classified as: Plots / Charts
+[C85eSjKenO] figure_2.jpg -> classified as: Architecture Diagram
+[C85eSjKenO] figure_3.jpg -> classified as: Plots / Charts
+[C85eSjKenO] figure_4.jpg -> classified as: Plots / Charts
+[C85eSjKenO] figure_1.jpg -> classified as: Plots / Charts
+[C9YyVygCpG] figure_5.jpg -> classified as: Plots / Charts
+[C9YyVygCpG] figure_2.jpg -> classified as: Architecture Diagram
+[C9YyVygCpG] figure_1.jpg -> classified as: Plots / Charts
+[C9pndmSjg6] figure_2.jpg -> classified as: Plots / Charts
+[C9pndmSjg6] figure_1.jpg -> classified as: Architecture Diagram
+[CEkIyshNbC] figure_5.jpg -> classified as: Plots / Charts
+[CEkIyshNbC] figure_6.jpg -> classified as: Plots / Charts
+[CEkIyshNbC] figure_2.jpg -> classified as: Plots / Charts
+[CEkIyshNbC] figure_3.jpg -> classified as: Plots / Charts
+[CEkIyshNbC] figure_4.jpg -> classified as: Plots / Charts
+[CEkIyshNbC] figure_1.jpg -> classified as: Plots / Charts
+[CFLEIeX7iK] figure_5.jpg -> classified as: Plots / Charts
+[CFLEIeX7iK] figure_6.jpg -> classified as: Qualitative Examples
+[CFLEIeX7iK] figure_2.jpg -> classified as: Architecture Diagram
+[CFLEIeX7iK] figure_3.jpg -> classified as: Plots / Charts
+[CFLEIeX7iK] figure_4.jpg -> classified as: Plots / Charts
+[CFLEIeX7iK] figure_1.jpg -> classified as: Plots / Charts
+[CFMdrcK935] figure_1.jpg -> classified as: Architecture Diagram
+[CGON8Btleu] figure_30.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_19.jpg -> classified as: Plots / Charts
+[CGON8Btleu] figure_23.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_29.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_24.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_5.jpg -> classified as: Plots / Charts
+[CGON8Btleu] figure_6.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_9.jpg -> classified as: Plots / Charts
+[CGON8Btleu] figure_22.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_28.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_18.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_13.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_15.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_2.jpg -> classified as: Architecture Diagram
+[CGON8Btleu] figure_20.jpg -> classified as: Plots / Charts
+[CGON8Btleu] figure_11.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[CGON8Btleu] figure_BEFORE_AVERAGING_OVER.jpg -> classified as: Plots / Charts
+[CGON8Btleu] figure_7.jpg -> classified as: Plots / Charts
+[CGON8Btleu] figure_3.jpg -> classified as: Plots / Charts
+[CGON8Btleu] figure_4.jpg -> classified as: Plots / Charts
+[CGON8Btleu] figure_31.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_17.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_1.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_8.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_12.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_25.jpg -> classified as: Plots / Charts
+[CGON8Btleu] figure_21.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_26.jpg -> classified as: Plots / Charts
+[CGON8Btleu] figure_14.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_32.jpg -> classified as: Plots / Charts
+[CGON8Btleu] figure_16.jpg -> classified as: Qualitative Examples
+[CGON8Btleu] figure_10.jpg -> classified as: Qualitative Examples
+[CIqjp9yTDq] figure_1.jpg -> classified as: Plots / Charts
+[CJWMXqAnAy] figure_19.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_23.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_5.jpg -> classified as: Plots / Charts
+[CJWMXqAnAy] figure_6.jpg -> classified as: Plots / Charts
+[CJWMXqAnAy] figure_9.jpg -> classified as: Plots / Charts
+[CJWMXqAnAy] figure_22.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_18.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_13.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_15.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_2.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[CJWMXqAnAy] figure_20.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_11.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_7.jpg -> classified as: Plots / Charts
+[CJWMXqAnAy] figure_3.jpg -> classified as: Architecture Diagram
+[CJWMXqAnAy] figure_4.jpg -> classified as: Plots / Charts
+[CJWMXqAnAy] figure_17.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_1.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_8.jpg -> classified as: Plots / Charts
+[CJWMXqAnAy] figure_12.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_21.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_14.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_16.jpg -> classified as: Qualitative Examples
+[CJWMXqAnAy] figure_10.jpg -> classified as: Qualitative Examples
+[CKXul9iX77] figure_5.jpg -> classified as: Plots / Charts
+[CKXul9iX77] figure_2.jpg -> classified as: Plots / Charts
+[CKXul9iX77] figure_3.jpg -> classified as: Plots / Charts
+[CKXul9iX77] figure_4.jpg -> classified as: Plots / Charts
+[CKXul9iX77] figure_1.jpg -> classified as: Architecture Diagram
+[CMMpcs9prj] figure_5.jpg -> classified as: Plots / Charts
+[CMMpcs9prj] figure_6.jpg -> classified as: Plots / Charts
+[CMMpcs9prj] figure_2.jpg -> classified as: Plots / Charts
+[CMMpcs9prj] figure_7.jpg -> classified as: Plots / Charts
+[CMMpcs9prj] figure_3.jpg -> classified as: Plots / Charts
+[CMMpcs9prj] figure_4.jpg -> classified as: Plots / Charts
+[CMMpcs9prj] figure_1.jpg -> classified as: Plots / Charts
+[COdUNtjMEp] figure_2.jpg -> classified as: Plots / Charts
+[COdUNtjMEp] figure_3.jpg -> classified as: Plots / Charts
+[COdUNtjMEp] figure_4.jpg -> classified as: Plots / Charts
+[COdUNtjMEp] figure_1.jpg -> classified as: Plots / Charts
+[CQF8mTF7qx] figure_(b)_The_feature.jpg -> classified as: Plots / Charts
+[CQF8mTF7qx] figure_(a)_The_rank.jpg -> classified as: Plots / Charts
+[CQF8mTF7qx] figure_2.jpg -> classified as: Plots / Charts
+[CS4mpDduO1] figure_1.jpg -> classified as: Plots / Charts
+[CUABD2qIB4] figure_5.jpg -> classified as: Qualitative Examples
+[CUABD2qIB4] figure_6.jpg -> classified as: Plots / Charts
+[CUABD2qIB4] figure_9.jpg -> classified as: Plots / Charts
+[CUABD2qIB4] figure_13.jpg -> classified as: Plots / Charts
+[CUABD2qIB4] figure_15.jpg -> classified as: Plots / Charts
+[CUABD2qIB4] figure_2.jpg -> classified as: Architecture Diagram
+[CUABD2qIB4] figure_11.jpg -> classified as: Plots / Charts
+[CUABD2qIB4] figure_7.jpg -> classified as: Plots / Charts
+[CUABD2qIB4] figure_3.jpg -> classified as: Plots / Charts
+[CUABD2qIB4] figure_4.jpg -> classified as: Plots / Charts
+[CUABD2qIB4] figure_1.jpg -> classified as: Plots / Charts
+[CUABD2qIB4] figure_8.jpg -> classified as: Plots / Charts
+[CUABD2qIB4] figure_12.jpg -> classified as: Plots / Charts
+[CUABD2qIB4] figure_14.jpg -> classified as: Plots / Charts
+[CUABD2qIB4] figure_10.jpg -> classified as: Plots / Charts
+[CUfSCwcgqm] figure_30.jpg -> classified as: Plots / Charts
+[CUfSCwcgqm] figure_19.jpg -> classified as: Plots / Charts
+[CUfSCwcgqm] figure_23.jpg -> classified as: Plots / Charts
+[CUfSCwcgqm] figure_29.jpg -> classified as: Plots / Charts
+[CUfSCwcgqm] figure_24.jpg -> classified as: Plots / Charts
+[CUfSCwcgqm] figure_5.jpg -> classified as: Qualitative Examples
+[CUfSCwcgqm] figure_6.jpg -> classified as: Qualitative Examples
+[CUfSCwcgqm] figure_9.jpg -> classified as: Plots / Charts
+[CUfSCwcgqm] figure_22.jpg -> classified as: Plots / Charts
+[CUfSCwcgqm] figure_28.jpg -> classified as: Plots / Charts
+[CUfSCwcgqm] figure_18.jpg -> classified as: Plots / Charts

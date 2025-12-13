@@ -34,7 +34,7 @@ import numpy as np
 import torch.nn as nn
 
 # Import the dataset builder
-from dataset_builder_new_vl import TextDatasetBuilder
+from tri_dataset_builder_new_vl import TextDatasetBuilder
 from datasets import load_from_disk
 
 from contextlib import contextmanager
@@ -73,6 +73,10 @@ class CustomDataCollator:
             'labels': []
         }
         
+        # Add sample_weight if present
+        if 'sample_weight' in features[0]:
+            batch['sample_weight'] = []
+        
         for feature in features:
             input_ids = feature['input_ids'][:max_len]
             attention_mask = feature['attention_mask'][:max_len]
@@ -88,14 +92,65 @@ class CustomDataCollator:
             batch['input_ids'].append(input_ids)
             batch['attention_mask'].append(attention_mask)
             batch['labels'].append(labels)
+            
+            if 'sample_weight' in feature:
+                batch['sample_weight'].append(feature['sample_weight'])
         
         # Convert to tensors
-        batch = {k: torch.tensor(v) for k, v in batch.items()}
-        return batch
+        tensor_batch = {k: torch.tensor(v) for k, v in batch.items() if k != 'sample_weight'}
+        
+        if 'sample_weight' in batch:
+            tensor_batch['sample_weight'] = torch.tensor(batch['sample_weight'], dtype=torch.float32)
+            
+        return tensor_batch
+
+class WeightedTrainer(Trainer):
+    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
+        sample_weights = inputs.pop("sample_weight", None)
+        labels = inputs.get("labels")
+        
+        # Forward pass
+        outputs = model(**inputs)
+        logits = outputs.get("logits")
+        
+        # Shift so that tokens < n predict n
+        shift_logits = logits[..., :-1, :].contiguous()
+        shift_labels = labels[..., 1:].contiguous()
+        
+        # Flatten the tokens
+        loss_fct = nn.CrossEntropyLoss(reduction='none')
+        shift_logits = shift_logits.view(-1, self.model.config.vocab_size)
+        shift_labels = shift_labels.view(-1)
+        
+        # Calculate loss per token
+        loss = loss_fct(shift_logits, shift_labels)
+        
+        # Reshape back to [batch_size, seq_len]
+        batch_size = inputs['input_ids'].size(0)
+        seq_len = inputs['input_ids'].size(1) - 1
+        loss = loss.view(batch_size, seq_len)
+        
+        # Average loss per sample (ignoring padded tokens)
+        # Note: CrossEntropyLoss with reduction='none' returns 0 for ignore_index (-100)
+        valid_mask = (shift_labels != -100).view(batch_size, seq_len).float()
+        sum_loss_per_sample = loss.sum(dim=1)
+        num_valid_tokens = valid_mask.sum(dim=1)
+        num_valid_tokens = torch.clamp(num_valid_tokens, min=1.0)
+        mean_loss_per_sample = sum_loss_per_sample / num_valid_tokens
+        
+        # Apply sample weights
+        if sample_weights is not None:
+            sample_weights = sample_weights.to(loss.device)
+            mean_loss_per_sample = mean_loss_per_sample * sample_weights
+            
+        # Final mean reduction
+        final_loss = mean_loss_per_sample.mean()
+        
+        return (final_loss, outputs) if return_outputs else final_loss
 
 def preprocess_logits_for_metrics(logits, labels):
     """
-    Reduce (bs, seq, vocab) -> (bs, 3) keeping only the three logits we need
+    Reduce (bs, seq, vocab) -> (bs, 2) keeping only the two logits we need
     at the *decision position* (first non-ignored label).
     """
     if isinstance(logits, tuple):
@@ -104,23 +159,27 @@ def preprocess_logits_for_metrics(logits, labels):
     # labels: torch.LongTensor  [bs, seq]
     with torch.no_grad():
         bs = logits.size(0)
-        # first position where label != -100 for each sample
+        # first position where label != -100 for each sample (this is the index of " yes"/" no")
         first_pos = (labels.ne(-100).int().argmax(dim=1))  # [bs]
         rows = torch.arange(bs, device=logits.device)
+        
+        # FIX: We need the logit from the PREVIOUS position (the prompt end, e.g., ":")
+        # because logits[t] predicts labels[t+1].
+        decision_indices = first_pos - 1
+        
         # logits at decision position: [bs, vocab]
-        dec_logits = logits[rows, first_pos, :]
-        # keep only no/yes/may columns -> [bs, 3]
-        # Order: 0=No, 1=Yes, 2=May
-        three = dec_logits.index_select(
-            dim=1, index=torch.tensor([NO_ID, YES_ID, MAY_ID], device=logits.device)
+        dec_logits = logits[rows, decision_indices, :]
+        # keep only yes/no columns -> [bs, 2]
+        two = dec_logits.index_select(
+            dim=1, index=torch.tensor([YES_ID, NO_ID], device=logits.device)
         )
-        return three
+        return two
 
 def compute_metrics(eval_pred, tokenizer=None):
     """
     Works in two modes:
-    - Preferred: predictions are (N, 3) = [no_logit, yes_logit, may_logit] from preprocess_logits_for_metrics.
-    - Fallback:  predictions are (N, L, V); we extract the three logits at the decision position.
+    - Preferred: predictions are (N, 2) = [no_logit, yes_logit] from preprocess_logits_for_metrics.
+    - Fallback:  predictions are (N, L, V); we extract the two logits at the decision position.
     Returns {'accuracy': ...} (Trainer will prefix to 'eval_accuracy').
     """
     import numpy as np
@@ -137,21 +196,19 @@ def compute_metrics(eval_pred, tokenizer=None):
             true_y.append(0)
         elif token_id == YES_ID:
             true_y.append(1)
-        elif token_id == MAY_ID:
-            true_y.append(2)
         else:
             true_y.append(-1) # Should not happen
             
     true_y = np.array(true_y, dtype=int)
 
-    # Mode A: already reduced to three logits
-    if preds.ndim == 2 and preds.shape[1] == 3:
-        # preds columns: 0=No, 1=Yes, 2=May
+    # Mode A: already reduced to two logits
+    if preds.ndim == 2 and preds.shape[1] == 2:
+        # preds columns: 0=No, 1=Yes
         pred_labels = np.argmax(preds, axis=1)
         acc = accuracy_score(true_y, pred_labels)
         return {"accuracy": acc}
 
-    # Mode B (fallback): full logits; pick decision position + yes/no/may columns
+    # Mode B (fallback): full logits; pick decision position + yes/no columns
     else:
         # preds: (N, L, V)
         N, L, V = preds.shape
@@ -160,18 +217,18 @@ def compute_metrics(eval_pred, tokenizer=None):
         # gather logits at that position: (N, V)
         rows = np.arange(N)
         dec_logits = preds[rows, decision_pos, :]
-        # Order: 0=No, 1=Yes, 2=May
-        yes_no_may = dec_logits[:, [NO_ID, YES_ID, MAY_ID]]  # (N, 3)
-        pred_labels = np.argmax(yes_no_may, axis=1)
+        # Order: 0=No, 1=Yes
+        yes_no = dec_logits[:, [NO_ID, YES_ID]]  # (N, 2)
+        pred_labels = np.argmax(yes_no, axis=1)
         acc = accuracy_score(true_y, pred_labels)
         return {"accuracy": acc}
 
 def preprocess_function(examples, tokenizer, max_length=1024):
     """Tokenize the texts and prepare for token probability training"""
-    # Create prompts that ask for accept/reject/may decision
+    # Create prompts that ask for accept/reject decision
     prompts = []
     for text in examples['text']:
-        prompt = f"Paper content:\n{text}\n\nBased on this AI research paper's content and statistics, should this paper be accepted? Answer yes, no, or may.\n\nDecision:"
+        prompt = f"Paper content:\n{text}\n\nBased on this AI research paper's content and statistics, should this paper be accepted? Answer yes or no.\n\nDecision:"
         prompts.append(prompt)
     
     # First, tokenize target tokens to know their length
@@ -179,10 +236,8 @@ def preprocess_function(examples, tokenizer, max_length=1024):
     for label in examples['labels']:
         if label == 1:
             target_tokens.append(" yes")
-        elif label == 0:
-            target_tokens.append(" no")
         else:
-            target_tokens.append(" may")
+            target_tokens.append(" no")
     
     # Tokenize target tokens
     target_encodings = tokenizer(
@@ -235,11 +290,16 @@ def preprocess_function(examples, tokenizer, max_length=1024):
         combined_attention_mask.append(full_mask)
         labels_for_loss.append(label_ids)
     
-    return {
+    result_dict = {
         'input_ids': combined_input_ids,
         'attention_mask': combined_attention_mask,
         'labels': labels_for_loss
     }
+    
+    if 'sample_weight' in examples:
+        result_dict['sample_weight'] = examples['sample_weight']
+        
+    return result_dict
 
 def download_and_save_model(model_name, cache_dir):
     """Download and save the base model locally"""
@@ -291,13 +351,12 @@ def split_dataset_stratified(dataset, test_size=0.2, seed=42):
     return {'train': train_dataset, 'test': test_dataset}
 
 def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None):
-    """Evaluate accuracy using probability-based comparison of yes/no/may tokens"""
+    """Evaluate accuracy using probability-based comparison of yes/no tokens"""
     print(f"Running probability-based accuracy evaluation on {len(eval_dataset)} samples...")
     
-    # Get token IDs for "yes", "no", "may"
+    # Get token IDs for "yes", "no"
     yes_token_id = tokenizer(" yes", add_special_tokens=False)['input_ids'][0]
     no_token_id = tokenizer(" no", add_special_tokens=False)['input_ids'][0]
-    may_token_id = tokenizer(" may", add_special_tokens=False)['input_ids'][0]
     
     all_predictions = []
     all_labels = []
@@ -347,10 +406,8 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                     true_token_id = labels[decision_pos]
                     if true_token_id == no_token_id:
                         true_label = 0
-                    elif true_token_id == yes_token_id:
-                        true_label = 1
                     else:
-                        true_label = 2
+                        true_label = 1
                     true_labels.append(true_label)
             
             if len(batch_input_ids) > 0:
@@ -391,14 +448,13 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                     # Get logits at the position where we need to predict the next token
                     logits_at_pos = logits[j, decision_pos - 1]  # -1 because we predict the next token
                     
-                    # Compare yes vs no vs may logits
+                    # Compare yes vs no logits
                     yes_logit = logits_at_pos[yes_token_id]
                     no_logit = logits_at_pos[no_token_id]
-                    may_logit = logits_at_pos[may_token_id]
                     
                     # Predict based on highest logit
-                    # 0=No, 1=Yes, 2=May
-                    logits_dict = {0: no_logit, 1: yes_logit, 2: may_logit}
+                    # 0=No, 1=Yes
+                    logits_dict = {0: no_logit, 1: yes_logit}
                     predicted_label = max(logits_dict, key=logits_dict.get)
                     
                     all_predictions.append(predicted_label)
@@ -439,7 +495,7 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
         # Classification report
         class_report = classification_report(
             all_labels, all_predictions, 
-            target_names=['No', 'Yes', 'May'], 
+            target_names=['No', 'Yes'], 
             zero_division=0
         )
         
@@ -465,7 +521,7 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
         print(f"F1-Score (Macro): {f1:.4f}")
         print("\nPer-class metrics:")
         # Handle cases where some classes might be missing in support
-        for cls_idx, cls_name in enumerate(['Reject (0)', 'Accept (1)', 'Maybe (2)']):
+        for cls_idx, cls_name in enumerate(['Reject (0)', 'Accept (1)']):
             if cls_idx < len(precision_per_class):
                 print(f"  {cls_name} - Precision: {precision_per_class[cls_idx]:.4f}, Recall: {recall_per_class[cls_idx]:.4f}, F1: {f1_per_class[cls_idx]:.4f}")
         
@@ -474,7 +530,7 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
         print(f"\nClassification Report:")
         print(class_report)
         print("="*50)
-        print("Method: Comparing logits of 'yes', 'no', 'may' tokens at decision position")
+        print("Method: Comparing logits of 'yes', 'no' tokens at decision position")
         print("Prediction: Max logit determines class")
         print("="*50)
     
@@ -597,16 +653,15 @@ def main():
             tokenizer.pad_token_id = tokenizer.eos_token_id
         
         # Get token IDs for "yes" and "no"
-        global YES_ID, NO_ID, MAY_ID
+        global YES_ID, NO_ID
         YES_ID = tokenizer(" yes", add_special_tokens=False)["input_ids"][0]
         NO_ID  = tokenizer(" no",  add_special_tokens=False)["input_ids"][0]
-        MAY_ID = tokenizer(" may", add_special_tokens=False)["input_ids"][0]
 
         # Load and prepare dataset
         print("Loading dataset...")
         
         # Define processed dataset cache path - include stats/img_desc in cache name if provided
-        cache_suffix = "llm_mineru_all_3class" # Changed suffix
+        cache_suffix = "llm_mineru_binary_weighted" # Changed suffix
         if STATISTICS_FILE:
             cache_suffix += "_with_stats"
         if IMG_DESC_FILE:
@@ -821,7 +876,7 @@ def main():
             )
             
             # Initialize trainer
-            trainer = Trainer(
+            trainer = WeightedTrainer(
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
@@ -918,7 +973,7 @@ def main():
             dataloader_persistent_workers=False,
         )
         
-        trainer = Trainer(
+        trainer = WeightedTrainer(
             model=model,
             args=training_args_eval,
             tokenizer=tokenizer,

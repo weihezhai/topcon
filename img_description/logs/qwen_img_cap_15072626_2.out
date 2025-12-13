@@ -1,0 +1,10 @@
+Starting Task ID: 2
+Initializing Qwen Client with model: qwen3-vl-8b-instruct
+Using Data Root: /ceph/hpc/home/euweihez/topcon/d2025d08-005-users/data_src/balanced/balanced_th
+--- SHARD INFO ---
+Job ID: 2 / 4
+Processing indices: 2 to 1 (Total: 0 papers)
+Outputting to: /ceph/hpc/home/euweihez/topcon/d2025d08-005-users/img_description/th/image_descriptions_2.json
+------------------
+Shard 2 complete.
+Task 2 finished

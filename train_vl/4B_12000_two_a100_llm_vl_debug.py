@@ -104,11 +104,16 @@ def preprocess_logits_for_metrics(logits, labels):
     # labels: torch.LongTensor  [bs, seq]
     with torch.no_grad():
         bs = logits.size(0)
-        # first position where label != -100 for each sample
+        # first position where label != -100 for each sample (this is the index of " yes"/" no")
         first_pos = (labels.ne(-100).int().argmax(dim=1))  # [bs]
         rows = torch.arange(bs, device=logits.device)
+        
+        # FIX: We need the logit from the PREVIOUS position (the prompt end, e.g., ":")
+        # because logits[t] predicts labels[t+1].
+        decision_indices = first_pos - 1
+        
         # logits at decision position: [bs, vocab]
-        dec_logits = logits[rows, first_pos, :]
+        dec_logits = logits[rows, decision_indices, :]
         # keep only yes/no columns -> [bs, 2]
         two = dec_logits.index_select(
             dim=1, index=torch.tensor([YES_ID, NO_ID], device=logits.device)

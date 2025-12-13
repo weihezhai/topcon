@@ -93,24 +93,23 @@ class TextDatasetBuilder:
         ]
         return 0 if status in rejected_statuses else 1
     
-    def get_label_from_score(self, score):
-        """Convert score to 3-class label"""
+    def get_weight_from_score(self, score):
+        """Calculate sample weight based on score"""
         if score is None:
-            return None
+            return 1.0
             
         # Handle case where score is a list [mean, std]
         if isinstance(score, list):
             if len(score) > 0:
                 score = score[0]
             else:
-                return None
-                
-        if score < 5.4:
-            return 0 # No / Reject
-        elif score > 6.2:
-            return 1 # Yes / Accept
+                return 1.0
+        
+        # Noisy data range: [5.4, 6.2]
+        if 5.4 <= score <= 6.2:
+            return 0.5
         else:
-            return 2 # May / Borderline
+            return 1.0
 
     def abs_intro(self, text):
         """Extract text before </introduction> tag to shorten content"""
@@ -420,6 +419,7 @@ class TextDatasetBuilder:
         """Load JSON files and create dataset with labels"""
         texts = []
         labels = []
+        sample_weights = []
         
         # Load labels dictionary
         labels_dict = self.load_labels()
@@ -454,17 +454,19 @@ class TextDatasetBuilder:
             
             filepath = os.path.join(subdir_path, json_file)
             
-            # Determine label
+            # Determine label and weight
             label = None
+            weight = 1.0
             
-            # Use metadata score if available (3-class)
-            if metadata_dict and paper_id in metadata_dict:
-                score = metadata_dict[paper_id]
-                label = self.get_label_from_score(score)
-            # Fallback to binary labels if metadata not available but labels are
-            elif not metadata_dict and paper_id in labels_dict:
+            # Always use binary labels from labels_dict
+            if paper_id in labels_dict:
                 status = labels_dict[paper_id]
                 label = self.get_label_from_status(status)
+            
+            # Calculate weight from metadata score if available
+            if metadata_dict and paper_id in metadata_dict:
+                score = metadata_dict[paper_id]
+                weight = self.get_weight_from_score(score)
             
             if label is not None:
                 try:
@@ -483,6 +485,7 @@ class TextDatasetBuilder:
                         
                         texts.append(text_with_stats)
                         labels.append(label)
+                        sample_weights.append(weight)
                         processed_files += 1
                 except Exception as e:
                     print(f"Error processing {filepath}: {e}")
@@ -499,11 +502,12 @@ class TextDatasetBuilder:
         if processed_files == 0:
             print("❌ No files were successfully processed!")
             print("Please check the filename format or label file.")
-            return Dataset.from_dict({'text': [], 'labels': []})
+            return Dataset.from_dict({'text': [], 'labels': [], 'sample_weight': []})
         
         return Dataset.from_dict({
             'text': texts,
-            'labels': labels
+            'labels': labels,
+            'sample_weight': sample_weights
         })
     
     def load_dataset_with_ids(self):
@@ -511,6 +515,7 @@ class TextDatasetBuilder:
         texts = []
         labels = []
         paper_ids = []
+        sample_weights = []
         
         # Load labels dictionary
         labels_dict = self.load_labels()
@@ -542,17 +547,19 @@ class TextDatasetBuilder:
             
             filepath = os.path.join(subdir_path, json_file)
             
-            # Determine label
+            # Determine label and weight
             label = None
+            weight = 1.0
             
-            # Use metadata score if available (3-class)
-            if metadata_dict and paper_id in metadata_dict:
-                score = metadata_dict[paper_id]
-                label = self.get_label_from_score(score)
-            # Fallback to binary labels if metadata not available but labels are
-            elif not metadata_dict and paper_id in labels_dict:
+            # Always use binary labels from labels_dict
+            if paper_id in labels_dict:
                 status = labels_dict[paper_id]
                 label = self.get_label_from_status(status)
+            
+            # Calculate weight from metadata score if available
+            if metadata_dict and paper_id in metadata_dict:
+                score = metadata_dict[paper_id]
+                weight = self.get_weight_from_score(score)
             
             if label is not None:
                 try:
@@ -572,13 +579,15 @@ class TextDatasetBuilder:
                         texts.append(text_with_stats)
                         labels.append(label)
                         paper_ids.append(paper_id)
+                        sample_weights.append(weight)
                 except Exception as e:
                     continue
         
         return Dataset.from_dict({
             'text': texts,
             'labels': labels,
-            'paper_id': paper_ids
+            'paper_id': paper_ids,
+            'sample_weight': sample_weights
         })
     
     def get_dataset_stats(self, dataset):
@@ -591,8 +600,7 @@ class TextDatasetBuilder:
                 'total_samples': 0,
                 'label_distribution': {
                     'accepted (1)': 0,
-                    'rejected (0)': 0,
-                    'maybe (2)': 0
+                    'rejected (0)': 0
                 },
                 'text_stats': {
                     'avg_length_words': 0,
@@ -608,8 +616,7 @@ class TextDatasetBuilder:
             'total_samples': len(dataset),
             'label_distribution': {
                 'accepted (1)': label_counts.get(1, 0),
-                'rejected (0)': label_counts.get(0, 0),
-                'maybe (2)': label_counts.get(2, 0)
+                'rejected (0)': label_counts.get(0, 0)
             },
             'text_stats': {
                 'avg_length_words': sum(text_lengths) / len(text_lengths) if text_lengths else 0,

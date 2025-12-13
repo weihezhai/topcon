@@ -811,9 +811,9 @@ def main():
                 BASE_MODEL_CACHE,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "78GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
+                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
                 offload_folder="./offload",  # Offload to disk if needed
-                attn_implementation="flash_attention_2"  # Use SDPA attention implementation
+                attn_implementation="sdpa"  # Use SDPA attention implementation
             )
 
         print(model)
@@ -949,7 +949,7 @@ def main():
                 device_map="auto",
                 max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
                 offload_folder="./offload",
-                attn_implementation="flash_attention_2"  # Use Flash Attention 2 implementation
+                attn_implementation="sdpa"  # Use SDPA attention implementation
             )
             
             # Clear cache again after loading

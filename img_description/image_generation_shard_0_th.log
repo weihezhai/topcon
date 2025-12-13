@@ -3654,3 +3654,8 @@ Outputting to: /ceph/hpc/home/euweihez/topcon/d2025d08-005-users/img_description
 [EGjvMcKrrl] figure_2.jpg -> classified as: Plots / Charts
 [EGjvMcKrrl] figure_3.jpg -> classified as: Plots / Charts
 [EGjvMcKrrl] figure_4.jpg -> classified as: Plots / Charts
+[EGjvMcKrrl] figure_1.jpg -> classified as: Other
+  -> Skipping second pass (Other)
+[EGxgZzDODh] figure_2.jpg -> classified as: Plots / Charts
+[EGxgZzDODh] figure_3.jpg -> classified as: Plots / Charts
+[EGxgZzDODh] figure_1.jpg -> classified as: Architecture Diagram

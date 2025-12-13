@@ -883,7 +883,7 @@ def main():
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
-                eval_dataset=small_eval_dataset  # Use smaller eval dataset for periodic evaluation
+                eval_dataset=small_eval_dataset,
                 tokenizer=tokenizer,
                 data_collator=data_collator,
                 preprocess_logits_for_metrics=preprocess_logits_for_metrics,

@@ -123,28 +123,31 @@ class WeightedTrainer(Trainer):
         shift_labels = shift_labels.view(-1)
         
         # Calculate loss per token
-        loss = loss_fct(shift_logits, shift_labels)
+        # CrossEntropyLoss returns 0 for ignore_index (-100)
+        token_losses = loss_fct(shift_logits, shift_labels)
         
         # Reshape back to [batch_size, seq_len]
         batch_size = inputs['input_ids'].size(0)
         seq_len = inputs['input_ids'].size(1) - 1
-        loss = loss.view(batch_size, seq_len)
+        token_losses = token_losses.view(batch_size, seq_len)
         
-        # Average loss per sample (ignoring padded tokens)
-        # Note: CrossEntropyLoss with reduction='none' returns 0 for ignore_index (-100)
-        valid_mask = (shift_labels != -100).view(batch_size, seq_len).float()
-        sum_loss_per_sample = loss.sum(dim=1)
-        num_valid_tokens = valid_mask.sum(dim=1)
-        num_valid_tokens = torch.clamp(num_valid_tokens, min=1.0)
-        mean_loss_per_sample = sum_loss_per_sample / num_valid_tokens
-        
-        # Apply sample weights
+        # Apply sample weights if provided
         if sample_weights is not None:
-            sample_weights = sample_weights.to(loss.device)
-            mean_loss_per_sample = mean_loss_per_sample * sample_weights
+            # Ensure weights are on the correct device and reshaped for broadcasting
+            sample_weights = sample_weights.to(token_losses.device).view(batch_size, 1)
+            token_losses = token_losses * sample_weights
             
-        # Final mean reduction
-        final_loss = mean_loss_per_sample.mean()
+        # Calculate final mean loss
+        # We divide by the total number of valid tokens (unweighted) to scale gradients
+        # according to the weights (e.g., weight 0.5 -> half the gradient magnitude)
+        valid_mask = (shift_labels != -100).view(batch_size, seq_len).float()
+        num_valid_tokens = valid_mask.sum()
+        
+        # Avoid division by zero
+        if num_valid_tokens == 0:
+            final_loss = torch.tensor(0.0, device=token_losses.device, requires_grad=True)
+        else:
+            final_loss = token_losses.sum() / num_valid_tokens
         
         return (final_loss, outputs) if return_outputs else final_loss
 
@@ -880,7 +883,7 @@ def main():
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
-                eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
+                eval_dataset=small_eval_dataset  # Use smaller eval dataset for periodic evaluation
                 tokenizer=tokenizer,
                 data_collator=data_collator,
                 preprocess_logits_for_metrics=preprocess_logits_for_metrics,

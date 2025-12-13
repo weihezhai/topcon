@@ -802,7 +802,7 @@ def main():
                 device_map="auto",  # Automatically distribute across available GPUs
                 max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
                 offload_folder="./offload",  # Offload to disk if needed
-                attn_implementation="flash_attention_2"  # Use SDPA attention implementation
+                attn_implementation="sdpa"  # Use SDPA attention implementation
             )
             print("Loaded fine-tuned model for evaluation")
         else:

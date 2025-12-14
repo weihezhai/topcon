@@ -627,9 +627,11 @@ def main():
         MODEL_NAME = args.model_name
         DATA_FOLDER = args.data_folder
         LABELS_FILE = args.labels_file
+        METADATA_FILE = args.metadata_file # Added
         STATISTICS_FILE = args.statistics_file
-        IMG_DESC_FILE = args.img_desc_file
-        METADATA_FILE = args.metadata_file
+        IMG_DESC_FILE = args.img_desc_file  # Added
+        OUTPUT_DIR = args.output_dir
+        MAX_LENGTH = args.max_length
 
         # Model directories
         BASE_MODEL_CACHE = "/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_4b/orig"  # Where to cache the downloaded model

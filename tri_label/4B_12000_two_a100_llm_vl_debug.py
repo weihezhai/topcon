@@ -1,21 +1,7 @@
 import os
 import sys
 import argparse
-
-# Parse GPU IDs early before importing torch
-parser = argparse.ArgumentParser(description="Fine-tune a language model with multi-GPU support")
-parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
-# Add other arguments here as needed
-args, unknown = parser.parse_known_args()  # Use parse_known_args to handle this early
-
-# Set CUDA_VISIBLE_DEVICES before importing torch
-if args.gpu_ids:
-    gpu_ids_str = ','.join(map(str, args.gpu_ids))
-    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_ids_str
-    print(f"Set CUDA_VISIBLE_DEVICES to: {gpu_ids_str}")
-
-# Now import torch and other libraries
-import torch
+# import inspect
 from datetime import datetime
 import pandas as pd
 from datasets import Dataset
@@ -98,24 +84,20 @@ class CustomDataCollator:
         batch = {k: torch.tensor(v) for k, v in batch.items()}
         return batch
 
-class WeightedTrainer(Trainer):
+def compute_loss_func(model, inputs, return_outputs=False, **kwargs):
     """
-    Scale per-batch loss by `sample_weight`.
-    Applied only during training (eval remains unweighted).
+    Standalone loss callable for HF Trainer.
+    Scales per-batch loss by `sample_weight` during training only.
     """
-    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        sample_weight = inputs.pop("sample_weight", None)
-        outputs = model(**inputs)
-        loss = outputs.loss
-        print(f"Raw loss: {loss.item()}")
+    sample_weight = inputs.pop("sample_weight", None)
+    outputs = model(**inputs)
+    loss = outputs.loss
 
-        if model.training and sample_weight is not None:
-            # batch size 1 -> scalar; general case -> mean weight
-            w = sample_weight.to(loss.device).float().mean()
-            print(f"Applying sample weight: {w.item()}")
-            loss = loss * w
+    if model.training and sample_weight is not None:
+        w = sample_weight.to(loss.device).float().mean()
+        loss = loss * w
 
-        return (loss, outputs) if return_outputs else loss
+    return (loss, outputs) if return_outputs else loss
 
 def preprocess_logits_for_metrics(logits, labels):
     """
@@ -830,7 +812,8 @@ def main():
             )
             
             # Initialize trainer
-            trainer = WeightedTrainer(
+            trainer = Trainer(
+                loss_func=compute_loss_func,
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
@@ -838,9 +821,9 @@ def main():
                 tokenizer=tokenizer,
                 data_collator=data_collator,
                 preprocess_logits_for_metrics=preprocess_logits_for_metrics,
-                compute_metrics=lambda ep: compute_metrics(ep)
+                compute_metrics=lambda ep: compute_metrics(ep),
             )
-            
+
             # Train the model
             print("Starting training...")
             
@@ -910,8 +893,25 @@ def main():
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-        # final eval trainer (unweighted eval loss via WeightedTrainer logic)
-        trainer = WeightedTrainer(
+        # Create trainer for final evaluation (needed for both train and eval modes)
+        print("Setting up trainer for final evaluation...")
+        training_args_eval = TrainingArguments(
+            output_dir=OUTPUT_DIR,
+            per_device_eval_batch_size=1,
+            bf16=True,
+            dataloader_pin_memory=False,
+            remove_unused_columns=False,
+            label_names=["labels"],
+            eval_accumulation_steps=1,
+            dataloader_num_workers=0,
+            prediction_loss_only=True,
+            skip_memory_metrics=True,
+            ddp_find_unused_parameters=False,
+            dataloader_persistent_workers=False,
+        )
+        
+        trainer = Trainer(
+            loss_func=compute_loss_func,
             model=model,
             args=training_args_eval,
             tokenizer=tokenizer,

@@ -85,20 +85,24 @@ class CustomDataCollator:
         batch = {k: torch.tensor(v) for k, v in batch.items()}
         return batch
 
-def compute_loss_func(model, inputs, return_outputs=False, **kwargs):
-    """
-    Standalone loss callable for HF Trainer.
-    Scales per-batch loss by `sample_weight` during training only.
-    """
-    sample_weight = inputs.pop("sample_weight", None)
-    outputs = model(**inputs)
-    loss = outputs.loss
+class WeightedTrainer(Trainer):
+    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
+        sample_weight = inputs.pop("sample_weight", None)
 
-    if model.training and sample_weight is not None:
-        w = sample_weight.to(loss.device).float().mean()
-        loss = loss * w
+        # Get the exact default Trainer loss behavior
+        loss, outputs = super().compute_loss(
+            model,
+            inputs,
+            return_outputs=True,
+            num_items_in_batch=num_items_in_batch,
+        )
 
-    return (loss, outputs) if return_outputs else loss
+        # Apply weight (batch size = 1 => scalar is fine)
+        if model.training and sample_weight is not None:
+            w = sample_weight.to(loss.device).float().mean()
+            loss = loss * w
+
+        return (loss, outputs) if return_outputs else loss
 
 def preprocess_logits_for_metrics(logits, labels):
     """
@@ -813,8 +817,7 @@ def main():
             )
             
             # Initialize trainer
-            trainer = Trainer(
-                compute_loss_func=compute_loss_func,
+            trainer = WeightedTrainer(
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
@@ -911,8 +914,7 @@ def main():
             dataloader_persistent_workers=False,
         )
         
-        trainer = Trainer(
-            compute_loss_func=compute_loss_func,
+        trainer = WeightedTrainer(
             model=model,
             args=training_args_eval,
             tokenizer=tokenizer,

@@ -403,12 +403,15 @@ class TextDatasetBuilder:
     def load_metadata_ratings(self):
         """Load metadata JSON (list[dict]) and build map: paper_id -> rating_avg (float)."""
         if not self.metadata_file or not os.path.exists(self.metadata_file):
+            print(f"Warning: Metadata file not found or not set: {self.metadata_file}")
             return {}
 
+        print(f"Loading metadata from {self.metadata_file}...")
         try:
             with open(self.metadata_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
             if not isinstance(data, list):
+                print("Error: Metadata JSON is not a list.")
                 return {}
 
             rating_map = {}
@@ -423,6 +426,12 @@ class TextDatasetBuilder:
                     rating_map[str(pid)] = float(ravg) if ravg is not None else None
                 except (TypeError, ValueError):
                     rating_map[str(pid)] = None
+            
+            print(f"Loaded {len(rating_map)} ratings from metadata.")
+            if rating_map:
+                print(f"Sample metadata IDs: {list(rating_map.keys())[:20]}")
+                print(f"Sample ratings: {list(rating_map.values())[:20]}")
+            
             return rating_map
         except Exception as e:
             print(f"Error loading metadata ratings: {e}")

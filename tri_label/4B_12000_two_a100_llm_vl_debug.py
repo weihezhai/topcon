@@ -656,12 +656,23 @@ def main():
             print(f"Saving processed dataset to {PROCESSED_DATASET_CACHE}")
             dataset.save_to_disk(PROCESSED_DATASET_CACHE)
 
-        # If cache was built before weights existed, attach them now (and re-save).
-        if METADATA_FILE and "sample_weight" not in dataset.column_names:
-            print("Cached dataset missing `sample_weight`; adding from metadata...")
-            dataset = dataset_builder.add_sample_weights_to_dataset(dataset)
-            print(f"Updating cached dataset at {PROCESSED_DATASET_CACHE}")
-            dataset.save_to_disk(PROCESSED_DATASET_CACHE)
+        # Always refresh weights if metadata is provided to ensure correctness
+        if METADATA_FILE:
+            print("Refreshing sample weights based on current metadata and parameters...")
+            if "paper_id" in dataset.column_names:
+                dataset = dataset_builder.add_sample_weights_to_dataset(dataset)
+                print(f"Updating cached dataset at {PROCESSED_DATASET_CACHE}")
+                dataset.save_to_disk(PROCESSED_DATASET_CACHE)
+            else:
+                print("Warning: dataset missing 'paper_id' column, cannot update weights.")
+
+        # Check weight distribution
+        if "sample_weight" in dataset.column_names:
+            weights = dataset["sample_weight"]
+            from collections import Counter
+            # Convert to python float to avoid tensor formatting issues in print
+            w_counts = Counter([float(w) for w in weights])
+            print(f"Sample weight distribution: {w_counts}")
 
         # Print dataset configuration
         print("\nDataset Configuration:")

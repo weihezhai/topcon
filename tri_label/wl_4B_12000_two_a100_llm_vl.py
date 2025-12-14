@@ -122,10 +122,6 @@ class WeightedTrainer(Trainer):
         if self.args.past_index >= 0:
             self._past = outputs[self.args.past_index]
 
-        # If no weights and standard loss is available, use it to avoid manual calculation errors
-        if weights is None and isinstance(outputs, dict) and "loss" in outputs:
-            return (outputs["loss"], outputs) if return_outputs else outputs["loss"]
-
         if labels is not None:
             # We don't support label smoothing with custom weights easily here
             loss = self.label_smoother(outputs, labels)
@@ -140,11 +136,7 @@ class WeightedTrainer(Trainer):
             
             # Flatten the tokens
             loss_fct = nn.CrossEntropyLoss(reduction='none')
-            
-            # FIX: Use logits.size(-1) instead of config.vocab_size to avoid mismatch
-            # if the tokenizer was resized but config not updated or padding exists
-            vocab_size = shift_logits.size(-1)
-            shift_logits = shift_logits.view(-1, vocab_size)
+            shift_logits = shift_logits.view(-1, self.model.config.vocab_size)
             shift_labels = shift_labels.view(-1)
             
             # Enable model parallelism
@@ -156,28 +148,28 @@ class WeightedTrainer(Trainer):
             seq_len = logits.size(1) - 1
             loss = loss.view(batch_size, seq_len)
             
-            # Calculate valid tokens mask (where label != -100)
-            # We need to reshape shift_labels back to check for -100
+            # Calculate valid token mask (where labels != -100)
+            # We need this to normalize correctly
             valid_mask = (shift_labels.view(batch_size, seq_len) != -100).float()
-            
-            # Sum loss per sample
-            sample_loss = (loss * valid_mask).sum(dim=1)
-            
-            # Count valid tokens per sample
-            sample_tokens = valid_mask.sum(dim=1)
-            
-            # Avoid division by zero
-            sample_tokens = sample_tokens.clamp(min=1.0)
-            
-            # Mean loss per sample (normalize by valid tokens, not total tokens)
-            sample_mean_loss = sample_loss / sample_tokens
             
             # Apply weights if available
             if weights is not None:
-                weights = weights.to(loss.device)
-                loss = (sample_mean_loss * weights).mean()
+                # weights is [batch_size], expand to [batch_size, seq_len]
+                weights = weights.to(loss.device).unsqueeze(1).expand_as(loss)
+                
+                # Apply weights to loss
+                # Loss is already 0 for ignored tokens, but we multiply anyway
+                loss = loss * weights
+                
+                # Normalize by sum of weights of valid tokens
+                # This prevents loss from being diluted by padding/ignored tokens
+                # and handles the weighting scale correctly (weighted average)
+                sum_weights = (weights * valid_mask).sum()
+                loss = loss.sum() / (sum_weights + 1e-9)
             else:
-                loss = sample_mean_loss.mean()
+                # Standard mean over valid tokens (like standard Trainer)
+                # loss.mean() would divide by total tokens (including ignored), which is wrong
+                loss = loss.sum() / (valid_mask.sum() + 1e-9)
 
         return (loss, outputs) if return_outputs else loss
 

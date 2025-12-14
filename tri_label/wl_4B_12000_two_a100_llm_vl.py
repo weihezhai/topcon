@@ -21,7 +21,7 @@ import numpy as np
 import torch.nn as nn
 
 # Import the dataset builder
-from dataset_builder_new_vl import TextDatasetBuilder
+from wl_dataset_builder_new_vl import TextDatasetBuilder
 from datasets import load_from_disk
 
 from contextlib import contextmanager

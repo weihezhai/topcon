@@ -107,10 +107,12 @@ class WeightedTrainer(Trainer):
         sample_weight = inputs.pop("sample_weight", None)
         outputs = model(**inputs)
         loss = outputs.loss
+        print(f"Raw loss: {loss.item()}")
 
         if model.training and sample_weight is not None:
             # batch size 1 -> scalar; general case -> mean weight
             w = sample_weight.to(loss.device).float().mean()
+            print(f"Applying sample weight: {w.item()}")
             loss = loss * w
 
         return (loss, outputs) if return_outputs else loss

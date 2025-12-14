@@ -422,15 +422,26 @@ class TextDatasetBuilder:
                 ravg = item.get("rating_avg")
                 if not pid:
                     continue
+                
+                val = None
                 try:
-                    rating_map[str(pid)] = float(ravg) if ravg is not None else None
+                    # Handle list format [mean, std] or scalar
+                    if isinstance(ravg, list) and len(ravg) > 0:
+                        val = float(ravg[0])
+                    elif ravg is not None:
+                        val = float(ravg)
                 except (TypeError, ValueError):
-                    rating_map[str(pid)] = None
+                    val = None
+                
+                rating_map[str(pid)] = val
             
             print(f"Loaded {len(rating_map)} ratings from metadata.")
             if rating_map:
-                print(f"Sample metadata IDs: {list(rating_map.keys())[:20]}")
-                print(f"Sample ratings: {list(rating_map.values())[:20]}")
+                # Filter out None values for display
+                valid_ratings = {k: v for k, v in rating_map.items() if v is not None}
+                print(f"Valid ratings count: {len(valid_ratings)}")
+                print(f"Sample metadata IDs: {list(valid_ratings.keys())[:5]}")
+                print(f"Sample ratings: {list(valid_ratings.values())[:5]}")
             
             return rating_map
         except Exception as e:

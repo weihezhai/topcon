@@ -149,27 +149,31 @@ class WeightedTrainer(Trainer):
             loss = loss.view(batch_size, seq_len)
             
             # Calculate valid token mask (where labels != -100)
-            # We need this to normalize correctly
             valid_mask = (shift_labels.view(batch_size, seq_len) != -100).float()
+            num_valid_tokens = valid_mask.sum()
             
             # Apply weights if available
             if weights is not None:
                 # weights is [batch_size], expand to [batch_size, seq_len]
-                weights = weights.to(loss.device).unsqueeze(1).expand_as(loss)
+                # Ensure weights are same dtype as loss (e.g. bf16)
+                weights = weights.to(loss.device).to(loss.dtype).unsqueeze(1).expand_as(loss)
                 
                 # Apply weights to loss
-                # Loss is already 0 for ignored tokens, but we multiply anyway
                 loss = loss * weights
                 
-                # Normalize by sum of weights of valid tokens
-                # This prevents loss from being diluted by padding/ignored tokens
-                # and handles the weighting scale correctly (weighted average)
-                sum_weights = (weights * valid_mask).sum()
-                loss = loss.sum() / (sum_weights + 1e-9)
+                # Normalize by number of valid tokens (Mean(Loss * Weight))
+                # This scales the gradients by the weight magnitude.
+                # Note: If weights are large, loss will be large. This is expected for importance weighting.
+                if num_valid_tokens > 0:
+                    loss = loss.sum() / num_valid_tokens
+                else:
+                    loss = loss.sum() * 0.0
             else:
-                # Standard mean over valid tokens (like standard Trainer)
-                # loss.mean() would divide by total tokens (including ignored), which is wrong
-                loss = loss.sum() / (valid_mask.sum() + 1e-9)
+                # Standard mean over valid tokens
+                if num_valid_tokens > 0:
+                    loss = loss.sum() / num_valid_tokens
+                else:
+                    loss = loss.sum() * 0.0
 
         return (loss, outputs) if return_outputs else loss
 

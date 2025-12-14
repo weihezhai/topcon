@@ -562,6 +562,7 @@ def main():
         LABELS_FILE = args.labels_file
         STATISTICS_FILE = args.statistics_file
         IMG_DESC_FILE = args.img_desc_file  # Added
+        METADATA_FILE = args.metadata_file
         OUTPUT_DIR = args.output_dir
         MAX_LENGTH = args.max_length
         

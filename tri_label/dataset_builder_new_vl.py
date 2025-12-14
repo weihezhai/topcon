@@ -440,8 +440,8 @@ class TextDatasetBuilder:
                 # Filter out None values for display
                 valid_ratings = {k: v for k, v in rating_map.items() if v is not None}
                 print(f"Valid ratings count: {len(valid_ratings)}")
-                print(f"Sample metadata IDs: {list(valid_ratings.keys())[:5]}")
-                print(f"Sample ratings: {list(valid_ratings.values())[:5]}")
+                print(f"Sample metadata IDs: {list(valid_ratings.keys())[:20]}")
+                print(f"Sample ratings: {list(valid_ratings.values())[:20]}")
             
             return rating_map
         except Exception as e:

@@ -14,4 +14,4 @@ module load cuDNN/8.7.0.84-CUDA-11.8.0
 source /mnt/parscratch/users/lip22fh/miniconda3/etc/profile.d/conda.sh
 conda activate pap
 
-python wl_4B_12000_two_a100_cv_vl.py --detailed_eval
+python 4B_12000_cv_vl_wl.py --detailed_eval

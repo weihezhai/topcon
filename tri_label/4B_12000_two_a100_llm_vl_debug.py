@@ -88,6 +88,7 @@ class CustomDataCollator:
 class WeightedTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         sample_weight = inputs.pop("sample_weight", None)
+        print(f"Sample weight in compute_loss: {sample_weight}")
 
         # Get the exact default Trainer loss behavior
         loss, outputs = super().compute_loss(
@@ -101,6 +102,7 @@ class WeightedTrainer(Trainer):
         if model.training and sample_weight is not None:
             w = sample_weight.to(loss.device).float().mean()
             loss = loss * w
+        print(f"Computed loss: {loss.item()}")
 
         return (loss, outputs) if return_outputs else loss
 
@@ -782,7 +784,7 @@ def main():
             # Training arguments - adjusted for multi-GPU
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
-                num_train_epochs=4,
+                num_train_epochs=5,
                 per_device_train_batch_size=1,  # Keep small for large model
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size

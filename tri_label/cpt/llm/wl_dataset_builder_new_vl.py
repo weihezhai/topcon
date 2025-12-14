@@ -5,13 +5,31 @@ import csv
 from datasets import Dataset
 
 class TextDatasetBuilder:
-    def __init__(self, data_folder, labels_file, statistics_file=None, img_desc_file=None, max_length=1024):
+    def __init__(
+        self,
+        data_folder,
+        labels_file,
+        statistics_file=None,
+        img_desc_file=None,
+        max_length=1024,
+        metadata_file=None,
+        noisy_low=5.4,
+        noisy_high=6.2,
+        noisy_weight=0.5,
+    ):
         self.data_folder = data_folder
         self.labels_file = labels_file
         self.statistics_file = statistics_file
         self.img_desc_file = img_desc_file
         self.max_length = max_length
-        
+
+        # rating-based weighting
+        self.metadata_file = metadata_file
+        self.noisy_low = noisy_low
+        self.noisy_high = noisy_high
+        self.noisy_weight = noisy_weight
+        self._rating_map = None  # lazy-loaded
+
     def load_labels(self):
         """Load labels from JSON file"""
         with open(self.labels_file, 'r', encoding='utf-8') as f:
@@ -382,11 +400,88 @@ class TextDatasetBuilder:
         else:
             return ""
     
+    def load_metadata_ratings(self):
+        """Load metadata JSON (list[dict]) and build map: paper_id -> rating_avg (float)."""
+        if not self.metadata_file or not os.path.exists(self.metadata_file):
+            print(f"Warning: Metadata file not found or not set: {self.metadata_file}")
+            return {}
+
+        print(f"Loading metadata from {self.metadata_file}...")
+        try:
+            with open(self.metadata_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if not isinstance(data, list):
+                print("Error: Metadata JSON is not a list.")
+                return {}
+
+            rating_map = {}
+            noisy_count = 0
+            for item in data:
+                if not isinstance(item, dict):
+                    continue
+                pid = item.get("id")
+                ravg = item.get("rating_avg")
+                if not pid:
+                    continue
+                
+                val = None
+                try:
+                    # Handle list format [mean, std] or scalar
+                    if isinstance(ravg, list) and len(ravg) > 0:
+                        val = float(ravg[0])
+                    elif ravg is not None:
+                        val = float(ravg)
+                except (TypeError, ValueError):
+                    val = None
+                
+                rating_map[str(pid)] = val
+                if val is not None and self.noisy_low <= val <= self.noisy_high:
+                    noisy_count += 1
+            
+            print(f"Loaded {len(rating_map)} ratings from metadata.")
+            print(f"Amount of data in noisy range [{self.noisy_low}, {self.noisy_high}]: {noisy_count}")
+            if rating_map:
+                # Filter out None values for display
+                valid_ratings = {k: v for k, v in rating_map.items() if v is not None}
+                print(f"Valid ratings count: {len(valid_ratings)}")
+                print(f"Sample metadata IDs: {list(valid_ratings.keys())[:20]}")
+                print(f"Sample ratings: {list(valid_ratings.values())[:20]}")
+            
+            return rating_map
+        except Exception as e:
+            print(f"Error loading metadata ratings: {e}")
+            return {}
+
+    def get_sample_weight(self, paper_id: str) -> float:
+        """Weight=0.5 if rating_avg in [noisy_low,noisy_high], else 1.0; missing -> 1.0."""
+        if self._rating_map is None:
+            self._rating_map = self.load_metadata_ratings()
+
+        if not paper_id or not self._rating_map:
+            return 1.0
+
+        rating = self._rating_map.get(str(paper_id), None)
+        if rating is None:
+            return 1.0
+        return self.noisy_weight if (self.noisy_low <= rating <= self.noisy_high) else 1.0
+
+    def add_sample_weights_to_dataset(self, dataset: Dataset) -> Dataset:
+        """Attach/overwrite `sample_weight` column using `paper_id` in an existing dataset."""
+        if "paper_id" not in dataset.column_names:
+            return dataset
+
+        def _add(batch):
+            pids = batch["paper_id"]
+            return {"sample_weight": [self.get_sample_weight(pid) for pid in pids]}
+
+        return dataset.map(_add, batched=True)
+
     def load_dataset(self):
         """Load JSON files and create dataset with labels"""
         texts = []
         labels = []
-        
+        sample_weights = []
+
         # Load labels dictionary
         labels_dict = self.load_labels()
         
@@ -428,24 +523,22 @@ class TextDatasetBuilder:
 
                     # Extract content from JSON
                     text = self._extract_paper_content(filepath, paper_id, paper_img_descs)
-                    if text:  # Only add non-empty texts
-                        # Count references in the text
+                    if text:
                         reference_count = self.count_references(text)
-                        
-                        # Add statistics at the end of the text
                         stats_str = self.format_statistics(paper_id, stats_dict, reference_count)
                         text_with_stats = text + stats_str
-                        
+
                         texts.append(text_with_stats)
                         labels.append(label)
+                        sample_weights.append(self.get_sample_weight(paper_id))
                         processed_files += 1
                 except Exception as e:
-                    print(f"Error processing {filepath}: {e}")
+                    #print(f"Error processing {filepath}: {e}")
                     continue
             else:
                 missing_labels.append(paper_id)
-        
-        print(f"Processed {processed_files} files")
+
+        #print(f"Processed {processed_files} files")
         if missing_labels:
             print(f"Warning: {len(missing_labels)} files had no corresponding labels")
             print(f"First few missing IDs: {missing_labels[:5]}")
@@ -458,7 +551,8 @@ class TextDatasetBuilder:
         
         return Dataset.from_dict({
             'text': texts,
-            'labels': labels
+            'labels': labels,
+            'sample_weight': sample_weights,
         })
     
     def load_dataset_with_ids(self):
@@ -466,7 +560,8 @@ class TextDatasetBuilder:
         texts = []
         labels = []
         paper_ids = []
-        
+        sample_weights = []
+
         # Load labels dictionary
         labels_dict = self.load_labels()
         
@@ -505,26 +600,25 @@ class TextDatasetBuilder:
 
                     # Extract content from JSON
                     text = self._extract_paper_content(filepath, paper_id, paper_img_descs)
-                    if text:  # Only add non-empty texts
-                        # Count references in the text
+                    if text:
                         reference_count = self.count_references(text)
-                        
-                        # Add statistics at the end of the text
                         stats_str = self.format_statistics(paper_id, stats_dict, reference_count)
                         text_with_stats = text + stats_str
-                        
+
                         texts.append(text_with_stats)
                         labels.append(label)
                         paper_ids.append(paper_id)
+                        sample_weights.append(self.get_sample_weight(paper_id))
                 except Exception as e:
                     continue
-        
+
         return Dataset.from_dict({
             'text': texts,
             'labels': labels,
-            'paper_id': paper_ids
+            'paper_id': paper_ids,
+            'sample_weight': sample_weights,
         })
-    
+
     def get_dataset_stats(self, dataset):
         """Get dataset statistics"""
         import pandas as pd

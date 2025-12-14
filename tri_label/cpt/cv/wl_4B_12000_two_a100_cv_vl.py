@@ -1,20 +1,7 @@
 import os
 import sys
 import argparse
-
-# Parse GPU IDs early before importing torch
-parser = argparse.ArgumentParser(description="Fine-tune a language model with multi-GPU support")
-parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
-# Add other arguments here as needed
-args, unknown = parser.parse_known_args()  # Use parse_known_args to handle this early
-
-# Set CUDA_VISIBLE_DEVICES before importing torch
-if args.gpu_ids:
-    gpu_ids_str = ','.join(map(str, args.gpu_ids))
-    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_ids_str
-    print(f"Set CUDA_VISIBLE_DEVICES to: {gpu_ids_str}")
-
-# Now import torch and other libraries
+# import inspect
 import torch
 from datetime import datetime
 import pandas as pd
@@ -34,7 +21,7 @@ import numpy as np
 import torch.nn as nn
 
 # Import the dataset builder
-from tri_dataset_builder_new_vl import TextDatasetBuilder
+from wl_dataset_builder_new_vl import TextDatasetBuilder
 from datasets import load_from_disk
 
 from contextlib import contextmanager
@@ -72,9 +59,8 @@ class CustomDataCollator:
             'attention_mask': [],
             'labels': []
         }
-        
-        # Add sample_weight if present
-        if 'sample_weight' in features[0]:
+        has_weight = 'sample_weight' in features[0]
+        if has_weight:
             batch['sample_weight'] = []
         
         for feature in features:
@@ -92,64 +78,31 @@ class CustomDataCollator:
             batch['input_ids'].append(input_ids)
             batch['attention_mask'].append(attention_mask)
             batch['labels'].append(labels)
-            
-            if 'sample_weight' in feature:
-                batch['sample_weight'].append(feature['sample_weight'])
+            if has_weight:
+                batch['sample_weight'].append(float(feature.get('sample_weight', 1.0)))
         
         # Convert to tensors
-        tensor_batch = {k: torch.tensor(v) for k, v in batch.items() if k != 'sample_weight'}
-        
-        if 'sample_weight' in batch:
-            tensor_batch['sample_weight'] = torch.tensor(batch['sample_weight'], dtype=torch.float32)
-            
-        return tensor_batch
+        batch = {k: torch.tensor(v) for k, v in batch.items()}
+        return batch
 
 class WeightedTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
-        sample_weights = inputs.pop("sample_weight", None)
-        labels = inputs.get("labels")
-        
-        # Forward pass
-        outputs = model(**inputs)
-        logits = outputs.get("logits")
-        
-        # Shift so that tokens < n predict n
-        shift_logits = logits[..., :-1, :].contiguous()
-        shift_labels = labels[..., 1:].contiguous()
-        
-        # Flatten the tokens
-        loss_fct = nn.CrossEntropyLoss(reduction='none')
-        shift_logits = shift_logits.view(-1, self.model.config.vocab_size)
-        shift_labels = shift_labels.view(-1)
-        
-        # Calculate loss per token
-        # CrossEntropyLoss returns 0 for ignore_index (-100)
-        token_losses = loss_fct(shift_logits, shift_labels)
-        
-        # Reshape back to [batch_size, seq_len]
-        batch_size = inputs['input_ids'].size(0)
-        seq_len = inputs['input_ids'].size(1) - 1
-        token_losses = token_losses.view(batch_size, seq_len)
-        
-        # Apply sample weights if provided
-        if sample_weights is not None:
-            # Ensure weights are on the correct device and reshaped for broadcasting
-            sample_weights = sample_weights.to(token_losses.device).view(batch_size, 1)
-            token_losses = token_losses * sample_weights
-            
-        # Calculate final mean loss
-        # We divide by the total number of valid tokens (unweighted) to scale gradients
-        # according to the weights (e.g., weight 0.5 -> half the gradient magnitude)
-        valid_mask = (shift_labels != -100).view(batch_size, seq_len).float()
-        num_valid_tokens = valid_mask.sum()
-        
-        # Avoid division by zero
-        if num_valid_tokens == 0:
-            final_loss = torch.tensor(0.0, device=token_losses.device, requires_grad=True)
-        else:
-            final_loss = token_losses.sum() / num_valid_tokens
-        
-        return (final_loss, outputs) if return_outputs else final_loss
+        sample_weight = inputs.pop("sample_weight", None)
+
+        # Get the exact default Trainer loss behavior
+        loss, outputs = super().compute_loss(
+            model,
+            inputs,
+            return_outputs=True,
+            num_items_in_batch=num_items_in_batch,
+        )
+
+        # Apply weight (batch size = 1 => scalar is fine)
+        if model.training and sample_weight is not None:
+            w = sample_weight.to(loss.device).float().mean()
+            loss = loss * w
+
+        return (loss, outputs) if return_outputs else loss
 
 def preprocess_logits_for_metrics(logits, labels):
     """
@@ -181,7 +134,7 @@ def preprocess_logits_for_metrics(logits, labels):
 def compute_metrics(eval_pred, tokenizer=None):
     """
     Works in two modes:
-    - Preferred: predictions are (N, 2) = [no_logit, yes_logit] from preprocess_logits_for_metrics.
+    - Preferred: predictions are (N, 2) = [yes_logit, no_logit] from preprocess_logits_for_metrics.
     - Fallback:  predictions are (N, L, V); we extract the two logits at the decision position.
     Returns {'accuracy': ...} (Trainer will prefix to 'eval_accuracy').
     """
@@ -194,21 +147,13 @@ def compute_metrics(eval_pred, tokenizer=None):
     for row in labels:
         # index of first non -100
         pos = int(np.argmax(row != -100))
-        token_id = row[pos]
-        if token_id == NO_ID:
-            true_y.append(0)
-        elif token_id == YES_ID:
-            true_y.append(1)
-        else:
-            true_y.append(-1) # Should not happen
-            
+        true_y.append(1 if row[pos] == YES_ID else 0)
     true_y = np.array(true_y, dtype=int)
 
     # Mode A: already reduced to two logits
     if preds.ndim == 2 and preds.shape[1] == 2:
-        # preds columns: 0=No, 1=Yes
-        pred_labels = np.argmax(preds, axis=1)
-        acc = accuracy_score(true_y, pred_labels)
+        yes_better = (preds[:, 0] > preds[:, 1]).astype(int)
+        acc = accuracy_score(true_y, yes_better)
         return {"accuracy": acc}
 
     # Mode B (fallback): full logits; pick decision position + yes/no columns
@@ -220,10 +165,9 @@ def compute_metrics(eval_pred, tokenizer=None):
         # gather logits at that position: (N, V)
         rows = np.arange(N)
         dec_logits = preds[rows, decision_pos, :]
-        # Order: 0=No, 1=Yes
-        yes_no = dec_logits[:, [NO_ID, YES_ID]]  # (N, 2)
-        pred_labels = np.argmax(yes_no, axis=1)
-        acc = accuracy_score(true_y, pred_labels)
+        yes_no = dec_logits[:, [YES_ID, NO_ID]]  # (N, 2)
+        yes_better = (yes_no[:, 0] > yes_no[:, 1]).astype(int)
+        acc = accuracy_score(true_y, yes_better)
         return {"accuracy": acc}
 
 def preprocess_function(examples, tokenizer, max_length=1024):
@@ -293,16 +237,16 @@ def preprocess_function(examples, tokenizer, max_length=1024):
         combined_attention_mask.append(full_mask)
         labels_for_loss.append(label_ids)
     
-    result_dict = {
+    out = {
         'input_ids': combined_input_ids,
         'attention_mask': combined_attention_mask,
         'labels': labels_for_loss
     }
-    
+
+    # keep weights if present
     if 'sample_weight' in examples:
-        result_dict['sample_weight'] = examples['sample_weight']
-        
-    return result_dict
+        out['sample_weight'] = examples['sample_weight']
+    return out
 
 def download_and_save_model(model_name, cache_dir):
     """Download and save the base model locally"""
@@ -331,38 +275,47 @@ def split_dataset_stratified(dataset, test_size=0.2, seed=42):
     """Split dataset with stratification using sklearn"""
     texts = dataset['text']
     labels = dataset['labels']
+    paper_ids = dataset['paper_id'] if 'paper_id' in dataset.column_names else None
+    sample_weights = dataset['sample_weight'] if 'sample_weight' in dataset.column_names else None
     
-    # Use sklearn for stratified split
     train_texts, test_texts, train_labels, test_labels = train_test_split(
         texts, labels, 
         test_size=test_size, 
         random_state=seed, 
         stratify=labels
     )
-    
-    # Create new datasets
-    train_dataset = Dataset.from_dict({
-        'text': train_texts,
-        'labels': train_labels
-    })
-    
-    test_dataset = Dataset.from_dict({
-        'text': test_texts,
-        'labels': test_labels
-    })
-    
+
+    # Reconstruct aligned splits (deterministic via indices)
+    # NOTE: use indices from sklearn by re-splitting indices to preserve alignment.
+    idx = np.arange(len(texts))
+    train_idx, test_idx = train_test_split(
+        idx, test_size=test_size, random_state=seed, stratify=labels
+    )
+
+    train_dict = {'text': [texts[i] for i in train_idx], 'labels': [labels[i] for i in train_idx]}
+    test_dict  = {'text': [texts[i] for i in test_idx],  'labels': [labels[i] for i in test_idx]}
+
+    if paper_ids is not None:
+        train_dict['paper_id'] = [paper_ids[i] for i in train_idx]
+        test_dict['paper_id']  = [paper_ids[i] for i in test_idx]
+    if sample_weights is not None:
+        train_dict['sample_weight'] = [sample_weights[i] for i in train_idx]
+        test_dict['sample_weight']  = [sample_weights[i] for i in test_idx]
+
+    train_dataset = Dataset.from_dict(train_dict)
+    test_dataset = Dataset.from_dict(test_dict)
     return {'train': train_dataset, 'test': test_dataset}
 
 def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None):
     """Evaluate accuracy using probability-based comparison of yes/no tokens"""
     print(f"Running probability-based accuracy evaluation on {len(eval_dataset)} samples...")
     
-    # Get token IDs for "yes", "no"
+    # Get token IDs for "yes" and "no"
     yes_token_id = tokenizer(" yes", add_special_tokens=False)['input_ids'][0]
-    no_token_id = tokenizer(" no", add_special_tokens=False)['input_ids'][0]
+    no_token_id = tokenizer(" no",  add_special_tokens=False)['input_ids'][0]
     
-    all_predictions = []
-    all_labels = []
+    all_binary_predictions = []
+    all_binary_labels = []
     total_loss = 0.0
     
     model = trainer.model
@@ -407,10 +360,7 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                     
                     # Get ground truth
                     true_token_id = labels[decision_pos]
-                    if true_token_id == no_token_id:
-                        true_label = 0
-                    else:
-                        true_label = 1
+                    true_label = 1 if true_token_id == yes_token_id else 0
                     true_labels.append(true_label)
             
             if len(batch_input_ids) > 0:
@@ -455,13 +405,11 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
                     yes_logit = logits_at_pos[yes_token_id]
                     no_logit = logits_at_pos[no_token_id]
                     
-                    # Predict based on highest logit
-                    # 0=No, 1=Yes
-                    logits_dict = {0: no_logit, 1: yes_logit}
-                    predicted_label = max(logits_dict, key=logits_dict.get)
+                    # Predict based on higher logit
+                    predicted_label = 1 if yes_logit > no_logit else 0
                     
-                    all_predictions.append(predicted_label)
-                    all_labels.append(true_label)
+                    all_binary_predictions.append(predicted_label)
+                    all_binary_labels.append(true_label)
             
             # Get loss from evaluation using original method for loss calculation
             eval_results = trainer.evaluate(eval_dataset=batch_dataset)
@@ -472,7 +420,7 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     
     # Calculate overall metrics
     avg_loss = total_loss / len(eval_dataset)
-    accuracy = accuracy_score(all_labels, all_predictions) if len(all_labels) > 0 else 0.0
+    accuracy = accuracy_score(all_binary_labels, all_binary_predictions) if len(all_binary_labels) > 0 else 0.0
     
     results = {
         'eval_loss': avg_loss,
@@ -481,29 +429,29 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     }
     
     # Add detailed metrics if requested
-    if detailed_eval and len(all_labels) > 0:
+    if detailed_eval and len(all_binary_labels) > 0:
         # Calculate precision, recall, F1
         precision, recall, f1, support = precision_recall_fscore_support(
-            all_labels, all_predictions, average='macro', zero_division=0
+            all_binary_labels, all_binary_predictions, average='macro', zero_division=0
         )
         
         # Calculate per-class metrics
         precision_per_class, recall_per_class, f1_per_class, support_per_class = precision_recall_fscore_support(
-            all_labels, all_predictions, average=None, zero_division=0
+            all_binary_labels, all_binary_predictions, average=None, zero_division=0
         )
         
         # Confusion matrix
-        cm = confusion_matrix(all_labels, all_predictions)
+        cm = confusion_matrix(all_binary_labels, all_binary_predictions)
         
         # Classification report
         class_report = classification_report(
-            all_labels, all_predictions, 
+            all_binary_labels, all_binary_predictions, 
             target_names=['No', 'Yes'], 
             zero_division=0
         )
         
         results.update({
-            'accuracy': accuracy_score(all_labels, all_predictions),
+            'binary_accuracy': accuracy_score(all_binary_labels, all_binary_predictions),
             'precision': precision,
             'recall': recall,
             'f1': f1,
@@ -518,23 +466,23 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
         print("\n" + "="*50)
         print("PROBABILITY-BASED EVALUATION METRICS")
         print("="*50)
-        print(f"Classification Accuracy: {results['accuracy']:.4f}")
-        print(f"Precision (Macro): {precision:.4f}")
-        print(f"Recall (Macro): {recall:.4f}")
-        print(f"F1-Score (Macro): {f1:.4f}")
+        print(f"Binary Classification Accuracy: {results['binary_accuracy']:.4f}")
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall: {recall:.4f}")
+        print(f"F1-Score: {f1:.4f}")
         print("\nPer-class metrics:")
-        # Handle cases where some classes might be missing in support
-        for cls_idx, cls_name in enumerate(['Reject (0)', 'Accept (1)']):
-            if cls_idx < len(precision_per_class):
-                print(f"  {cls_name} - Precision: {precision_per_class[cls_idx]:.4f}, Recall: {recall_per_class[cls_idx]:.4f}, F1: {f1_per_class[cls_idx]:.4f}")
-        
+        print(f"  Reject (0) - Precision: {precision_per_class[0]:.4f}, Recall: {recall_per_class[0]:.4f}, F1: {f1_per_class[0]:.4f}")
+        print(f"  Accept (1) - Precision: {precision_per_class[1]:.4f}, Recall: {recall_per_class[1]:.4f}, F1: {f1_per_class[1]:.4f}")
         print(f"\nConfusion Matrix:")
-        print(cm)
+        print(f"              Predicted")
+        print(f"              Reject  Accept")
+        print(f"Actual Reject   {cm[0,0]:4d}    {cm[0,1]:4d}")
+        print(f"       Accept   {cm[1,0]:4d}    {cm[1,1]:4d}")
         print(f"\nClassification Report:")
         print(class_report)
         print("="*50)
-        print("Method: Comparing logits of 'yes', 'no' tokens at decision position")
-        print("Prediction: Max logit determines class")
+        print("Method: Comparing logits of 'yes' vs 'no' tokens at decision position")
+        print("Prediction: Accept if P(yes) > P(no), else Reject")
         print("="*50)
     
     return results
@@ -559,7 +507,6 @@ def main():
     print("="*80)
     
     try:
-        # Re-parse all arguments properly in main
         parser = argparse.ArgumentParser(description="Fine-tune a language model with multi-GPU support")
         parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
@@ -567,12 +514,15 @@ def main():
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/balanced_llm", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/topcon/balanced_labels.json", help="Path to the file containing labels")
-        parser.add_argument("--metadata_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_meta.json', help="Path to the metadata json file containing rating_avg for 3-class classification")
         parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
-        parser.add_argument("--img_desc_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/img_des/img_descriptions_llm.json', help="Path to the image descriptions JSON file for vision-language support")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_4b/wl/llm", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--img_desc_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/img_des/image_descriptions_llm.json', help="Path to the image descriptions JSON file for vision-language support")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_4b/orig/ft/llm/", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=12000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
+        parser.add_argument("--metadata_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_meta.json', help="Path to metadata JSON (list of dicts with fields: id, rating_avg)")
+        parser.add_argument("--noisy_low", type=float, default=5.2, help="Lower bound (inclusive) of noisy rating_avg range")
+        parser.add_argument("--noisy_high", type=float, default=6.2, help="Upper bound (inclusive) of noisy rating_avg range")
+        parser.add_argument("--noisy_weight", type=float, default=0.5, help="Sample weight for noisy range")
         args = parser.parse_args()
 
         # Default to all visible GPUs if none provided
@@ -597,10 +547,18 @@ def main():
         MODEL_NAME = args.model_name
         DATA_FOLDER = args.data_folder
         LABELS_FILE = args.labels_file
-        METADATA_FILE = args.metadata_file # Added
         STATISTICS_FILE = args.statistics_file
         IMG_DESC_FILE = args.img_desc_file  # Added
-        OUTPUT_DIR = args.output_dir
+        METADATA_FILE = args.metadata_file
+        
+        # Add timestamp to output directory for training runs to separate them
+        if not args.eval:
+            OUTPUT_DIR = os.path.join(args.output_dir, timestamp)
+        else:
+            OUTPUT_DIR = args.output_dir
+            
+        print(f"Output directory set to: {OUTPUT_DIR}")
+
         MAX_LENGTH = args.max_length
         
         # Model directories
@@ -661,70 +619,60 @@ def main():
         NO_ID  = tokenizer(" no",  add_special_tokens=False)["input_ids"][0]
 
         # Load and prepare dataset
-        print("Loading dataset...")
+        print("Loading dataset....")
         
         # Define processed dataset cache path - include stats/img_desc in cache name if provided
-        cache_suffix = "llm_mineru_binary_weighted" # Changed suffix
+        cache_suffix = "llm_mineru_all"
         if STATISTICS_FILE:
             cache_suffix += "_with_stats"
         if IMG_DESC_FILE:
             cache_suffix += "_with_img_desc"
+        if METADATA_FILE:
+            cache_suffix += "_with_rating_weights_5262"
         PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/dataset_cache/balanced/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
-        
-        # Check if processed dataset exists by looking for the dataset_info.json file
+
+        dataset_builder = TextDatasetBuilder(
+            DATA_FOLDER,
+            LABELS_FILE,
+            statistics_file=STATISTICS_FILE,
+            img_desc_file=IMG_DESC_FILE,
+            max_length=MAX_LENGTH,
+            metadata_file=METADATA_FILE,
+            noisy_low=args.noisy_low,
+            noisy_high=args.noisy_high,
+            noisy_weight=args.noisy_weight,
+        )
+
         dataset_info_path = os.path.join(PROCESSED_DATASET_CACHE, "dataset_info.json")
         if os.path.exists(dataset_info_path) and os.path.isdir(PROCESSED_DATASET_CACHE):
             try:
                 print("Loading cached processed dataset...")
                 dataset = load_from_disk(PROCESSED_DATASET_CACHE)
-                # Still need to create dataset_builder for stats
-                dataset_builder = TextDatasetBuilder(
-                    DATA_FOLDER, 
-                    LABELS_FILE, 
-                    statistics_file=STATISTICS_FILE,
-                    img_desc_file=IMG_DESC_FILE,
-                    metadata_file=METADATA_FILE, # Added
-                    max_length=MAX_LENGTH
-                )
                 print("Successfully loaded cached dataset!")
             except Exception as e:
                 print(f"Failed to load cached dataset: {e}")
                 print("Processing dataset from scratch...")
-                dataset_builder = TextDatasetBuilder(
-                    DATA_FOLDER, 
-                    LABELS_FILE, 
-                    statistics_file=STATISTICS_FILE,
-                    img_desc_file=IMG_DESC_FILE,
-                    metadata_file=METADATA_FILE, # Added
-                    max_length=MAX_LENGTH
-                )
                 dataset = dataset_builder.load_dataset_with_ids()
-                
-                # Save processed dataset to cache
                 print(f"Saving processed dataset to {PROCESSED_DATASET_CACHE}")
                 dataset.save_to_disk(PROCESSED_DATASET_CACHE)
         else:
             print("No cached dataset found. Processing dataset for the first time...")
-            dataset_builder = TextDatasetBuilder(
-                DATA_FOLDER, 
-                LABELS_FILE, 
-                statistics_file=STATISTICS_FILE,
-                img_desc_file=IMG_DESC_FILE,
-                metadata_file=METADATA_FILE, # Added
-                max_length=MAX_LENGTH
-            )
             dataset = dataset_builder.load_dataset_with_ids()
-            
-            # Save processed dataset to cache
             print(f"Saving processed dataset to {PROCESSED_DATASET_CACHE}")
             dataset.save_to_disk(PROCESSED_DATASET_CACHE)
-        
+
+        # If cache was built before weights existed, attach them now (and re-save).
+        if METADATA_FILE and "sample_weight" not in dataset.column_names:
+            print("Cached dataset missing `sample_weight`; adding from metadata...")
+            dataset = dataset_builder.add_sample_weights_to_dataset(dataset)
+            print(f"Updating cached dataset at {PROCESSED_DATASET_CACHE}")
+            dataset.save_to_disk(PROCESSED_DATASET_CACHE)
+
         # Print dataset configuration
         print("\nDataset Configuration:")
         print(f"  Data folder: {DATA_FOLDER}")
         print(f"  Labels file: {LABELS_FILE}")
-        print(f"  Metadata file: {METADATA_FILE if METADATA_FILE else 'Not provided'}")
         print(f"  Statistics file: {STATISTICS_FILE if STATISTICS_FILE else 'Not provided'}")
         print(f"  Image descriptions file: {IMG_DESC_FILE if IMG_DESC_FILE else 'Not provided'}")  # Added
         print(f"  Max length: {MAX_LENGTH}")
@@ -738,9 +686,10 @@ def main():
         
         # Split dataset using sklearn for proper stratification
         print("Splitting dataset...")
-        train_test_split_result = split_dataset_stratified(dataset, test_size=0.2, seed=42)
+        train_test_split_result = split_dataset_stratified(dataset, test_size=0.1, seed=42)
         train_dataset = train_test_split_result['train']
         eval_dataset = train_test_split_result['test']
+        small_eval_dataset = eval_dataset.select(range(min(100, len(eval_dataset))))
 
         # Create a smaller subset for faster evaluation during training
         small_eval_dataset = eval_dataset.select(range(min(100, len(eval_dataset))))  # Even smaller for faster eval
@@ -765,25 +714,22 @@ def main():
         train_dataset = train_dataset.map(
             lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
             batched=True,
-            batch_size=100,  # Process in smaller batches
-            remove_columns=cols_to_remove  # Remove original columns 
+            batch_size=100,
+            remove_columns=cols_to_remove
         )
-        
         eval_dataset = eval_dataset.map(
             lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
             batched=True,
-            batch_size=100,  # Process in smaller batches
-            remove_columns=cols_to_remove  # Remove original columns 
+            batch_size=100,
+            remove_columns=cols_to_remove
         )
-        
-        # Also tokenize the small eval dataset for periodic evaluation
         small_eval_dataset = small_eval_dataset.map(
             lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
             batched=True,
             batch_size=100,
             remove_columns=cols_to_remove
         )
-        
+
         print("Tokenization complete")
         print(f"Train dataset columns: {train_dataset.column_names}")
         print(f"Train dataset sample (initial part): {str(train_dataset[0])[:50]}...")
@@ -793,7 +739,7 @@ def main():
         print(f"Sample input_ids type: {type(sample['input_ids'])}")
         print(f"Sample input_ids length: {len(sample['input_ids'])}")
         print(f"Sample labels type: {type(sample['labels'])}")
-        print(f"Sample labels last 20 values: {sample['labels'][-20:]}")
+        print(f"Sample labels value: {sample['labels']}")
         
         # Load model with automatic device mapping for multi-GPU
         print("Loading model with automatic device mapping across GPUs...")
@@ -814,7 +760,7 @@ def main():
                 BASE_MODEL_CACHE,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
+                max_memory={i: "78GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
                 offload_folder="./offload",  # Offload to disk if needed
                 attn_implementation="sdpa"  # Use SDPA attention implementation
             )
@@ -887,9 +833,9 @@ def main():
                 tokenizer=tokenizer,
                 data_collator=data_collator,
                 preprocess_logits_for_metrics=preprocess_logits_for_metrics,
-                compute_metrics=lambda ep: compute_metrics(ep)
+                compute_metrics=lambda ep: compute_metrics(ep),
             )
-            
+
             # Train the model
             print("Starting training...")
             
@@ -952,7 +898,7 @@ def main():
                 device_map="auto",
                 max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
                 offload_folder="./offload",
-                attn_implementation="sdpa"  # Use SDPA attention implementation
+                attn_implementation="sdpa"  # Use Flash Attention 2 implementation
             )
             
             # Clear cache again after loading

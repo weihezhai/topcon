@@ -110,7 +110,7 @@ class WeightedTrainer(Trainer):
         weights = inputs.pop("weight", None)
         
         # Save labels BEFORE passing to model
-        labels = inputs.get("labels")
+        labels = inputs.get("labels").clone() if "labels" in inputs else None
         
         if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
@@ -132,26 +132,43 @@ class WeightedTrainer(Trainer):
                 shift_logits = logits[..., :-1, :].contiguous()
                 shift_labels = labels[..., 1:].contiguous()
                 
+                # Create mask for valid (non-padding) tokens
+                valid_mask = (shift_labels != -100)
+                
                 # Flatten the tokens
-                loss_fct = nn.CrossEntropyLoss(reduction='none', ignore_index=-100)
-                shift_logits = shift_logits.view(-1, model.config.vocab_size)
-                shift_labels = shift_labels.view(-1)
+                loss_fct = nn.CrossEntropyLoss(reduction='none')
+                shift_logits_flat = shift_logits.view(-1, logits.size(-1))
+                shift_labels_flat = shift_labels.view(-1)
+                
+                # Replace -100 with 0 temporarily for loss computation (will be masked out)
+                shift_labels_flat_safe = shift_labels_flat.clone()
+                shift_labels_flat_safe[shift_labels_flat == -100] = 0
                 
                 # Enable model parallelism
-                shift_labels = shift_labels.to(shift_logits.device)
-                loss = loss_fct(shift_logits, shift_labels)
+                shift_labels_flat_safe = shift_labels_flat_safe.to(shift_logits_flat.device)
+                loss_flat = loss_fct(shift_logits_flat, shift_labels_flat_safe)
                 
                 # Reshape back to [batch_size, seq_len]
                 batch_size = logits.size(0)
                 seq_len = logits.size(1) - 1
-                loss = loss.view(batch_size, seq_len)
+                loss = loss_flat.view(batch_size, seq_len)
                 
-                # Apply weights: [batch_size] -> [batch_size, seq_len]
-                weights = weights.to(loss.device).float().unsqueeze(1).expand_as(loss)
-                loss = loss * weights
+                # Apply valid mask (zero out padding positions)
+                valid_mask = valid_mask.to(loss.device)
+                loss = loss * valid_mask.float()
                 
-                # Mean over all tokens (ignoring padding which is already 0 from ignore_index)
-                loss = loss.sum() / (labels[..., 1:] != -100).sum()
+                # Apply sample weights: [batch_size] -> [batch_size, 1]
+                weights = weights.to(loss.device).float().unsqueeze(1)
+                
+                # Compute weighted mean per sample, then average across samples
+                # Sum loss per sample / count of valid tokens per sample
+                valid_counts = valid_mask.sum(dim=1).float().clamp(min=1)  # [batch_size]
+                per_sample_loss = loss.sum(dim=1) / valid_counts  # [batch_size]
+                
+                # Apply weights and compute mean
+                weighted_loss = per_sample_loss * weights.squeeze(1)
+                loss = weighted_loss.mean()
+                
             else:
                 # Use model's built-in loss if no weights
                 if hasattr(outputs, "loss") and outputs.loss is not None:
@@ -162,7 +179,7 @@ class WeightedTrainer(Trainer):
                     shift_logits = logits[..., :-1, :].contiguous()
                     shift_labels = labels[..., 1:].contiguous()
                     loss_fct = nn.CrossEntropyLoss(ignore_index=-100)
-                    loss = loss_fct(shift_logits.view(-1, model.config.vocab_size), 
+                    loss = loss_fct(shift_logits.view(-1, logits.size(-1)), 
                                    shift_labels.view(-1).to(shift_logits.device))
 
         return (loss, outputs) if return_outputs else loss

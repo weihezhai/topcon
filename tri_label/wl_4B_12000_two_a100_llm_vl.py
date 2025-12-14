@@ -175,6 +175,33 @@ class WeightedTrainer(Trainer):
 
         return (loss, outputs) if return_outputs else loss
 
+# def preprocess_logits_for_metrics(logits, labels):
+#     """
+#     Reduce (bs, seq, vocab) -> (bs, 2) keeping only the two logits we need
+#     at the *decision position* (first non-ignored label).
+#     """
+#     if isinstance(logits, tuple):
+#         logits = logits[0]  # some models return (logits, past_key_values, ...)
+#     # logits: torch.FloatTensor [bs, seq, vocab]
+#     # labels: torch.LongTensor  [bs, seq]
+#     with torch.no_grad():
+#         bs = logits.size(0)
+#         # first position where label != -100 for each sample (this is the index of " yes"/" no")
+#         first_pos = (labels.ne(-100).int().argmax(dim=1))  # [bs]
+#         rows = torch.arange(bs, device=logits.device)
+        
+#         # FIX: We need the logit from the PREVIOUS position (the prompt end, e.g., ":")
+#         # because logits[t] predicts labels[t+1].
+#         decision_indices = first_pos - 1
+        
+#         # logits at decision position: [bs, vocab]
+#         dec_logits = logits[rows, decision_indices, :]
+#         # keep only yes/no columns -> [bs, 2]
+#         two = dec_logits.index_select(
+#             dim=1, index=torch.tensor([YES_ID, NO_ID], device=logits.device)
+#         )
+#         return two
+
 def preprocess_logits_for_metrics(logits, labels):
     """
     Reduce (bs, seq, vocab) -> (bs, 2) keeping only the two logits we need
@@ -186,16 +213,11 @@ def preprocess_logits_for_metrics(logits, labels):
     # labels: torch.LongTensor  [bs, seq]
     with torch.no_grad():
         bs = logits.size(0)
-        # first position where label != -100 for each sample (this is the index of " yes"/" no")
+        # first position where label != -100 for each sample
         first_pos = (labels.ne(-100).int().argmax(dim=1))  # [bs]
         rows = torch.arange(bs, device=logits.device)
-        
-        # FIX: We need the logit from the PREVIOUS position (the prompt end, e.g., ":")
-        # because logits[t] predicts labels[t+1].
-        decision_indices = first_pos - 1
-        
         # logits at decision position: [bs, vocab]
-        dec_logits = logits[rows, decision_indices, :]
+        dec_logits = logits[rows, first_pos, :]
         # keep only yes/no columns -> [bs, 2]
         two = dec_logits.index_select(
             dim=1, index=torch.tensor([YES_ID, NO_ID], device=logits.device)

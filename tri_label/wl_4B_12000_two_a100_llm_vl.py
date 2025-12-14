@@ -104,103 +104,68 @@ class CustomDataCollator:
 class WeightedTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         """
-        How the loss is computed by Trainer. By default, all models return the loss in the first element.
-        Subclass and override for custom behavior.
+        Compute loss with sample weighting for noisy examples.
         """
         # Extract weights and remove from inputs so model doesn't complain
         weights = inputs.pop("weight", None)
         
+        # Save labels BEFORE passing to model
+        labels = inputs.get("labels")
+        
         if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
-        else:
-            labels = None
         
         outputs = model(**inputs)
         
         # Save past state if it exists
-        # TODO: this needs to be fixed and made cleaner later.
         if self.args.past_index >= 0:
             self._past = outputs[self.args.past_index]
 
-        if labels is not None:
-            # We don't support label smoothing with custom weights easily here
+        if self.label_smoother is not None and labels is not None:
             loss = self.label_smoother(outputs, labels)
         else:
-            # Standard causal LM loss calculation with weights
-            logits = outputs.get("logits")
-            labels = inputs.get("labels")
-            
-            # Shift so that tokens < n predict n
-            shift_logits = logits[..., :-1, :].contiguous()
-            shift_labels = labels[..., 1:].contiguous()
-            
-            # Flatten the tokens
-            loss_fct = nn.CrossEntropyLoss(reduction='none')
-            shift_logits = shift_logits.view(-1, self.model.config.vocab_size)
-            shift_labels = shift_labels.view(-1)
-            
-            # Enable model parallelism
-            shift_labels = shift_labels.to(shift_logits.device)
-            loss = loss_fct(shift_logits, shift_labels)
-            
-            # Reshape back to [batch_size, seq_len]
-            batch_size = logits.size(0)
-            seq_len = logits.size(1) - 1
-            loss = loss.view(batch_size, seq_len)
-            
-            # Apply weights if available
-            if weights is not None:
-                # weights is [batch_size], expand to [batch_size, seq_len]
-                weights = weights.to(loss.device).unsqueeze(1).expand_as(loss)
+            if weights is not None and labels is not None:
+                # Custom weighted loss calculation
+                logits = outputs.get("logits")
                 
-                # Create a mask for valid tokens (where label != -100)
-                # We need to use the shifted labels because loss is calculated on shifted data
-                valid_token_mask = (shift_labels != -100).float()
+                # Shift so that tokens < n predict n
+                shift_logits = logits[..., :-1, :].contiguous()
+                shift_labels = labels[..., 1:].contiguous()
                 
-                # Zero out weights where tokens are ignored (just to be safe)
-                weights = weights * valid_token_mask
+                # Flatten the tokens
+                loss_fct = nn.CrossEntropyLoss(reduction='none', ignore_index=-100)
+                shift_logits = shift_logits.view(-1, model.config.vocab_size)
+                shift_labels = shift_labels.view(-1)
                 
-                # Multiply loss by weights
+                # Enable model parallelism
+                shift_labels = shift_labels.to(shift_logits.device)
+                loss = loss_fct(shift_logits, shift_labels)
+                
+                # Reshape back to [batch_size, seq_len]
+                batch_size = logits.size(0)
+                seq_len = logits.size(1) - 1
+                loss = loss.view(batch_size, seq_len)
+                
+                # Apply weights: [batch_size] -> [batch_size, seq_len]
+                weights = weights.to(loss.device).float().unsqueeze(1).expand_as(loss)
                 loss = loss * weights
                 
-                # CORRECT NORMALIZATION:
-                # Divide by the sum of weights for the VALID tokens only.
-                # Adding a small epsilon (1e-8) prevents division by zero.
-                sum_of_weights = weights.sum() + 1e-8
-                loss = loss.sum() / sum_of_weights
+                # Mean over all tokens (ignoring padding which is already 0 from ignore_index)
+                loss = loss.sum() / (labels[..., 1:] != -100).sum()
             else:
-                # Standard reduction excluding ignored tokens
-                valid_token_mask = (shift_labels != -100).float()
-                loss = loss.sum() / (valid_token_mask.sum() + 1e-8)
+                # Use model's built-in loss if no weights
+                if hasattr(outputs, "loss") and outputs.loss is not None:
+                    loss = outputs.loss
+                else:
+                    # Fallback: compute loss manually
+                    logits = outputs.get("logits")
+                    shift_logits = logits[..., :-1, :].contiguous()
+                    shift_labels = labels[..., 1:].contiguous()
+                    loss_fct = nn.CrossEntropyLoss(ignore_index=-100)
+                    loss = loss_fct(shift_logits.view(-1, model.config.vocab_size), 
+                                   shift_labels.view(-1).to(shift_logits.device))
 
         return (loss, outputs) if return_outputs else loss
-
-# def preprocess_logits_for_metrics(logits, labels):
-#     """
-#     Reduce (bs, seq, vocab) -> (bs, 2) keeping only the two logits we need
-#     at the *decision position* (first non-ignored label).
-#     """
-#     if isinstance(logits, tuple):
-#         logits = logits[0]  # some models return (logits, past_key_values, ...)
-#     # logits: torch.FloatTensor [bs, seq, vocab]
-#     # labels: torch.LongTensor  [bs, seq]
-#     with torch.no_grad():
-#         bs = logits.size(0)
-#         # first position where label != -100 for each sample (this is the index of " yes"/" no")
-#         first_pos = (labels.ne(-100).int().argmax(dim=1))  # [bs]
-#         rows = torch.arange(bs, device=logits.device)
-        
-#         # FIX: We need the logit from the PREVIOUS position (the prompt end, e.g., ":")
-#         # because logits[t] predicts labels[t+1].
-#         decision_indices = first_pos - 1
-        
-#         # logits at decision position: [bs, vocab]
-#         dec_logits = logits[rows, decision_indices, :]
-#         # keep only yes/no columns -> [bs, 2]
-#         two = dec_logits.index_select(
-#             dim=1, index=torch.tensor([YES_ID, NO_ID], device=logits.device)
-#         )
-#         return two
 
 def preprocess_logits_for_metrics(logits, labels):
     """
@@ -213,11 +178,16 @@ def preprocess_logits_for_metrics(logits, labels):
     # labels: torch.LongTensor  [bs, seq]
     with torch.no_grad():
         bs = logits.size(0)
-        # first position where label != -100 for each sample
+        # first position where label != -100 for each sample (this is the index of " yes"/" no")
         first_pos = (labels.ne(-100).int().argmax(dim=1))  # [bs]
         rows = torch.arange(bs, device=logits.device)
+        
+        # FIX: We need the logit from the PREVIOUS position (the prompt end, e.g., ":")
+        # because logits[t] predicts labels[t+1].
+        decision_indices = first_pos - 1
+        
         # logits at decision position: [bs, vocab]
-        dec_logits = logits[rows, first_pos, :]
+        dec_logits = logits[rows, decision_indices, :]
         # keep only yes/no columns -> [bs, 2]
         two = dec_logits.index_select(
             dim=1, index=torch.tensor([YES_ID, NO_ID], device=logits.device)
@@ -929,7 +899,7 @@ def main():
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
-                eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
+                eval_dataset=small_eval_dataset  # Use smaller eval dataset for periodic evaluation
                 tokenizer=tokenizer,
                 data_collator=data_collator,
                 preprocess_logits_for_metrics=preprocess_logits_for_metrics,

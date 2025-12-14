@@ -814,7 +814,7 @@ def main():
             
             # Initialize trainer
             trainer = Trainer(
-                loss_func=compute_loss_func,
+                compute_loss_func=compute_loss_func,
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
@@ -912,7 +912,7 @@ def main():
         )
         
         trainer = Trainer(
-            loss_func=compute_loss_func,
+            compute_loss_func=compute_loss_func,
             model=model,
             args=training_args_eval,
             tokenizer=tokenizer,

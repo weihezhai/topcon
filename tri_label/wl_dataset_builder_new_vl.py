@@ -415,6 +415,7 @@ class TextDatasetBuilder:
                 return {}
 
             rating_map = {}
+            noisy_count = 0
             for item in data:
                 if not isinstance(item, dict):
                     continue
@@ -434,8 +435,11 @@ class TextDatasetBuilder:
                     val = None
                 
                 rating_map[str(pid)] = val
+                if val is not None and self.noisy_low <= val <= self.noisy_high:
+                    noisy_count += 1
             
             print(f"Loaded {len(rating_map)} ratings from metadata.")
+            print(f"Amount of data in noisy range [{self.noisy_low}, {self.noisy_high}]: {noisy_count}")
             if rating_map:
                 # Filter out None values for display
                 valid_ratings = {k: v for k, v in rating_map.items() if v is not None}

@@ -88,7 +88,6 @@ class CustomDataCollator:
 class WeightedTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         sample_weight = inputs.pop("sample_weight", None)
-        print(f"Sample weight in compute_loss: {sample_weight}")
 
         # Get the exact default Trainer loss behavior
         loss, outputs = super().compute_loss(
@@ -102,7 +101,6 @@ class WeightedTrainer(Trainer):
         if model.training and sample_weight is not None:
             w = sample_weight.to(loss.device).float().mean()
             loss = loss * w
-        print(f"Computed loss: {loss.item()}")
 
         return (loss, outputs) if return_outputs else loss
 
@@ -656,23 +654,12 @@ def main():
             print(f"Saving processed dataset to {PROCESSED_DATASET_CACHE}")
             dataset.save_to_disk(PROCESSED_DATASET_CACHE)
 
-        # Always refresh weights if metadata is provided to ensure correctness
-        if METADATA_FILE:
-            print("Refreshing sample weights based on current metadata and parameters...")
-            if "paper_id" in dataset.column_names:
-                dataset = dataset_builder.add_sample_weights_to_dataset(dataset)
-                print(f"Updating cached dataset at {PROCESSED_DATASET_CACHE}")
-                dataset.save_to_disk(PROCESSED_DATASET_CACHE)
-            else:
-                print("Warning: dataset missing 'paper_id' column, cannot update weights.")
-
-        # Check weight distribution
-        if "sample_weight" in dataset.column_names:
-            weights = dataset["sample_weight"]
-            from collections import Counter
-            # Convert to python float to avoid tensor formatting issues in print
-            w_counts = Counter([float(w) for w in weights])
-            print(f"Sample weight distribution: {w_counts}")
+        # If cache was built before weights existed, attach them now (and re-save).
+        if METADATA_FILE and "sample_weight" not in dataset.column_names:
+            print("Cached dataset missing `sample_weight`; adding from metadata...")
+            dataset = dataset_builder.add_sample_weights_to_dataset(dataset)
+            print(f"Updating cached dataset at {PROCESSED_DATASET_CACHE}")
+            dataset.save_to_disk(PROCESSED_DATASET_CACHE)
 
         # Print dataset configuration
         print("\nDataset Configuration:")

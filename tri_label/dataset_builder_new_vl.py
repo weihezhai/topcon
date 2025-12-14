@@ -5,13 +5,13 @@ import csv
 from datasets import Dataset
 
 class TextDatasetBuilder:
-    def __init__(self, data_folder, labels_file, statistics_file=None, img_desc_file=None, metadata_file=None, max_length=1024):
+    def __init__(self, data_folder, labels_file, statistics_file=None, img_desc_file=None, max_length=1024, metadata_file=None):
         self.data_folder = data_folder
         self.labels_file = labels_file
         self.statistics_file = statistics_file
         self.img_desc_file = img_desc_file
-        self.metadata_file = metadata_file
         self.max_length = max_length
+        self.metadata_file = metadata_file
         
     def load_labels(self):
         """Load labels from JSON file"""
@@ -30,43 +30,6 @@ class TextDatasetBuilder:
         except Exception as e:
             print(f"Error loading image descriptions: {e}")
             return {}
-
-    def load_metadata_ratings(self):
-        """Load metadata and create a mapping of paper_id -> rating_avg"""
-        if not self.metadata_file or not os.path.exists(self.metadata_file):
-            print(f"Warning: Metadata file not found at {self.metadata_file}")
-            return {}
-        
-        try:
-            with open(self.metadata_file, 'r', encoding='utf-8') as f:
-                metadata_list = json.load(f)
-            
-            # Create mapping from id to rating_avg
-            rating_map = {}
-            for item in metadata_list:
-                if 'id' in item and 'rating_avg' in item:
-                    rating_map[item['id']] = item['rating_avg']
-            return rating_map
-        except Exception as e:
-            print(f"Error loading metadata: {e}")
-            return {}
-
-    def calculate_sample_weight(self, rating_avg):
-        """
-        Calculate sample weight based on rating_avg.
-        Down-weight noisy examples (5.4 <= rating <= 6.2) to 0.5.
-        Default weight is 1.0.
-        """
-        if rating_avg is None:
-            return 1.0
-            
-        try:
-            rating = float(rating_avg)
-            if 5.4 <= rating <= 6.2:
-                return 0.5
-            return 1.0
-        except (ValueError, TypeError):
-            return 1.0
 
     def _extract_figure_number(self, caption):
         """Extract figure number from caption string (e.g., 'Figure 1: ...' -> '1')"""
@@ -420,20 +383,65 @@ class TextDatasetBuilder:
         else:
             return ""
     
+    def load_metadata_rating_avg(self):
+        """Load metadata JSON (list of dicts) and return mapping: paper_id(str) -> rating_avg(float|None)."""
+        if not self.metadata_file or not os.path.exists(self.metadata_file):
+            return {}
+
+        try:
+            with open(self.metadata_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if not isinstance(data, list):
+                print(f"Warning: metadata_file is not a list: {self.metadata_file}")
+                return {}
+
+            out = {}
+            for item in data:
+                if not isinstance(item, dict):
+                    continue
+                pid = item.get("id")
+                if pid is None:
+                    continue
+                raw = item.get("rating_avg", None)
+                try:
+                    rating = float(raw) if raw is not None else None
+                except Exception:
+                    rating = None
+                out[str(pid)] = rating
+            return out
+        except Exception as e:
+            print(f"Error loading metadata: {e}")
+            return {}
+
+    def get_sample_weight_from_rating(self, rating_avg):
+        """Down-weight noisy samples: 0.5 if rating_avg in [5.4, 6.2], else 1.0."""
+        try:
+            if rating_avg is None:
+                return 1.0
+            r = float(rating_avg)
+            return 0.5 if (5.4 <= r <= 6.2) else 1.0
+        except Exception:
+            return 1.0
+
     def load_dataset(self):
         """Load JSON files and create dataset with labels"""
         texts = []
         labels = []
-        
+        rating_avgs = []
+        sample_weights = []
+
         # Load labels dictionary
         labels_dict = self.load_labels()
-        
+
         # Load statistics dictionary
         stats_dict = self.load_statistics()
 
         # Load image descriptions
         all_img_descs = self.load_image_descriptions()
-        
+
+        # Load metadata (rating_avg)
+        rating_map = self.load_metadata_rating_avg()
+
         missing_labels = []
         processed_files = 0
         
@@ -459,23 +467,28 @@ class TextDatasetBuilder:
             if paper_id in labels_dict:
                 status = labels_dict[paper_id]
                 label = self.get_label_from_status(status)
-                
+
                 try:
                     # Get image descriptions for this paper
                     paper_img_descs = all_img_descs.get(paper_id, {})
 
                     # Extract content from JSON
                     text = self._extract_paper_content(filepath, paper_id, paper_img_descs)
-                    if text:  # Only add non-empty texts
+                    if text:
                         # Count references in the text
                         reference_count = self.count_references(text)
                         
                         # Add statistics at the end of the text
                         stats_str = self.format_statistics(paper_id, stats_dict, reference_count)
                         text_with_stats = text + stats_str
-                        
+
+                        r_avg = rating_map.get(str(paper_id), None)
+                        w = self.get_sample_weight_from_rating(r_avg)
+
                         texts.append(text_with_stats)
                         labels.append(label)
+                        rating_avgs.append(r_avg)
+                        sample_weights.append(w)
                         processed_files += 1
                 except Exception as e:
                     print(f"Error processing {filepath}: {e}")
@@ -496,7 +509,9 @@ class TextDatasetBuilder:
         
         return Dataset.from_dict({
             'text': texts,
-            'labels': labels
+            'labels': labels,
+            'rating_avg': rating_avgs,
+            'sample_weight': sample_weights,
         })
     
     def load_dataset_with_ids(self):
@@ -504,20 +519,21 @@ class TextDatasetBuilder:
         texts = []
         labels = []
         paper_ids = []
-        weights = []
-        
+        rating_avgs = []
+        sample_weights = []
+
         # Load labels dictionary
         labels_dict = self.load_labels()
-        
+
         # Load statistics dictionary
         stats_dict = self.load_statistics()
 
         # Load image descriptions
         all_img_descs = self.load_image_descriptions()
-        
-        # Load metadata ratings
-        rating_map = self.load_metadata_ratings()
-        
+
+        # Load metadata (rating_avg)
+        rating_map = self.load_metadata_rating_avg()
+
         # Process subdirectories in sorted order for consistency (subdirectory name IS the paper ID)
         for paper_id in sorted(os.listdir(self.data_folder)):
             subdir_path = os.path.join(self.data_folder, paper_id)
@@ -540,39 +556,40 @@ class TextDatasetBuilder:
             if paper_id in labels_dict:
                 status = labels_dict[paper_id]
                 label = self.get_label_from_status(status)
-                
+
                 try:
                     # Get image descriptions for this paper
                     paper_img_descs = all_img_descs.get(paper_id, {})
 
                     # Extract content from JSON
                     text = self._extract_paper_content(filepath, paper_id, paper_img_descs)
-                    if text:  # Only add non-empty texts
+                    if text:
                         # Count references in the text
                         reference_count = self.count_references(text)
                         
                         # Add statistics at the end of the text
                         stats_str = self.format_statistics(paper_id, stats_dict, reference_count)
                         text_with_stats = text + stats_str
-                        
-                        # Calculate weight
-                        rating = rating_map.get(paper_id)
-                        weight = self.calculate_sample_weight(rating)
-                        
+
+                        r_avg = rating_map.get(str(paper_id), None)
+                        w = self.get_sample_weight_from_rating(r_avg)
+
                         texts.append(text_with_stats)
                         labels.append(label)
                         paper_ids.append(paper_id)
-                        weights.append(weight)
+                        rating_avgs.append(r_avg)
+                        sample_weights.append(w)
                 except Exception as e:
                     continue
-        
+
         return Dataset.from_dict({
             'text': texts,
             'labels': labels,
             'paper_id': paper_ids,
-            'weight': weights
+            'rating_avg': rating_avgs,
+            'sample_weight': sample_weights,
         })
-    
+
     def get_dataset_stats(self, dataset):
         """Get dataset statistics"""
         import pandas as pd

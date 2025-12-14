@@ -24,17 +24,17 @@ from transformers import (
     AutoModelForCausalLM,
     TrainingArguments, 
     Trainer,
-    DataCollatorForLanguageModeling,  # Changed for causal LM
+    DataCollatorForLanguageModeling,
     default_data_collator
 )
-# Removed LoRA - using full fine-tuning
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix, classification_report
 from sklearn.model_selection import train_test_split
 import numpy as np
 import torch.nn as nn
+import torch.nn.functional as F
 
 # Import the dataset builder
-from wl_dataset_builder_new_vl import TextDatasetBuilder
+from dataset_builder_new_vl import TextDatasetBuilder
 from datasets import load_from_disk
 
 from contextlib import contextmanager
@@ -65,117 +65,144 @@ class CustomDataCollator:
     def __call__(self, features):
         # Find the maximum length in this batch
         max_len = max(len(f['input_ids']) for f in features)
-        max_len = min(max_len, self.max_length)  # Don't exceed max_length
-        
+        max_len = min(max_len, self.max_length)
+
         batch = {
             'input_ids': [],
             'attention_mask': [],
-            'labels': []
+            'labels': [],
+            'sample_weight': []
         }
-        
-        # Handle weights if present
-        has_weights = 'weight' in features[0]
-        if has_weights:
-            batch['weight'] = []
-        
+
         for feature in features:
             input_ids = feature['input_ids'][:max_len]
             attention_mask = feature['attention_mask'][:max_len]
             labels = feature['labels'][:max_len]
-            
-            # Pad to max_len
+            w = float(feature.get('sample_weight', 1.0))
+
             pad_length = max_len - len(input_ids)
             if pad_length > 0:
                 input_ids.extend([self.tokenizer.pad_token_id] * pad_length)
                 attention_mask.extend([0] * pad_length)
                 labels.extend([-100] * pad_length)
-            
+
             batch['input_ids'].append(input_ids)
             batch['attention_mask'].append(attention_mask)
             batch['labels'].append(labels)
-            
-            if has_weights:
-                batch['weight'].append(feature['weight'])
-        
-        # Convert to tensors
+            batch['sample_weight'].append(w)
+
         batch = {k: torch.tensor(v) for k, v in batch.items()}
+        batch['sample_weight'] = batch['sample_weight'].to(dtype=torch.float32)
         return batch
 
-class WeightedTrainer(Trainer):
-    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
-        """
-        How the loss is computed by Trainer. By default, all models return the loss in the first element.
-        Subclass and override for custom behavior.
-        """
-        # Extract weights and remove from inputs so model doesn't complain
-        weights = inputs.pop("weight", None)
-        
-        if self.label_smoother is not None and "labels" in inputs:
-            labels = inputs.pop("labels")
-        else:
-            labels = None
-        
-        outputs = model(**inputs)
-        
-        # Save past state if it exists
-        # TODO: this needs to be fixed and made cleaner later.
-        if self.args.past_index >= 0:
-            self._past = outputs[self.args.past_index]
+class WeightedLossTrainer(Trainer):
+    """
+    Apply per-sample weights for causal LM classification-style prompting.
+    Expects `sample_weight: float` in the batch.
+    """
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+        sample_weight = inputs.pop("sample_weight", None)  # IMPORTANT: don't pass to model.forward
+        labels = inputs.get("labels", None)
 
-        if labels is not None:
-            # We don't support label smoothing with custom weights easily here
-            loss = self.label_smoother(outputs, labels)
+        outputs = model(**inputs)
+        logits = outputs.logits
+
+        # If no labels, fall back
+        if labels is None:
+            loss = outputs.loss if hasattr(outputs, "loss") else None
+            return (loss, outputs) if return_outputs else loss
+
+        # Standard causal LM shift
+        shift_logits = logits[..., :-1, :].contiguous()
+        shift_labels = labels[..., 1:].contiguous()
+
+        # Token-wise loss, masked
+        token_loss = F.cross_entropy(
+            shift_logits.view(-1, shift_logits.size(-1)),
+            shift_labels.view(-1),
+            reduction="none",
+            ignore_index=-100,
+        ).view(shift_labels.size())
+
+        mask = shift_labels.ne(-100)
+        denom = mask.sum(dim=1).clamp_min(1)
+        per_sample_loss = (token_loss * mask).sum(dim=1) / denom  # (bs,)
+
+        if sample_weight is not None and model.training:
+            w = sample_weight.to(device=per_sample_loss.device, dtype=per_sample_loss.dtype)
+            loss = (per_sample_loss * w).sum() / w.sum().clamp_min(1e-12)
         else:
-            # Standard causal LM loss calculation with weights
-            logits = outputs.get("logits")
-            labels = inputs.get("labels")
-            
-            # Shift so that tokens < n predict n
-            shift_logits = logits[..., :-1, :].contiguous()
-            shift_labels = labels[..., 1:].contiguous()
-            
-            # Flatten the tokens
-            loss_fct = nn.CrossEntropyLoss(reduction='none')
-            shift_logits = shift_logits.view(-1, self.model.config.vocab_size)
-            shift_labels = shift_labels.view(-1)
-            
-            # Enable model parallelism
-            shift_labels = shift_labels.to(shift_logits.device)
-            loss = loss_fct(shift_logits, shift_labels)
-            
-            # Reshape back to [batch_size, seq_len]
-            batch_size = logits.size(0)
-            seq_len = logits.size(1) - 1
-            loss = loss.view(batch_size, seq_len)
-            
-            # Calculate valid token mask (where labels != -100)
-            valid_mask = (shift_labels.view(batch_size, seq_len) != -100).float()
-            num_valid_tokens = valid_mask.sum()
-            
-            # Apply weights if available
-            if weights is not None:
-                # weights is [batch_size], expand to [batch_size, seq_len]
-                # Ensure weights are same dtype as loss (e.g. bf16)
-                weights = weights.to(loss.device).to(loss.dtype).unsqueeze(1).expand_as(loss)
-                
-                # Apply weights to loss
-                loss = loss * weights
-                
-                # Normalize by number of valid tokens (Mean(Loss * Weight))
-                # This scales the gradients by the weight magnitude.
-                # Note: If weights are large, loss will be large. This is expected for importance weighting.
-                if num_valid_tokens > 0:
-                    loss = loss.sum() / num_valid_tokens
-                else:
-                    loss = loss.sum() * 0.0
-            else:
-                # Standard mean over valid tokens
-                if num_valid_tokens > 0:
-                    loss = loss.sum() / num_valid_tokens
-                else:
-                    loss = loss.sum() * 0.0
+            loss = per_sample_loss.mean()
 
         return (loss, outputs) if return_outputs else loss
+
+# Removed LoRA - using full fine-tuning
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix, classification_report
+from sklearn.model_selection import train_test_split
+import numpy as np
+import torch.nn as nn
+
+# Import the dataset builder
+from dataset_builder_new_vl import TextDatasetBuilder
+from datasets import load_from_disk
+
+from contextlib import contextmanager
+
+class TeeOutput:
+    """Class to duplicate stdout to both console and log file"""
+    def __init__(self, log_file):
+        self.terminal = sys.stdout
+        self.log = open(log_file, 'w', buffering=1)  # Line buffering
+        
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+        
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+        
+    def close(self):
+        self.log.close()
+
+class CustomDataCollator:
+    """Custom data collator that handles variable-length sequences"""
+    def __init__(self, tokenizer, max_length=2048):
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+    
+    def __call__(self, features):
+        # Find the maximum length in this batch
+        max_len = max(len(f['input_ids']) for f in features)
+        max_len = min(max_len, self.max_length)
+
+        batch = {
+            'input_ids': [],
+            'attention_mask': [],
+            'labels': [],
+            'sample_weight': []
+        }
+
+        for feature in features:
+            input_ids = feature['input_ids'][:max_len]
+            attention_mask = feature['attention_mask'][:max_len]
+            labels = feature['labels'][:max_len]
+            w = float(feature.get('sample_weight', 1.0))
+
+            pad_length = max_len - len(input_ids)
+            if pad_length > 0:
+                input_ids.extend([self.tokenizer.pad_token_id] * pad_length)
+                attention_mask.extend([0] * pad_length)
+                labels.extend([-100] * pad_length)
+
+            batch['input_ids'].append(input_ids)
+            batch['attention_mask'].append(attention_mask)
+            batch['labels'].append(labels)
+            batch['sample_weight'].append(w)
+
+        batch = {k: torch.tensor(v) for k, v in batch.items()}
+        batch['sample_weight'] = batch['sample_weight'].to(dtype=torch.float32)
+        return batch
 
 def preprocess_logits_for_metrics(logits, labels):
     """
@@ -283,10 +310,12 @@ def preprocess_function(examples, tokenizer, max_length=1024):
     combined_input_ids = []
     combined_attention_mask = []
     labels_for_loss = []
-    weights_out = [] # Preserve weights
-    
-    has_weights = 'weight' in examples
-    
+
+    # Preserve sample weights through tokenization
+    weights = examples.get("sample_weight", None)
+    if weights is None:
+        weights = [1.0] * len(examples["text"])
+
     for i in range(len(result['input_ids'])):
         # Combine input + target
         full_input = result['input_ids'][i] + target_encodings['input_ids'][i]
@@ -312,20 +341,13 @@ def preprocess_function(examples, tokenizer, max_length=1024):
         combined_input_ids.append(full_input)
         combined_attention_mask.append(full_mask)
         labels_for_loss.append(label_ids)
-        
-        if has_weights:
-            weights_out.append(examples['weight'][i])
     
-    output = {
+    return {
         'input_ids': combined_input_ids,
         'attention_mask': combined_attention_mask,
-        'labels': labels_for_loss
+        'labels': labels_for_loss,
+        'sample_weight': weights,
     }
-    
-    if has_weights:
-        output['weight'] = weights_out
-        
-    return output
 
 def download_and_save_model(model_name, cache_dir):
     """Download and save the base model locally"""
@@ -351,29 +373,19 @@ def download_and_save_model(model_name, cache_dir):
     return cache_dir
 
 def split_dataset_stratified(dataset, test_size=0.2, seed=42):
-    """Split dataset with stratification using sklearn"""
-    texts = dataset['text']
+    """Split dataset with stratification while preserving all columns."""
     labels = dataset['labels']
-    
-    # Use sklearn for stratified split
-    train_texts, test_texts, train_labels, test_labels = train_test_split(
-        texts, labels, 
-        test_size=test_size, 
-        random_state=seed, 
+    indices = list(range(len(dataset)))
+
+    train_idx, test_idx = train_test_split(
+        indices,
+        test_size=test_size,
+        random_state=seed,
         stratify=labels
     )
-    
-    # Create new datasets
-    train_dataset = Dataset.from_dict({
-        'text': train_texts,
-        'labels': train_labels
-    })
-    
-    test_dataset = Dataset.from_dict({
-        'text': test_texts,
-        'labels': test_labels
-    })
-    
+
+    train_dataset = dataset.select(train_idx)
+    test_dataset = dataset.select(test_idx)
     return {'train': train_dataset, 'test': test_dataset}
 
 def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_eval=False, tokenizer=None):
@@ -585,10 +597,10 @@ def main():
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/balanced_llm", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/topcon/balanced_labels.json", help="Path to the file containing labels")
-        parser.add_argument("--metadata_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_meta.json', help="Path to the metadata json file containing rating_avg for 3-class classification")
         parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
-        parser.add_argument("--img_desc_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/img_des/img_descriptions_llm.json', help="Path to the image descriptions JSON file for vision-language support")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_4b/wl/llm", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--img_desc_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/img_des/image_descriptions_llm.json', help="Path to the image descriptions JSON file for vision-language support")
+        parser.add_argument("--metadata_file", type=str, default=None, help="Path to metadata JSON (list of dicts with keys: id, rating_avg)")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_4b/orig/ft/llm", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=12000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         args = parser.parse_args()
@@ -616,11 +628,9 @@ def main():
         DATA_FOLDER = args.data_folder
         LABELS_FILE = args.labels_file
         STATISTICS_FILE = args.statistics_file
-        IMG_DESC_FILE = args.img_desc_file  # Added
-        METADATA_FILE = args.metadata_file # Added
-        OUTPUT_DIR = args.output_dir
-        MAX_LENGTH = args.max_length
-        
+        IMG_DESC_FILE = args.img_desc_file
+        METADATA_FILE = args.metadata_file
+
         # Model directories
         BASE_MODEL_CACHE = "/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_4b/orig"  # Where to cache the downloaded model
 
@@ -688,8 +698,7 @@ def main():
         if IMG_DESC_FILE:
             cache_suffix += "_with_img_desc"
         if METADATA_FILE:
-            cache_suffix += "_with_weights"
-            
+            cache_suffix += "_with_metadata"
         PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/dataset_cache/balanced/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
         
@@ -701,24 +710,24 @@ def main():
                 dataset = load_from_disk(PROCESSED_DATASET_CACHE)
                 # Still need to create dataset_builder for stats
                 dataset_builder = TextDatasetBuilder(
-                    DATA_FOLDER, 
-                    LABELS_FILE, 
+                    DATA_FOLDER,
+                    LABELS_FILE,
                     statistics_file=STATISTICS_FILE,
-                    img_desc_file=IMG_DESC_FILE,  # Added
-                    metadata_file=METADATA_FILE, # Added
-                    max_length=MAX_LENGTH
+                    img_desc_file=IMG_DESC_FILE,
+                    max_length=MAX_LENGTH,
+                    metadata_file=METADATA_FILE,
                 )
                 print("Successfully loaded cached dataset!")
             except Exception as e:
                 print(f"Failed to load cached dataset: {e}")
                 print("Processing dataset from scratch...")
                 dataset_builder = TextDatasetBuilder(
-                    DATA_FOLDER, 
-                    LABELS_FILE, 
+                    DATA_FOLDER,
+                    LABELS_FILE,
                     statistics_file=STATISTICS_FILE,
-                    img_desc_file=IMG_DESC_FILE,  # Added
-                    metadata_file=METADATA_FILE, # Added
-                    max_length=MAX_LENGTH
+                    img_desc_file=IMG_DESC_FILE,
+                    max_length=MAX_LENGTH,
+                    metadata_file=METADATA_FILE,
                 )
                 dataset = dataset_builder.load_dataset_with_ids()
                 
@@ -728,12 +737,12 @@ def main():
         else:
             print("No cached dataset found. Processing dataset for the first time...")
             dataset_builder = TextDatasetBuilder(
-                DATA_FOLDER, 
-                LABELS_FILE, 
+                DATA_FOLDER,
+                LABELS_FILE,
                 statistics_file=STATISTICS_FILE,
-                img_desc_file=IMG_DESC_FILE,  # Added
-                metadata_file=METADATA_FILE, # Added
-                max_length=MAX_LENGTH
+                img_desc_file=IMG_DESC_FILE,
+                max_length=MAX_LENGTH,
+                metadata_file=METADATA_FILE,
             )
             dataset = dataset_builder.load_dataset_with_ids()
             
@@ -746,10 +755,9 @@ def main():
         print(f"  Data folder: {DATA_FOLDER}")
         print(f"  Labels file: {LABELS_FILE}")
         print(f"  Statistics file: {STATISTICS_FILE if STATISTICS_FILE else 'Not provided'}")
-        print(f"  Image descriptions file: {IMG_DESC_FILE if IMG_DESC_FILE else 'Not provided'}")  # Added
-        print(f"  Metadata file: {METADATA_FILE if METADATA_FILE else 'Not provided'}") # Added
-        print(f"  Max length: {MAX_LENGTH}")
-        
+        print(f"  Image descriptions file: {IMG_DESC_FILE if IMG_DESC_FILE else 'Not provided'}")
+        print(f"  Metadata file: {METADATA_FILE if METADATA_FILE else 'Not provided'}")
+
         # Print dataset statistics
         stats = dataset_builder.get_dataset_stats(dataset)
         print(f"Dataset Statistics:")
@@ -781,10 +789,6 @@ def main():
         
         # Get column names to remove (all original columns)
         cols_to_remove = train_dataset.column_names
-        # Keep 'weight' if it exists, so it passes to the collator
-        if 'weight' in cols_to_remove:
-            cols_to_remove.remove('weight')
-            
         print(f"Columns to remove after tokenization: {cols_to_remove}")
 
         train_dataset = train_dataset.map(
@@ -869,7 +873,7 @@ def main():
             # Training arguments - adjusted for multi-GPU
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
-                num_train_epochs=5,
+                num_train_epochs=4,
                 per_device_train_batch_size=1,  # Keep small for large model
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
@@ -887,7 +891,7 @@ def main():
                 greater_is_better=True,  # False for loss, True for accuracy
                 bf16=True,  # Enable bf16 for memory efficiency
                 dataloader_pin_memory=False,
-                remove_unused_columns=False, # Important to keep 'weight' column
+                remove_unused_columns=False,
                 label_names=["labels"],
                 max_grad_norm=1.0,
                 adam_epsilon=1e-8,
@@ -904,12 +908,11 @@ def main():
             )
             
             # Initialize trainer
-            # Use WeightedTrainer instead of standard Trainer
-            trainer = WeightedTrainer(
+            trainer = WeightedLossTrainer(
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
-                eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
+                eval_dataset=small_eval_dataset,
                 tokenizer=tokenizer,
                 data_collator=data_collator,
                 preprocess_logits_for_metrics=preprocess_logits_for_metrics,
@@ -1002,7 +1005,7 @@ def main():
             dataloader_persistent_workers=False,
         )
         
-        trainer = Trainer(
+        trainer = WeightedLossTrainer(
             model=model,
             args=training_args_eval,
             tokenizer=tokenizer,

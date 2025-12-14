@@ -104,83 +104,80 @@ class CustomDataCollator:
 class WeightedTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         """
-        Compute loss with sample weighting for noisy examples.
+        How the loss is computed by Trainer. By default, all models return the loss in the first element.
+        Subclass and override for custom behavior.
         """
         # Extract weights and remove from inputs so model doesn't complain
         weights = inputs.pop("weight", None)
         
-        # Save labels BEFORE passing to model
-        labels = inputs.get("labels").clone() if "labels" in inputs else None
-        
         if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
+        else:
+            labels = None
         
         outputs = model(**inputs)
         
         # Save past state if it exists
+        # TODO: this needs to be fixed and made cleaner later.
         if self.args.past_index >= 0:
             self._past = outputs[self.args.past_index]
 
-        if self.label_smoother is not None and labels is not None:
+        # If no weights and standard loss is available, use it to avoid manual calculation errors
+        if weights is None and isinstance(outputs, dict) and "loss" in outputs:
+            return (outputs["loss"], outputs) if return_outputs else outputs["loss"]
+
+        if labels is not None:
+            # We don't support label smoothing with custom weights easily here
             loss = self.label_smoother(outputs, labels)
         else:
-            if weights is not None and labels is not None:
-                # Custom weighted loss calculation
-                logits = outputs.get("logits")
-                
-                # Shift so that tokens < n predict n
-                shift_logits = logits[..., :-1, :].contiguous()
-                shift_labels = labels[..., 1:].contiguous()
-                
-                # Create mask for valid (non-padding) tokens
-                valid_mask = (shift_labels != -100)
-                
-                # Flatten the tokens
-                loss_fct = nn.CrossEntropyLoss(reduction='none')
-                shift_logits_flat = shift_logits.view(-1, logits.size(-1))
-                shift_labels_flat = shift_labels.view(-1)
-                
-                # Replace -100 with 0 temporarily for loss computation (will be masked out)
-                shift_labels_flat_safe = shift_labels_flat.clone()
-                shift_labels_flat_safe[shift_labels_flat == -100] = 0
-                
-                # Enable model parallelism
-                shift_labels_flat_safe = shift_labels_flat_safe.to(shift_logits_flat.device)
-                loss_flat = loss_fct(shift_logits_flat, shift_labels_flat_safe)
-                
-                # Reshape back to [batch_size, seq_len]
-                batch_size = logits.size(0)
-                seq_len = logits.size(1) - 1
-                loss = loss_flat.view(batch_size, seq_len)
-                
-                # Apply valid mask (zero out padding positions)
-                valid_mask = valid_mask.to(loss.device)
-                loss = loss * valid_mask.float()
-                
-                # Apply sample weights: [batch_size] -> [batch_size, 1]
-                weights = weights.to(loss.device).float().unsqueeze(1)
-                
-                # Compute weighted mean per sample, then average across samples
-                # Sum loss per sample / count of valid tokens per sample
-                valid_counts = valid_mask.sum(dim=1).float().clamp(min=1)  # [batch_size]
-                per_sample_loss = loss.sum(dim=1) / valid_counts  # [batch_size]
-                
-                # Apply weights and compute mean
-                weighted_loss = per_sample_loss * weights.squeeze(1)
-                loss = weighted_loss.mean()
-                
+            # Standard causal LM loss calculation with weights
+            logits = outputs.get("logits")
+            labels = inputs.get("labels")
+            
+            # Shift so that tokens < n predict n
+            shift_logits = logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+            
+            # Flatten the tokens
+            loss_fct = nn.CrossEntropyLoss(reduction='none')
+            
+            # FIX: Use logits.size(-1) instead of config.vocab_size to avoid mismatch
+            # if the tokenizer was resized but config not updated or padding exists
+            vocab_size = shift_logits.size(-1)
+            shift_logits = shift_logits.view(-1, vocab_size)
+            shift_labels = shift_labels.view(-1)
+            
+            # Enable model parallelism
+            shift_labels = shift_labels.to(shift_logits.device)
+            loss = loss_fct(shift_logits, shift_labels)
+            
+            # Reshape back to [batch_size, seq_len]
+            batch_size = logits.size(0)
+            seq_len = logits.size(1) - 1
+            loss = loss.view(batch_size, seq_len)
+            
+            # Calculate valid tokens mask (where label != -100)
+            # We need to reshape shift_labels back to check for -100
+            valid_mask = (shift_labels.view(batch_size, seq_len) != -100).float()
+            
+            # Sum loss per sample
+            sample_loss = (loss * valid_mask).sum(dim=1)
+            
+            # Count valid tokens per sample
+            sample_tokens = valid_mask.sum(dim=1)
+            
+            # Avoid division by zero
+            sample_tokens = sample_tokens.clamp(min=1.0)
+            
+            # Mean loss per sample (normalize by valid tokens, not total tokens)
+            sample_mean_loss = sample_loss / sample_tokens
+            
+            # Apply weights if available
+            if weights is not None:
+                weights = weights.to(loss.device)
+                loss = (sample_mean_loss * weights).mean()
             else:
-                # Use model's built-in loss if no weights
-                if hasattr(outputs, "loss") and outputs.loss is not None:
-                    loss = outputs.loss
-                else:
-                    # Fallback: compute loss manually
-                    logits = outputs.get("logits")
-                    shift_logits = logits[..., :-1, :].contiguous()
-                    shift_labels = labels[..., 1:].contiguous()
-                    loss_fct = nn.CrossEntropyLoss(ignore_index=-100)
-                    loss = loss_fct(shift_logits.view(-1, logits.size(-1)), 
-                                   shift_labels.view(-1).to(shift_logits.device))
+                loss = sample_mean_loss.mean()
 
         return (loss, outputs) if return_outputs else loss
 
@@ -916,7 +913,7 @@ def main():
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
-                eval_dataset=small_eval_dataset,  # Use smaller eval dataset for periodic evaluation
+                eval_dataset=small_eval_dataset  # Use smaller eval dataset for periodic evaluation
                 tokenizer=tokenizer,
                 data_collator=data_collator,
                 preprocess_logits_for_metrics=preprocess_logits_for_metrics,

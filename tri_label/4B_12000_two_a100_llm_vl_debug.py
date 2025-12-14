@@ -624,7 +624,7 @@ def main():
         NO_ID  = tokenizer(" no",  add_special_tokens=False)["input_ids"][0]
 
         # Load and prepare dataset
-        print("Loading dataset...")
+        print("Loading dataset....")
         
         # Define processed dataset cache path - include stats/img_desc in cache name if provided
         cache_suffix = "llm_mineru_all"

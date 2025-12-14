@@ -686,7 +686,7 @@ def main():
         
         # Split dataset using sklearn for proper stratification
         print("Splitting dataset...")
-        train_test_split_result = split_dataset_stratified(dataset, test_size=0.2, seed=42)
+        train_test_split_result = split_dataset_stratified(dataset, test_size=0.1, seed=42)
         train_dataset = train_test_split_result['train']
         eval_dataset = train_test_split_result['test']
         small_eval_dataset = eval_dataset.select(range(min(100, len(eval_dataset))))

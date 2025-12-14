@@ -153,19 +153,25 @@ class WeightedTrainer(Trainer):
                 # weights is [batch_size], expand to [batch_size, seq_len]
                 weights = weights.to(loss.device).unsqueeze(1).expand_as(loss)
                 
-                # Mask out ignored tokens (-100) from the weighting to avoid skewing the mean
-                # The loss function already handles -100 by ignoring them, but when we multiply
-                # by weights and take the mean, we need to be careful.
-                # However, CrossEntropyLoss(reduction='none') returns 0 for ignored targets if ignore_index is set (default -100).
-                # So we just multiply by sample weight.
+                # Create a mask for valid tokens (where label != -100)
+                # We need to use the shifted labels because loss is calculated on shifted data
+                valid_token_mask = (shift_labels != -100).float()
+                
+                # Zero out weights where tokens are ignored (just to be safe)
+                weights = weights * valid_token_mask
+                
+                # Multiply loss by weights
                 loss = loss * weights
                 
-                # We need to normalize by the sum of weights of valid tokens, or just take mean
-                # Standard Trainer takes mean of all losses.
-                # Here we take mean, which effectively scales the gradient by the weight.
-                loss = loss.mean()
+                # CORRECT NORMALIZATION:
+                # Divide by the sum of weights for the VALID tokens only.
+                # Adding a small epsilon (1e-8) prevents division by zero.
+                sum_of_weights = weights.sum() + 1e-8
+                loss = loss.sum() / sum_of_weights
             else:
-                loss = loss.mean()
+                # Standard reduction excluding ignored tokens
+                valid_token_mask = (shift_labels != -100).float()
+                loss = loss.sum() / (valid_token_mask.sum() + 1e-8)
 
         return (loss, outputs) if return_outputs else loss
 
@@ -861,7 +867,7 @@ def main():
             # Training arguments - adjusted for multi-GPU
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
-                num_train_epochs=4,
+                num_train_epochs=5,
                 per_device_train_batch_size=1,  # Keep small for large model
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size

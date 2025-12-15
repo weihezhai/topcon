@@ -2,7 +2,7 @@
 #SBATCH --partition=gpu
 #SBATCH --qos=gpu
 #SBATCH --gres=gpu:3
-#SBATCH --mem=140G
+#SBATCH --mem=240G
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=weihezhai@gmail.com
 #SBATCH --mail-type=BEGIN,END,FAIL

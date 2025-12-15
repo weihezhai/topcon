@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --partition=gpu
 #SBATCH --qos=gpu
-#SBATCH --gres=gpu:2
-#SBATCH --mem=160G
+#SBATCH --gres=gpu:3
+#SBATCH --mem=140G
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=weihezhai@gmail.com
 #SBATCH --mail-type=BEGIN,END,FAIL

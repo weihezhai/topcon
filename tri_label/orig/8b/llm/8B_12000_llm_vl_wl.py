@@ -513,7 +513,7 @@ def main():
         parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
         parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
 
-        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_all", help="Path to the folder containing training jsons")
+        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_llm", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/topcon/balanced_labels.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
         parser.add_argument("--img_desc_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/img_des/image_descriptions_all.json', help="Path to the image descriptions JSON file for vision-language support")

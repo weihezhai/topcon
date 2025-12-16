@@ -511,14 +511,14 @@ def main():
         parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
         parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
-        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
+        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B", help="Pre-trained model name or path")
 
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_all", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/topcon/balanced_labels.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
         parser.add_argument("--img_desc_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/img_des/image_descriptions_all.json', help="Path to the image descriptions JSON file for vision-language support")
         parser.add_argument("--metadata_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_meta.json', help="Path to metadata JSON (list of dicts with fields: id, rating_avg)")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_8b/orig/llm", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_8b/orig/all", help="Directory to save/load the fine-tuned model")
         
         parser.add_argument("--max_length", type=int, default=12000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")

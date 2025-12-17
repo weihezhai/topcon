@@ -511,7 +511,7 @@ def main():
         parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
         parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
-        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-4B", help="Pre-trained model name or path")
+        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B", help="Pre-trained model name or path")
 
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_llm", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/topcon/balanced_labels.json", help="Path to the file containing labels")
@@ -792,11 +792,11 @@ def main():
             # Training arguments - adjusted for multi-GPU
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
-                num_train_epochs=4,
+                num_train_epochs=5,
                 per_device_train_batch_size=1,  # Keep small for large model
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
-                learning_rate=1e-5,
+                learning_rate=2e-5,
                 warmup_ratio=0.1,
                 weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",

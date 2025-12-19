@@ -163,7 +163,7 @@ class TextDatasetBuilder:
         matches.sort()
         return os.path.join(figures_dir, matches[0])
     
-    def _extract_paper_content(self, json_file_path: str, paper_id: str = None, paper_img_descs: dict = None) -> str:
+    def _extract_paper_content_and_images(self, json_file_path: str, paper_id: str = None, paper_img_descs: dict = None) -> str:
         """
         Extract paper content from a JSON file.
         

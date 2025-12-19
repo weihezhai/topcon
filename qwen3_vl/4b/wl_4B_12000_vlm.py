@@ -395,13 +395,13 @@ def download_and_save_model(model_name, cache_dir):
     # Create cache directory if it doesn't exist
     os.makedirs(cache_dir, exist_ok=True)
     
-    # Download tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
-    tokenizer.save_pretrained(cache_dir)
+    # Download processor (includes tokenizer and image processor)
+    processor = AutoProcessor.from_pretrained(model_name, cache_dir=cache_dir)
+    processor.save_pretrained(cache_dir)
     
-    # Download model for causal language modeling
-    from transformers import AutoModelForCausalLM
-    model = AutoModelForCausalLM.from_pretrained(
+    # Download model for Vision2Seq
+    from transformers import AutoModelForVision2Seq
+    model = AutoModelForVision2Seq.from_pretrained(
         model_name,
         torch_dtype=torch.bfloat16,
         cache_dir=cache_dir
@@ -659,12 +659,12 @@ def main():
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/topcon/balanced_labels.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
 
-        # REMOVED meaning: img_desc_file no longer used (kept arg to avoid breaking scripts)
+        # default None since VLM uses real images now
         parser.add_argument("--img_desc_file", type=str, default=None, help="(Deprecated) image descriptions JSON; VLM uses real images now")
 
-        # NEW: where to find {paper_id}/figures/*
+        # images roots leave default None to use the same as data_folder
         parser.add_argument("--images_root", type=str, default=None, help="Optional root for images; expects {images_root}/{paper_id}/figures/*")
-        parser.add_argument("--max_images_per_paper", type=int, default=6, help="Max number of figure images per sample")
+        parser.add_argument("--max_images_per_paper", type=int, default=8, help="Max number of figure images per sample")
 
         parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_vl_4b/ft/", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=12000, help="Maximum sequence length for training")
@@ -749,14 +749,24 @@ def main():
         # Download and cache the base model if not already cached (only for training mode)
         if not args.eval:
             config_file = os.path.join(BASE_MODEL_CACHE, "config.json")
-            if not os.path.exists(config_file):
+            preprocessor_config = os.path.join(BASE_MODEL_CACHE, "preprocessor_config.json")
+            
+            # Check for both config and preprocessor config to ensure complete download
+            # This fixes the issue where only tokenizer was saved previously
+            if not os.path.exists(config_file) or not os.path.exists(preprocessor_config):
                 download_and_save_model(MODEL_NAME, BASE_MODEL_CACHE)
             else:
                 print(f"Using cached model from {BASE_MODEL_CACHE}")
         
         # Load processor (tokenizer+image processor)
         processor = AutoProcessor.from_pretrained(MODEL_PATH)
-        tokenizer = processor.tokenizer
+        
+        # Handle case where AutoProcessor returns a tokenizer directly
+        if hasattr(processor, "tokenizer"):
+            tokenizer = processor.tokenizer
+        else:
+            tokenizer = processor
+            print("Warning: AutoProcessor returned a tokenizer object directly. Using it as tokenizer.")
 
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token

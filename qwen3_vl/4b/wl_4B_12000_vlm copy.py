@@ -1,40 +1,29 @@
 import os
 import sys
 import argparse
-# import inspect
 import torch
 from datetime import datetime
 import pandas as pd
 from datasets import Dataset
 from transformers import (
-    AutoTokenizer, 
+    AutoProcessor,                 # NEW
+    AutoModelForVision2Seq,         # NEW (VLM)
+    AutoTokenizer,
     AutoModelForCausalLM,
-    TrainingArguments, 
+    TrainingArguments,
     Trainer,
-    DataCollatorForLanguageModeling,  # Changed for causal LM
     default_data_collator
 )
-# Removed LoRA - using full fine-tuning
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix, classification_report
 from sklearn.model_selection import train_test_split
 import numpy as np
 import torch.nn as nn
+from PIL import Image  # NEW
 
-# +++ PEFT / LoRA +++
-from peft import LoraConfig, get_peft_model, PeftModel
-
-# Import the dataset builder
 from wl_dataset_builder_new_vl import TextDatasetBuilder
 from datasets import load_from_disk
 
 from contextlib import contextmanager
-
-# +++ add for crash-safe saving +++
-import json
-import time
-import signal
-import atexit
-import traceback
 
 class TeeOutput:
     """Class to duplicate stdout to both console and log file"""
@@ -257,6 +246,161 @@ def preprocess_function(examples, tokenizer, max_length=1024):
     if 'sample_weight' in examples:
         out['sample_weight'] = examples['sample_weight']
     return out
+
+def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per_sample=6):
+    """
+    Build a multimodal prompt using interleaved text and images.
+    Uses 'content' column which contains JSON serialized list of text/image items.
+    """
+    input_ids_out = []
+    attention_mask_out = []
+    labels_out = []
+    
+    # Initialize dict to collect vision features (pixel_values, etc.)
+    vision_keys = {}
+    
+    # Check if 'content' column exists, otherwise fallback to 'text' (legacy)
+    use_content = 'content' in examples
+    
+    for i in range(len(examples['labels'])):
+        label = examples['labels'][i]
+        target_text = " yes" if int(label) == 1 else " no"
+        
+        messages = []
+        images = []
+        
+        if use_content:
+            # Parse the structured content
+            content_list = json.loads(examples['content'][i])
+            
+            # Build the user message content
+            user_content = []
+            user_content.append({"type": "text", "text": "Paper content:\n"})
+            
+            img_count = 0
+            for item in content_list:
+                if item['type'] == 'text':
+                    user_content.append({"type": "text", "text": item['text'] + "\n"})
+                elif item['type'] == 'image':
+                    if img_count < max_images_per_sample:
+                        try:
+                            # Load image to verify it exists and is valid
+                            img_path = item['path']
+                            image = Image.open(img_path).convert("RGB")
+                            images.append(image)
+                            # For Qwen2-VL, we pass the path or placeholder in messages
+                            # processor.apply_chat_template will handle formatting
+                            user_content.append({"type": "image", "image": img_path}) 
+                            img_count += 1
+                        except Exception as e:
+                            print(f"Error loading image {item.get('path')}: {e}")
+                            continue
+            
+            user_content.append({"type": "text", "text": "\nBased on this AI research paper's content and figures, should this paper be accepted? Answer yes or no.\n\nDecision:"})
+            
+            messages = [
+                {
+                    "role": "user",
+                    "content": user_content
+                }
+            ]
+        else:
+            # Fallback to old behavior if 'content' is missing
+            text = examples['text'][i]
+            img_paths = examples.get("image_paths", [[]] * len(examples["text"]))[i]
+            
+            user_content = [{"type": "text", "text": f"Paper content:\n{text}\n\nYou are also provided with figures from the paper.\nBased on this AI research paper's content and figures, should this paper be accepted? Answer yes or no.\n\nDecision:"}]
+            
+            # Append images at the end (not interleaved)
+            for p in (img_paths or [])[:max_images_per_sample]:
+                try:
+                    image = Image.open(p).convert("RGB")
+                    images.append(image)
+                    user_content.insert(0, {"type": "image", "image": p})
+                except:
+                    continue
+            
+            messages = [{"role": "user", "content": user_content}]
+
+        # Apply chat template to get text with <image> tokens
+        text_prompt = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        
+        # Tokenize with processor
+        # processor expects 'text' (list of strings) and 'images' (list of list of images, or list of images)
+        inputs = processor(
+            text=[text_prompt],
+            images=[images] if images else None,
+            padding=False, 
+            truncation=True,
+            max_length=max_length,
+            return_tensors="pt",
+        )
+        
+        # Extract tensors
+        input_ids = inputs['input_ids'][0].tolist()
+        attention_mask = inputs['attention_mask'][0].tolist()
+        
+        # Collect vision features
+        for k, v in inputs.items():
+            if k not in ["input_ids", "attention_mask"]:
+                if k not in vision_keys:
+                    vision_keys[k] = []
+                vision_keys[k].append(v[0])
+
+        # Prepare target
+        target_enc = processor.tokenizer(target_text, add_special_tokens=False, return_attention_mask=False)
+        target_ids = target_enc['input_ids']
+        
+        # Truncate if necessary (keeping room for target)
+        if len(input_ids) + len(target_ids) > max_length:
+            keep = max(1, max_length - len(target_ids))
+            input_ids = input_ids[:keep]
+            attention_mask = attention_mask[:keep]
+        
+        full_ids = input_ids + target_ids
+        full_mask = attention_mask + [1] * len(target_ids)
+        full_labels = [-100] * len(input_ids) + target_ids
+        
+        input_ids_out.append(full_ids)
+        attention_mask_out.append(full_mask)
+        labels_out.append(full_labels)
+
+    out = {
+        "input_ids": input_ids_out,
+        "attention_mask": attention_mask_out,
+        "labels": labels_out,
+    }
+    
+    # Add collected vision features to output
+    out.update(vision_keys)
+
+    if "sample_weight" in examples:
+        out["sample_weight"] = examples["sample_weight"]
+    return out
+
+class VLMDataCollator:
+    """Pad multimodal batches produced by AutoProcessor and keep optional sample_weight."""
+    def __init__(self, processor, max_length=2048):
+        self.processor = processor
+        self.max_length = max_length
+
+    def __call__(self, features):
+        has_weight = "sample_weight" in features[0]
+        sample_weight = None
+        if has_weight:
+            sample_weight = torch.tensor([float(f.get("sample_weight", 1.0)) for f in features], dtype=torch.float)
+
+        # processor.pad handles input_ids/attention_mask (and possibly pixel_values / image_grid_thw etc)
+        pad_keys = {k: [f[k] for f in features] for k in features[0].keys() if k != "sample_weight"}
+        batch = self.processor.pad(
+            pad_keys,
+            padding=True,
+            max_length=self.max_length,
+            return_tensors="pt",
+        )
+        if has_weight:
+            batch["sample_weight"] = sample_weight
+        return batch
 
 def download_and_save_model(model_name, cache_dir):
     """Download and save the base model locally"""
@@ -497,117 +641,6 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     
     return results
 
-def _safe_mkdir(path: str):
-    try:
-        os.makedirs(path, exist_ok=True)
-    except Exception:
-        pass
-
-def _now_tag():
-    return datetime.now().strftime("%Y%m%d_%H%M%S")
-
-def save_emergency_checkpoint(*, trainer=None, model=None, tokenizer=None, output_dir=None, reason=None, exc=None):
-    """
-    Best-effort emergency checkpoint.
-    Saves:
-      - trainer state (trainer_state.json)
-      - optimizer/scheduler/rng if trainer checkpointing is healthy (trainer.save_state)
-      - LoRA adapters via model.save_pretrained(...)
-      - tokenizer
-      - a small crash_report.json with reason/exception/traceback
-    """
-    if output_dir is None:
-        return
-
-    crash_root = os.path.join(output_dir, "crash_checkpoints")
-    crash_dir = os.path.join(crash_root, f"crash_{_now_tag()}")
-    _safe_mkdir(crash_dir)
-
-    report = {
-        "time": datetime.now().isoformat(),
-        "reason": reason,
-        "output_dir": output_dir,
-    }
-    if exc is not None:
-        report["exception_type"] = type(exc).__name__
-        report["exception_str"] = str(exc)
-        report["traceback"] = traceback.format_exc()
-
-    # Try to capture RNG states (helps exact reproducibility if you later resume manually)
-    try:
-        rng = {"torch_cpu": torch.get_rng_state().tolist()}
-        if torch.cuda.is_available():
-            try:
-                rng["torch_cuda"] = [s.tolist() for s in torch.cuda.get_rng_state_all()]
-            except Exception:
-                rng["torch_cuda"] = "unavailable"
-        with open(os.path.join(crash_dir, "rng_state.json"), "w") as f:
-            json.dump(rng, f)
-    except Exception:
-        pass
-
-    # Save trainer state + optim/sched if possible
-    try:
-        if trainer is not None:
-            # Only let rank0 write to avoid contention
-            is_rank0 = True
-            try:
-                is_rank0 = trainer.is_world_process_zero()
-            except Exception:
-                pass
-
-            if is_rank0:
-                # trainer.save_state writes trainer_state.json + optimizer/scheduler/rng (if configured)
-                trainer.save_state()
-                # Copy trainer_state.json into crash_dir for convenience
-                try:
-                    src = os.path.join(trainer.args.output_dir, "trainer_state.json")
-                    if os.path.exists(src):
-                        with open(src, "r") as fsrc, open(os.path.join(crash_dir, "trainer_state.json"), "w") as fdst:
-                            fdst.write(fsrc.read())
-                except Exception:
-                    pass
-                report["global_step"] = getattr(trainer.state, "global_step", None)
-                report["epoch"] = getattr(trainer.state, "epoch", None)
-    except Exception:
-        # if CUDA is broken, this may fail; keep going with minimal artifacts
-        pass
-
-    # Save adapters/tokenizer (best effort)
-    try:
-        if model is not None:
-            model.save_pretrained(crash_dir)
-    except Exception:
-        pass
-    try:
-        if tokenizer is not None:
-            tokenizer.save_pretrained(crash_dir)
-    except Exception:
-        pass
-
-    # Persist crash report
-    try:
-        with open(os.path.join(crash_dir, "crash_report.json"), "w") as f:
-            json.dump(report, f, indent=2)
-    except Exception:
-        pass
-
-    print(f"[EMERGENCY CHECKPOINT] Wrote crash checkpoint to: {crash_dir}")
-    return crash_dir
-
-def _should_treat_as_cuda_failure(exc: Exception) -> bool:
-    msg = str(exc).lower()
-    return isinstance(exc, RuntimeError) and (
-        "cuda" in msg
-        or "cublas" in msg
-        or "cudnn" in msg
-        or "nccl" in msg
-        or "device-side assert" in msg
-        or "illegal memory access" in msg
-        or "unspecified launch failure" in msg
-        or "out of memory" in msg
-    )
-
 def main():
     # Set up logging
     log_dir = "./log"
@@ -615,7 +648,7 @@ def main():
     
     # Create log filename with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = os.path.join(log_dir, f"training_log_all_{timestamp}.log")
+    log_file = os.path.join(log_dir, f"training_log_llm_{timestamp}.log")
     
     # Redirect stdout and stderr to both console and log file
     tee_stdout = TeeOutput(log_file)
@@ -628,62 +661,32 @@ def main():
     print("="*80)
     
     try:
-        parser = argparse.ArgumentParser(description="Fine-tune a language model with multi-GPU support")
+        parser = argparse.ArgumentParser(description="Fine-tune a vision-language model with multi-GPU support")
         parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
-        parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
+        parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics")
         parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
-        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-14B", help="Pre-trained model name or path")
 
-        parser.add_argument("--data_folder", type=str, default="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/data_src/balanced/balanced_all", help="Path to the folder containing training jsons")
-        parser.add_argument("--labels_file", type=str, default="/ceph/hpc/home/euweihez/topcon/balanced_labels.json", help="Path to the file containing labels")
+        # CHANGED default to VLM
+        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-VL-4B", help="Pre-trained VLM name or path")
+
+        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/balanced_llm", help="Path to the folder containing training jsons")
+        parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/topcon/balanced_labels.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
-        parser.add_argument("--img_desc_file", type=str, default='/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/img_description/image_descriptions_all.json', help="Path to the image descriptions JSON file for vision-language support")
-        parser.add_argument("--metadata_file", type=str, default='/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/combined_iclr2024_2025.json', help="Path to metadata JSON (list of dicts with fields: id, rating_avg)")
-        parser.add_argument("--output_dir", type=str, default="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/models/qwen3_14b/all", help="Directory to save/load the fine-tuned model")
-        
+
+        # REMOVED meaning: img_desc_file no longer used (kept arg to avoid breaking scripts)
+        parser.add_argument("--img_desc_file", type=str, default=None, help="(Deprecated) image descriptions JSON; VLM uses real images now")
+
+        # NEW: where to find {paper_id}/figures/*
+        parser.add_argument("--images_root", type=str, default=None, help="Optional root for images; expects {images_root}/{paper_id}/figures/*")
+        parser.add_argument("--max_images_per_paper", type=int, default=6, help="Max number of figure images per sample")
+
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_vl_4b/ft/", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=12000, help="Maximum sequence length for training")
-        parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
+        parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use")
+        parser.add_argument("--metadata_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_meta.json', help="Path to metadata JSON")
         parser.add_argument("--noisy_low", type=float, default=5.2, help="Lower bound (inclusive) of noisy rating_avg range")
         parser.add_argument("--noisy_high", type=float, default=6.2, help="Upper bound (inclusive) of noisy rating_avg range")
         parser.add_argument("--noisy_weight", type=float, default=0.5, help="Sample weight for noisy range")
-
-        # +++ LoRA config +++
-        parser.add_argument("--lora_r", type=int, default=32, help="LoRA rank")
-        parser.add_argument("--lora_alpha", type=int, default=64, help="LoRA alpha")
-        parser.add_argument("--lora_dropout", type=float, default=0.05, help="LoRA dropout")
-        parser.add_argument(
-            "--lora_target_modules",
-            type=str,
-            default="q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj",
-            help="Comma-separated module names to apply LoRA to",
-        )
-        parser.add_argument(
-            "--lora_bias",
-            type=str,
-            default="none",
-            choices=["none", "all", "lora_only"],
-            help="Whether to train bias parameters",
-        )
-        parser.add_argument(
-            "--merge_lora_for_eval",
-            action="store_true",
-            help="In --eval mode, merge adapters into base weights for faster inference",
-        )
-
-        # +++ crash-safe resume/checkpoint knobs +++
-        parser.add_argument(
-            "--resume_from_checkpoint",
-            type=str,
-            default=None,
-            help="Path to a Trainer checkpoint dir (e.g., .../checkpoint-1200) to manually resume training.",
-        )
-        parser.add_argument(
-            "--save_steps",
-            type=int,
-            default=100,
-            help="Checkpoint save frequency (steps). Lower this to reduce lost work on failures.",
-        )
-
         args = parser.parse_args()
 
         # Default to all visible GPUs if none provided
@@ -709,27 +712,20 @@ def main():
         DATA_FOLDER = args.data_folder
         LABELS_FILE = args.labels_file
         STATISTICS_FILE = args.statistics_file
-        IMG_DESC_FILE = args.img_desc_file  # Added
         METADATA_FILE = args.metadata_file
-        
+
         # Add timestamp to output directory for training runs to separate them
-        # If resuming, DO NOT create a new timestamped directory; resume into the specified run folder.
         if not args.eval:
-            if args.resume_from_checkpoint:
-                OUTPUT_DIR = args.output_dir
-            else:
-                OUTPUT_DIR = os.path.join(args.output_dir, timestamp)
+            OUTPUT_DIR = os.path.join(args.output_dir, timestamp)
         else:
             OUTPUT_DIR = args.output_dir
             
         print(f"Output directory set to: {OUTPUT_DIR}")
-        if args.resume_from_checkpoint:
-            print(f"Manual resume requested from checkpoint: {args.resume_from_checkpoint}")
 
         MAX_LENGTH = args.max_length
         
         # Model directories
-        BASE_MODEL_CACHE = "/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/models/qwen3_14b"  # Where to cache the downloaded model
+        BASE_MODEL_CACHE = "/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_4b/orig"  # Where to cache the downloaded model
 
         # If in evaluation mode, use the fine-tuned model directory
         if args.eval:
@@ -772,43 +768,45 @@ def main():
             else:
                 print(f"Using cached model from {BASE_MODEL_CACHE}")
         
-        # Load tokenizer from appropriate model path
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+        # Load processor (tokenizer+image processor)
+        processor = AutoProcessor.from_pretrained(MODEL_PATH)
+        tokenizer = processor.tokenizer
+
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
-        # Ensure pad_token_id is set
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
-        
-        # Get token IDs for "yes" and "no"
+
         global YES_ID, NO_ID
         YES_ID = tokenizer(" yes", add_special_tokens=False)["input_ids"][0]
         NO_ID  = tokenizer(" no",  add_special_tokens=False)["input_ids"][0]
 
-        # Load and prepare dataset
         print("Loading dataset....")
-        
-        # Define processed dataset cache path - include stats/img_desc in cache name if provided
-        cache_suffix = "all_mineru"
+
+        cache_suffix = "vlm_real_images"
         if STATISTICS_FILE:
             cache_suffix += "_with_stats"
-        if IMG_DESC_FILE:
-            cache_suffix += "_with_img_desc"
         if METADATA_FILE:
             cache_suffix += "_with_rating_weights_5262"
-        PROCESSED_DATASET_CACHE = f"/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/data_src/cache/processed_dataset/{cache_suffix}"
+        if args.images_root:
+            cache_suffix += "_images_root"
+        cache_suffix += f"_maximg{args.max_images_per_paper}"
+
+        PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/dataset_cache/balanced/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
 
         dataset_builder = TextDatasetBuilder(
             DATA_FOLDER,
             LABELS_FILE,
             statistics_file=STATISTICS_FILE,
-            img_desc_file=IMG_DESC_FILE,
+            img_desc_file=None,                    # CHANGED: no descriptions
             max_length=MAX_LENGTH,
             metadata_file=METADATA_FILE,
             noisy_low=args.noisy_low,
             noisy_high=args.noisy_high,
             noisy_weight=args.noisy_weight,
+            images_root=args.images_root,          # NEW
+            max_images_per_paper=args.max_images_per_paper,  # NEW
         )
 
         dataset_info_path = os.path.join(PROCESSED_DATASET_CACHE, "dataset_info.json")
@@ -871,126 +869,84 @@ def main():
         print(f"First text sample length: {len(train_dataset[0]['text'])}")
         print(f"Text preview: {train_dataset[0]['text'][:100]}...")
         
-        # Tokenize datasets using the new approach
+        # Tokenize datasets using the VLM approach
         print("Tokenizing datasets...")
         
-        # Get column names to remove (all original columns)
         cols_to_remove = train_dataset.column_names
         print(f"Columns to remove after tokenization: {cols_to_remove}")
 
         train_dataset = train_dataset.map(
-            lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
+            lambda x: preprocess_function_vlm(x, processor, MAX_LENGTH, args.max_images_per_paper),
             batched=True,
-            batch_size=100,
+            batch_size=10,
             remove_columns=cols_to_remove
         )
         eval_dataset = eval_dataset.map(
-            lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
+            lambda x: preprocess_function_vlm(x, processor, MAX_LENGTH, args.max_images_per_paper),
             batched=True,
-            batch_size=100,
+            batch_size=10,
             remove_columns=cols_to_remove
         )
         small_eval_dataset = small_eval_dataset.map(
-            lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
+            lambda x: preprocess_function_vlm(x, processor, MAX_LENGTH, args.max_images_per_paper),
             batched=True,
-            batch_size=100,
+            batch_size=10,
             remove_columns=cols_to_remove
         )
 
-        print("Tokenization complete")
-        print(f"Train dataset columns: {train_dataset.column_names}")
-        print(f"Train dataset sample (initial part): {str(train_dataset[0])[:50]}...")
-
-        # Debug tensor shapes
-        sample = train_dataset[0]
-        print(f"Sample input_ids type: {type(sample['input_ids'])}")
-        print(f"Sample input_ids length: {len(sample['input_ids'])}")
-        print(f"Sample labels type: {type(sample['labels'])}")
-        print(f"Sample labels value: {sample['labels']}")
-        
-        # Load model
-        print("Loading model with automatic device mapping across GPUs...")
-
-        # NOTE: with PEFT we always load the BASE model weights first, then attach adapters.
-        base_model = AutoModelForCausalLM.from_pretrained(
-            BASE_MODEL_CACHE if not args.eval else BASE_MODEL_CACHE,
-            torch_dtype=torch.bfloat16,
-            device_map="auto",
-            max_memory={i: "39GiB" for i in range(len(args.gpu_ids))},
-            offload_folder="./offload",
-            attn_implementation="sdpa",
-        )
-
-        # Disable cache for training stability with gradient checkpointing
-        base_model.config.use_cache = False
-
-        # Build / attach adapters
-        target_modules = [m.strip() for m in args.lora_target_modules.split(",") if m.strip()]
-        lora_cfg = LoraConfig(
-            r=args.lora_r,
-            lora_alpha=args.lora_alpha,
-            lora_dropout=args.lora_dropout,
-            target_modules=target_modules,
-            bias=args.lora_bias,
-            task_type="CAUSAL_LM",
-        )
-
+        # Load VLM model with automatic device mapping for multi-GPU
+        print("Loading VLM model with automatic device mapping across GPUs...")
         if args.eval:
-            # Load LoRA adapters from OUTPUT_DIR onto the base model
-            model = PeftModel.from_pretrained(base_model, OUTPUT_DIR, is_trainable=False)
-            if args.merge_lora_for_eval:
-                model = model.merge_and_unload()
-            print("Loaded base model + LoRA adapters for evaluation")
+            model = AutoModelForVision2Seq.from_pretrained(
+                OUTPUT_DIR,
+                torch_dtype=torch.bfloat16,
+                device_map="auto",
+                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
+                offload_folder="./offload",
+                attn_implementation="sdpa",
+            )
+            print("Loaded fine-tuned VLM for evaluation")
         else:
-            # Wrap base model with trainable LoRA adapters (base weights frozen)
-            model = get_peft_model(base_model, lora_cfg)
-            # Useful for some checkpointing paths
-            if hasattr(model, "enable_input_require_grads"):
-                model.enable_input_require_grads()
-            model.print_trainable_parameters()
-            print("Loaded base model + trainable LoRA adapters for training")
+            model = AutoModelForVision2Seq.from_pretrained(
+                BASE_MODEL_CACHE,
+                torch_dtype=torch.bfloat16,
+                device_map="auto",
+                max_memory={i: "78GiB" for i in range(len(args.gpu_ids))},
+                offload_folder="./offload",
+                attn_implementation="sdpa",
+            )
 
-        print(model)
-        
-        # Print device mapping
-        if hasattr(model, 'hf_device_map'):
-            print("Model device mapping:")
-            for layer, device in model.hf_device_map.items():
-                print(f"  {layer}: {device}")
-        
-        # Data collator for language modeling
-        data_collator = CustomDataCollator(
-            tokenizer=tokenizer,
-            max_length=MAX_LENGTH
-        )
+        # Data collator for multimodal
+        data_collator = VLMDataCollator(processor=processor, max_length=MAX_LENGTH)
 
         # Only run training if not in evaluation mode
         if not args.eval:
             # Set eval_steps based on debug mode
             eval_steps = 10 if args.debug else 100
+            
             if args.debug:
                 print("DEBUG MODE: eval_steps set to 10")
-
-            # Training arguments
+            
+            # Training arguments - adjusted for multi-GPU
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
-                num_train_epochs=3,
-                per_device_train_batch_size=1,
+                num_train_epochs=5,
+                per_device_train_batch_size=1,  # Keep small for large model
                 per_device_eval_batch_size=1,
-                gradient_accumulation_steps=8,
-                learning_rate=1e-4,
-                warmup_ratio=0.05,
+                gradient_accumulation_steps=8,  # Maintain effective batch size
+                learning_rate=2e-5,
+                warmup_ratio=0.1,
                 weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,
                 eval_strategy="steps",
-                eval_steps=eval_steps,
-                save_steps=int(args.save_steps),
-                save_total_limit=3,
-                load_best_model_at_end=True,
-                metric_for_best_model="eval_accuracy",
-                greater_is_better=True,
-                bf16=True,
+                eval_steps=eval_steps,  # Use variable based on debug mode
+                save_steps=100,
+                save_total_limit=3,  # Increase to keep more checkpoints including best
+                load_best_model_at_end=True,  # Change to True to load best model at end
+                metric_for_best_model="eval_accuracy",  # Or use "eval_accuracy" if you prefer
+                greater_is_better=True,  # False for loss, True for accuracy
+                bf16=True,  # Enable bf16 for memory efficiency
                 dataloader_pin_memory=False,
                 remove_unused_columns=False,
                 label_names=["labels"],
@@ -999,16 +955,16 @@ def main():
                 lr_scheduler_type="linear",
                 optim="adamw_torch",
                 eval_accumulation_steps=1,
-                dataloader_num_workers=0,
-                prediction_loss_only=False,
+                dataloader_num_workers=0,  # Disable multiprocessing for multi-GPU setup
+                prediction_loss_only=False,  # Change to False to compute metrics
                 skip_memory_metrics=True,
-                ddp_find_unused_parameters=False,
-                dataloader_persistent_workers=False,
-                gradient_checkpointing=True,
-                # optional: helps keep a usable checkpoint on preemption-style exits
-                save_on_each_node=False,
+                # Multi-GPU specific settings
+                ddp_find_unused_parameters=False,  # For efficiency in DDP
+                dataloader_persistent_workers=False,  # Disable persistent workers
+                gradient_checkpointing=True,  # Enable gradient checkpointing to save memory
             )
-
+            
+            # Initialize trainer
             trainer = WeightedTrainer(
                 model=model,
                 args=training_args,
@@ -1020,91 +976,32 @@ def main():
                 compute_metrics=lambda ep: compute_metrics(ep),
             )
 
-            # +++ crash-safe hooks (signals + atexit) +++
-            _shutdown_requested = {"flag": False}
-
-            def _handle_signal(signum, frame):
-                if _shutdown_requested["flag"]:
-                    return
-                _shutdown_requested["flag"] = True
-                try:
-                    print(f"\n[Signal {signum}] Received termination signal; attempting emergency checkpoint...")
-                except Exception:
-                    pass
-                save_emergency_checkpoint(
-                    trainer=trainer,
-                    model=model,
-                    tokenizer=tokenizer,
-                    output_dir=OUTPUT_DIR,
-                    reason=f"signal_{signum}",
-                )
-                # Exit promptly (common on preemptible nodes)
-                raise SystemExit(128 + int(signum))
-
-            try:
-                signal.signal(signal.SIGTERM, _handle_signal)
-                signal.signal(signal.SIGINT, _handle_signal)
-            except Exception:
-                pass
-
-            def _atexit_hook():
-                # Only run if we are exiting unexpectedly (best-effort)
-                if _shutdown_requested["flag"]:
-                    return
-                # If training completed normally, you will already have checkpoints/adapters saved.
-                # Still: if the process dies mid-run without exception, this might help.
-                try:
-                    save_emergency_checkpoint(
-                        trainer=trainer,
-                        model=model,
-                        tokenizer=tokenizer,
-                        output_dir=OUTPUT_DIR,
-                        reason="atexit",
-                    )
-                except Exception:
-                    pass
-
-            atexit.register(_atexit_hook)
-
+            # Train the model
             print("Starting training...")
-
-            # Override evaluation to use memory cleanup (unchanged)
+            
+            # Override evaluation to use memory cleanup
             original_evaluate = trainer.evaluate
             def memory_safe_evaluate(*args, **kwargs):
                 torch.cuda.empty_cache()
+                # Disable cache during evaluation to save memory
                 original_use_cache = model.config.use_cache
                 model.config.use_cache = False
                 with torch.no_grad():
                     result = original_evaluate(*args, **kwargs)
+                # Restore original cache setting
                 model.config.use_cache = original_use_cache
                 torch.cuda.empty_cache()
                 return result
             trainer.evaluate = memory_safe_evaluate
-
-            # +++ train with emergency save on failure +++
-            try:
-                trainer.train(resume_from_checkpoint=args.resume_from_checkpoint)
-            except SystemExit:
-                # signal handler already saved
-                raise
-            except Exception as e:
-                # Try to persist current state before re-raising
-                reason = "cuda_or_runtime_failure" if _should_treat_as_cuda_failure(e) else "training_exception"
-                print(f"[TRAINING ERROR] {reason}: {e}")
-                save_emergency_checkpoint(
-                    trainer=trainer,
-                    model=model,
-                    tokenizer=tokenizer,
-                    output_dir=OUTPUT_DIR,
-                    reason=reason,
-                    exc=e,
-                )
-                raise
-
-            # Save ONLY adapters (+ config) to OUTPUT_DIR
-            print(f"Saving LoRA adapters to {OUTPUT_DIR}")
-            model.save_pretrained(OUTPUT_DIR)
+            
+            trainer.train()
+            
+            # Save the fine-tuned model
+            print(f"Saving fine-tuned model to {OUTPUT_DIR}")
+            trainer.save_model()
             tokenizer.save_pretrained(OUTPUT_DIR)
+            
+            print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
 
             # Explicitly delete trainer and optimizer to free memory
             del trainer
@@ -1134,22 +1031,20 @@ def main():
             import time
             time.sleep(2)
             
-            # Reload base + adapters for final evaluation
-            base_model = AutoModelForCausalLM.from_pretrained(
-                BASE_MODEL_CACHE,
+            # Reload the model fresh with device mapping
+            model = AutoModelForVision2Seq.from_pretrained(
+                OUTPUT_DIR,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
-                max_memory={i: "39GiB" for i in range(len(args.gpu_ids))},
+                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
                 offload_folder="./offload",
-                attn_implementation="sdpa",
+                attn_implementation="sdpa"  # Use Flash Attention 2 implementation
             )
-            base_model.config.use_cache = False
-            model = PeftModel.from_pretrained(base_model, OUTPUT_DIR, is_trainable=False)
-
+            
+            # Clear cache again after loading
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-        # Create trainer for final evaluation (needed for both train and eval modes)
         print("Setting up trainer for final evaluation...")
         training_args_eval = TrainingArguments(
             output_dir=OUTPUT_DIR,

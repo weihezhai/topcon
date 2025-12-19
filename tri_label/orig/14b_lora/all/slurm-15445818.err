@@ -1,3 +1,4 @@
 The tokenizer you are loading from '/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/models/qwen3_14b' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
 `torch_dtype` is deprecated! Use `dtype` instead!
 The tokenizer has new PAD/BOS/EOS tokens that differ from the model config and generation config. The model config and generation config were aligned accordingly, being updated with the tokenizer's values. Updated tokens: {'bos_token_id': None, 'pad_token_id': 151643}.
+[2025-12-19T17:14:40.887] error: *** JOB 15445818 ON gn43 CANCELLED AT 2025-12-19T17:14:40 DUE to SIGNAL Terminated ***

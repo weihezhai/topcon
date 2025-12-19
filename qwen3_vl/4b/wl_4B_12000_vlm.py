@@ -249,35 +249,70 @@ def preprocess_function(examples, tokenizer, max_length=1024):
 
 def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per_sample=6):
     """
-    Build a multimodal prompt:
-      text + N images, then ask for yes/no decision.
-    Labels compute loss only on the target token (" yes" or " no").
+    Interleave images at exact positions using TextDatasetBuilder.FIGURE_MARKER.
+    Uses Qwen3-VL chat template so image/text ordering is preserved. :contentReference[oaicite:1]{index=1}
     """
+    tok = processor.tokenizer
+
     prompts = []
     targets = []
     images_batch = []
 
-    for text, label, img_paths in zip(examples["text"], examples["labels"], examples.get("image_paths", [[]] * len(examples["text"]))):
-        prompt = (
-            "Paper content:\n"
-            f"{text}\n\n"
-            "You are also provided with figures from the paper.\n"
-            "Based on this AI research paper's content and figures, should this paper be accepted? "
-            "Answer yes or no.\n\nDecision:"
-        )
-        prompts.append(prompt)
-        targets.append(" yes" if int(label) == 1 else " no")
+    FIGURE_MARKER = "<|FIGURE|>"  # must match builder
 
-        paths = (img_paths or [])[:max_images_per_sample]
+    for text, label, img_paths in zip(
+        examples["text"],
+        examples["labels"],
+        examples.get("image_paths", [[]] * len(examples["text"]))
+    ):
+        img_paths = (img_paths or [])[:max_images_per_sample]
+
+        # Split text into chunks around figure markers; marker count should align with img_paths order.
+        chunks = (text or "").split(FIGURE_MARKER)
+
+        content = []
+        # first chunk
+        content.append({"type": "text", "text": "Paper content:\n" + chunks[0]})
+
         imgs = []
-        for p in paths:
-            try:
-                imgs.append(Image.open(p).convert("RGB"))
-            except Exception:
-                continue
+        # for each subsequent chunk, insert image then chunk text
+        for i in range(1, len(chunks)):
+            if (i - 1) < len(img_paths):
+                p = img_paths[i - 1]
+                try:
+                    im = Image.open(p).convert("RGB")
+                    content.append({"type": "image", "image": im})
+                    imgs.append(im)
+                except Exception:
+                    # if image missing/unreadable, just skip inserting an image
+                    pass
+            content.append({"type": "text", "text": chunks[i]})
+
+        # Add your decision question at the end (after all interleaving)
+        content.append({
+            "type": "text",
+            "text": (
+                "\n\nBased on this AI research paper's content and figures, should this paper be accepted? "
+                "Answer yes or no.\n\nDecision:"
+            )
+        })
+
+        messages = [{"role": "user", "content": content}]
+
+        # Build the model-ready prompt string with correct multimodal placeholders/order
+        prompt_text = processor.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True
+        )
+        prompts.append(prompt_text)
+
+        # images must be provided in the SAME order as the image items in messages
         images_batch.append(imgs)
 
-    # Encode prompt + images (no target yet)
+        targets.append(" yes" if int(label) == 1 else " no")
+
+    # Encode prompts + images (no targets yet)
     enc = processor(
         text=prompts,
         images=images_batch,
@@ -287,10 +322,9 @@ def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per
         return_tensors=None,
     )
 
-    # Encode targets to reserve space + create labels
-    tok = processor.tokenizer
+    # Encode targets and build labels (loss only on target tokens)
     target_enc = tok(targets, add_special_tokens=False, return_attention_mask=False)
-    max_tlen = max(len(x) for x in target_enc["input_ids"]) if len(target_enc["input_ids"]) else 1
+    max_tlen = max(len(x) for x in target_enc["input_ids"]) if target_enc["input_ids"] else 1
 
     input_ids_out, attn_out, labels_out = [], [], []
 
@@ -319,7 +353,7 @@ def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per
         "labels": labels_out,
     }
 
-    # passthrough any vision features produced by processor (e.g., pixel_values, image_grid_thw, etc.)
+    # passthrough vision features produced by processor (pixel_values, image_grid_thw, etc.)
     for k in enc.keys():
         if k in ("input_ids", "attention_mask"):
             continue
@@ -327,6 +361,7 @@ def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per
 
     if "sample_weight" in examples:
         out["sample_weight"] = examples["sample_weight"]
+
     return out
 
 class VLMDataCollator:

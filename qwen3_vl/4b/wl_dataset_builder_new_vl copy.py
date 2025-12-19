@@ -35,9 +35,6 @@ class TextDatasetBuilder:
         self.noisy_high = noisy_high
         self.noisy_weight = noisy_weight
         self._rating_map = None  # lazy-loaded
-    
-    # Add near top of class
-    FIGURE_MARKER = "<|FIGURE|>"  # unique marker used to interleave figures later
 
     def load_labels(self):
         """Load labels from JSON file"""
@@ -57,8 +54,31 @@ class TextDatasetBuilder:
         return match.group(1) if match else None
 
     def _process_image_entry(self, entry, content_parts, paper_id, paper_img_descs):
-        """Deprecated in VLM mode: we no longer inject image descriptions into text."""
-        return
+        """
+        Process an image entry from JSON.
+        Finds the corresponding image file and adds it to content_parts.
+        """
+        caption = entry.get("text", "").strip()
+        fig_num = self._extract_figure_number(caption)
+        
+        image_found = False
+        if fig_num and paper_id:
+            # Determine image directory
+            base = self.images_root if self.images_root else self.data_folder
+            figures_dir = os.path.join(base, paper_id, "figures")
+            
+            if os.path.isdir(figures_dir):
+                # Try common extensions for figure_N
+                for ext in [".jpg", ".jpeg", ".png", ".webp", ".bmp"]:
+                    candidate = os.path.join(figures_dir, f"figure_{fig_num}{ext}")
+                    if os.path.exists(candidate):
+                        content_parts.append({"type": "image", "path": candidate})
+                        image_found = True
+                        break
+        
+        # Add caption text (always add caption, even if image not found, to preserve context)
+        if caption:
+            content_parts.append({"type": "text", "text": caption})
 
     def extract_paper_id(self, filename):
         """Extract paper ID from filename (format: paperid_content_list.json)"""
@@ -127,171 +147,125 @@ class TextDatasetBuilder:
                     filtered_sentences.append(sentence_restored)
         
         return ' '.join(filtered_sentences)
-
-    def _figures_dir(self, paper_id: str) -> str:
-        base = self.images_root if self.images_root else self.data_folder
-        return os.path.join(base, paper_id, "figures")
-
-    def _match_figure_path_from_caption(self, paper_id: str, caption: str):
-        """
-        Match caption like 'Figure 1: ...' to a local image filename like figure_1.jpg (case-insensitive).
-        Returns full path or None.
-        """
-        fig_num = self._extract_figure_number(caption)
-        if not fig_num:
-            return None
-
-        figures_dir = self._figures_dir(paper_id)
-        if not os.path.isdir(figures_dir):
-            return None
-
-        exts = (".jpg", ".jpeg", ".png", ".webp", ".bmp")
-        # robust regex: fig/figure + optional separators + number boundary
-        pat = re.compile(rf"(figure|fig)[\s_\-]*{re.escape(str(fig_num))}\b", re.IGNORECASE)
-
-        matches = []
-        for fn in os.listdir(figures_dir):
-            if not fn.lower().endswith(exts):
-                continue
-            stem = os.path.splitext(fn)[0]
-            if pat.search(stem):
-                matches.append(fn)
-
-        if not matches:
-            return None
-
-        matches.sort()
-        return os.path.join(figures_dir, matches[0])
     
-    def _extract_paper_content(self, json_file_path: str, paper_id: str = None, paper_img_descs: dict = None) -> str:
+    def _extract_paper_content(self, json_file_path: str, paper_id: str = None, paper_img_descs: dict = None):
         """
         Extract paper content from a JSON file.
         
         Args:
             json_file_path: Path to the JSON file containing paper data
             paper_id: The ID of the paper (used for image lookup)
+            paper_img_descs: Dictionary of image descriptions for this paper
             
         Returns:
-            Concatenated text from:
-            1. Title (first text_level=1)
-            2. Abstract section
-            3. Introduction section  
-            4. Main body sections (until Acknowledgments or References)
-            5. Equations
-            6. inserts FIGURE_MARKER into the text at the exact JSON position of each image entry
-            7. appends the matched image path (caption->Figure N->file match) in the same order
+            List of dicts: [{'type': 'text', 'text': ...}, {'type': 'image', 'path': ...}]
         """
         # Load JSON data from file
         try:
-            with open(json_file_path, "r", encoding="utf-8") as f:
+            with open(json_file_path, 'r', encoding='utf-8') as f:
                 paper_data = json.load(f)
         except Exception as e:
             print(f"Error loading JSON from {json_file_path}: {e}")
-            return "", []
-
+            return []
+        
         content_parts = []
-        ordered_image_paths = []
-
-        # --- same section indexing logic as your current _extract_paper_content ---
-        title_idx = abstract_idx = intro_idx = acknowledgments_idx = references_idx = None
-
+        
+        # Find indices of key sections
+        title_idx = None
+        abstract_idx = None
+        intro_idx = None
+        acknowledgments_idx = None
+        references_idx = None
+        
         for i, entry in enumerate(paper_data):
+            # Check for level 1 headers
             if entry.get("type") == "text" and entry.get("text_level") == 1:
                 text = entry.get("text", "").strip()
+                
+                # First text_level=1 is the title
                 if title_idx is None:
                     title_idx = i
+                # Look for abstract
                 elif "ABSTRACT" in text.upper():
                     abstract_idx = i
+                # Look for introduction
                 elif "INTRODUCTION" in text.upper():
                     intro_idx = i
+                # Look for acknowledgments (before references)
                 elif acknowledgments_idx is None and ("ACKNOWLEDGMENT" in text.upper() or "ACKNOWLEDGEMENT" in text.upper()):
                     acknowledgments_idx = i
+                # Look for references
                 elif "REFERENCES" in text.upper() or "REFERENCE" in text.upper():
                     references_idx = i
                     break
+            # Also check if any regular text block starts with "ACKNOWLEDGMENTS" or "REFERENCES"
             elif entry.get("type") == "text":
                 text = entry.get("text", "").strip()
                 upper_text = text.upper()
+                
+                # Check if text starts with "ACKNOWLEDGMENTS" (case-insensitive)
                 if acknowledgments_idx is None and (upper_text.startswith("ACKNOWLEDGMENT") or upper_text.startswith("ACKNOWLEDGEMENT")):
                     acknowledgments_idx = i
+                # Check if text starts with "REFERENCES" (case-insensitive)
                 elif references_idx is None and upper_text.startswith("REFERENCES"):
                     references_idx = i
                     break
-
+        
+        # Determine the end index for content extraction
         content_end_idx = acknowledgments_idx if acknowledgments_idx is not None else references_idx
+        
+        # Helper to add text
+        def add_text(t):
+            if t:
+                t = self._remove_github_links(t)
+                if t.strip():
+                    content_parts.append({"type": "text", "text": t.strip()})
 
-        def _handle_entry(entry):
-            t = entry.get("type")
-            if t == "text":
-                txt = entry.get("text", "").strip()
-                if txt:
-                    content_parts.append(txt)
-            elif t == "equation":
-                eq = entry.get("text", "").strip()
-                if eq:
-                    content_parts.append(eq)
-            elif t == "image":
-                # grab caption from common keys (depends on your parser)
-                caption = (
-                    entry.get("caption")
-                    or entry.get("caption_text")
-                    or entry.get("text")   # some pipelines store caption in "text"
-                    or ""
-                ).strip()
-
-                # enforce cap
-                if self.max_images_per_paper is not None and len(ordered_image_paths) >= int(self.max_images_per_paper):
-                    return
-
-                img_path = self._match_figure_path_from_caption(paper_id, caption)
-
-                # Only interleave if we can match a real file
-                if img_path:
-                    content_parts.append(self.FIGURE_MARKER)
-                    if caption:
-                        content_parts.append(caption)
-                    ordered_image_paths.append(img_path)
-
-        # Title
+        # Extract title
         if title_idx is not None:
             title_text = paper_data[title_idx].get("text", "").strip()
-            if title_text:
-                content_parts.append(title_text)
+            add_text(title_text)
+        
+        # Helper to process range
+        def process_range(start, end):
+            for i in range(start, end):
+                entry = paper_data[i]
+                if entry.get("type") == "text":
+                    add_text(entry.get("text", ""))
+                elif entry.get("type") == "equation":
+                    add_text(entry.get("text", ""))
+                elif entry.get("type") == "image":
+                    self._process_image_entry(entry, content_parts, paper_id, paper_img_descs)
 
-        # Abstract section: [abstract_idx, intro_idx)
+        # Extract abstract
         if abstract_idx is not None and intro_idx is not None:
-            for i in range(abstract_idx, intro_idx):
-                _handle_entry(paper_data[i])
-
-        # Introduction section
+            process_range(abstract_idx, intro_idx)
+        
+        # Extract introduction
         if intro_idx is not None:
             next_section_idx = None
             for i in range(intro_idx + 1, len(paper_data)):
                 if paper_data[i].get("type") == "text" and paper_data[i].get("text_level") == 1:
                     next_section_idx = i
                     break
+            
             if next_section_idx is None:
                 next_section_idx = content_end_idx if content_end_idx else len(paper_data)
-
-            end_cap = content_end_idx if content_end_idx else len(paper_data)
-            for i in range(intro_idx, min(next_section_idx, end_cap)):
-                _handle_entry(paper_data[i])
-
-        # Main body
+            
+            process_range(intro_idx, min(next_section_idx, content_end_idx if content_end_idx else len(paper_data)))
+        
+        # Extract main body
         if intro_idx is not None:
             start_idx = intro_idx
             for i in range(intro_idx + 1, len(paper_data)):
                 if paper_data[i].get("type") == "text" and paper_data[i].get("text_level") == 1:
                     start_idx = i
                     break
-
+            
             end_idx = content_end_idx if content_end_idx else len(paper_data)
-            for i in range(start_idx, end_idx):
-                _handle_entry(paper_data[i])
-
-        full_text = " ".join(content_parts)
-        full_text = self._remove_github_links(full_text)
-        return full_text, ordered_image_paths
+            process_range(start_idx, end_idx)
+        
+        return content_parts
     
     def debug_label_matching(self):
         """Debug function to check label matching issues"""
@@ -495,9 +469,10 @@ class TextDatasetBuilder:
     def load_dataset(self):
         """Load JSON files and create dataset with labels"""
         texts = []
+        contents = # New column for structured content
         labels = []
         sample_weights = []
-        image_paths_all = []  # NEW
+        # image_paths_all removed, embedded in content
 
         labels_dict = self.load_labels()
         stats_dict = self.load_statistics()
@@ -525,16 +500,26 @@ class TextDatasetBuilder:
                 label = self.get_label_from_status(status)
 
                 try:
-                    text, ordered_paths = self._extract_paper_content_and_images(filepath, paper_id)
-                    if text:
-                        reference_count = self.count_references(text)
+                    # Get structured content
+                    content_list = self._extract_paper_content(filepath, paper_id, paper_img_descs=None)
+                    
+                    if content_list:
+                        # Reconstruct full text for stats
+                        full_text_parts = [item['text'] for item in content_list if item['type'] == 'text']
+                        full_text = " ".join(full_text_parts)
+                        
+                        reference_count = self.count_references(full_text)
                         stats_str = self.format_statistics(paper_id, stats_dict, reference_count)
-                        text_with_stats = text + stats_str
+                        
+                        # Append stats to text and content list
+                        text_with_stats = full_text + stats_str
+                        if stats_str:
+                            content_list.append({"type": "text", "text": stats_str})
 
                         texts.append(text_with_stats)
+                        contents.append(json.dumps(content_list)) # Serialize structured content
                         labels.append(label)
                         sample_weights.append(self.get_sample_weight(paper_id))
-                        image_paths_all.append(ordered_paths) # NEW
                         processed_files += 1
                 except Exception:
                     continue
@@ -552,18 +537,18 @@ class TextDatasetBuilder:
 
         return Dataset.from_dict({
             'text': texts,
+            'content': contents, # New column
             'labels': labels,
             'sample_weight': sample_weights,
-            'image_paths': image_paths_all,   # NEW
         })
 
     def load_dataset_with_ids(self):
         """Load JSON files and create dataset with labels and IDs"""
         texts = []
+        contents = []
         labels = []
         paper_ids = []
         sample_weights = []
-        image_paths_all = []  # NEW
 
         labels_dict = self.load_labels()
         stats_dict = self.load_statistics()
@@ -588,26 +573,33 @@ class TextDatasetBuilder:
                 label = self.get_label_from_status(status)
 
                 try:
-                    text, ordered_paths = self._extract_paper_content_and_images(filepath, paper_id)
-                    if text:
-                        reference_count = self.count_references(text)
+                    content_list = self._extract_paper_content(filepath, paper_id, paper_img_descs=None)
+                    
+                    if content_list:
+                        full_text_parts = [item['text'] for item in content_list if item['type'] == 'text']
+                        full_text = " ".join(full_text_parts)
+                        
+                        reference_count = self.count_references(full_text)
                         stats_str = self.format_statistics(paper_id, stats_dict, reference_count)
-                        text_with_stats = text + stats_str
+                        
+                        text_with_stats = full_text + stats_str
+                        if stats_str:
+                            content_list.append({"type": "text", "text": stats_str})
 
                         texts.append(text_with_stats)
+                        contents.append(json.dumps(content_list))
                         labels.append(label)
                         paper_ids.append(paper_id)
                         sample_weights.append(self.get_sample_weight(paper_id))
-                        image_paths_all.append(ordered_paths)  # NEW
                 except Exception:
                     continue
 
         return Dataset.from_dict({
             'text': texts,
+            'content': contents,
             'labels': labels,
             'paper_id': paper_ids,
             'sample_weight': sample_weights,
-            'image_paths': image_paths_all,  # NEW
         })
 
     def get_dataset_stats(self, dataset):

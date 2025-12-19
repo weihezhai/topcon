@@ -1,26 +1,25 @@
 import os
 import sys
 import argparse
-# import inspect
 import torch
 from datetime import datetime
 import pandas as pd
 from datasets import Dataset
 from transformers import (
-    AutoTokenizer, 
+    AutoProcessor,                 # NEW
+    AutoModelForVision2Seq,         # NEW (VLM)
+    AutoTokenizer,
     AutoModelForCausalLM,
-    TrainingArguments, 
+    TrainingArguments,
     Trainer,
-    DataCollatorForLanguageModeling,  # Changed for causal LM
     default_data_collator
 )
-# Removed LoRA - using full fine-tuning
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix, classification_report
 from sklearn.model_selection import train_test_split
 import numpy as np
 import torch.nn as nn
+from PIL import Image  # NEW
 
-# Import the dataset builder
 from wl_dataset_builder_new_vl import TextDatasetBuilder
 from datasets import load_from_disk
 
@@ -247,6 +246,112 @@ def preprocess_function(examples, tokenizer, max_length=1024):
     if 'sample_weight' in examples:
         out['sample_weight'] = examples['sample_weight']
     return out
+
+def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per_sample=6):
+    """
+    Build a multimodal prompt:
+      text + N images, then ask for yes/no decision.
+    Labels compute loss only on the target token (" yes" or " no").
+    """
+    prompts = []
+    targets = []
+    images_batch = []
+
+    for text, label, img_paths in zip(examples["text"], examples["labels"], examples.get("image_paths", [[]] * len(examples["text"]))):
+        prompt = (
+            "Paper content:\n"
+            f"{text}\n\n"
+            "You are also provided with figures from the paper.\n"
+            "Based on this AI research paper's content and figures, should this paper be accepted? "
+            "Answer yes or no.\n\nDecision:"
+        )
+        prompts.append(prompt)
+        targets.append(" yes" if int(label) == 1 else " no")
+
+        paths = (img_paths or [])[:max_images_per_sample]
+        imgs = []
+        for p in paths:
+            try:
+                imgs.append(Image.open(p).convert("RGB"))
+            except Exception:
+                continue
+        images_batch.append(imgs)
+
+    # Encode prompt + images (no target yet)
+    enc = processor(
+        text=prompts,
+        images=images_batch,
+        truncation=True,
+        padding=False,
+        max_length=max_length,
+        return_tensors=None,
+    )
+
+    # Encode targets to reserve space + create labels
+    tok = processor.tokenizer
+    target_enc = tok(targets, add_special_tokens=False, return_attention_mask=False)
+    max_tlen = max(len(x) for x in target_enc["input_ids"]) if len(target_enc["input_ids"]) else 1
+
+    input_ids_out, attn_out, labels_out = [], [], []
+
+    for i in range(len(enc["input_ids"])):
+        prompt_ids = enc["input_ids"][i]
+        prompt_mask = enc["attention_mask"][i]
+        t_ids = target_enc["input_ids"][i]
+
+        # truncate prompt to leave room for target
+        if len(prompt_ids) + len(t_ids) > max_length:
+            keep = max(1, max_length - len(t_ids))
+            prompt_ids = prompt_ids[:keep]
+            prompt_mask = prompt_mask[:keep]
+
+        full_ids = prompt_ids + t_ids
+        full_mask = prompt_mask + [1] * len(t_ids)
+        full_labels = [-100] * len(prompt_ids) + t_ids
+
+        input_ids_out.append(full_ids)
+        attn_out.append(full_mask)
+        labels_out.append(full_labels)
+
+    out = {
+        "input_ids": input_ids_out,
+        "attention_mask": attn_out,
+        "labels": labels_out,
+    }
+
+    # passthrough any vision features produced by processor (e.g., pixel_values, image_grid_thw, etc.)
+    for k in enc.keys():
+        if k in ("input_ids", "attention_mask"):
+            continue
+        out[k] = enc[k]
+
+    if "sample_weight" in examples:
+        out["sample_weight"] = examples["sample_weight"]
+    return out
+
+class VLMDataCollator:
+    """Pad multimodal batches produced by AutoProcessor and keep optional sample_weight."""
+    def __init__(self, processor, max_length=2048):
+        self.processor = processor
+        self.max_length = max_length
+
+    def __call__(self, features):
+        has_weight = "sample_weight" in features[0]
+        sample_weight = None
+        if has_weight:
+            sample_weight = torch.tensor([float(f.get("sample_weight", 1.0)) for f in features], dtype=torch.float)
+
+        # processor.pad handles input_ids/attention_mask (and possibly pixel_values / image_grid_thw etc)
+        pad_keys = {k: [f[k] for f in features] for k in features[0].keys() if k != "sample_weight"}
+        batch = self.processor.pad(
+            pad_keys,
+            padding=True,
+            max_length=self.max_length,
+            return_tensors="pt",
+        )
+        if has_weight:
+            batch["sample_weight"] = sample_weight
+        return batch
 
 def download_and_save_model(model_name, cache_dir):
     """Download and save the base model locally"""
@@ -507,21 +612,29 @@ def main():
     print("="*80)
     
     try:
-        parser = argparse.ArgumentParser(description="Fine-tune a language model with multi-GPU support")
+        parser = argparse.ArgumentParser(description="Fine-tune a vision-language model with multi-GPU support")
         parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
-        parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
+        parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics")
         parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
-        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-14B", help="Pre-trained model name or path")
 
-        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_all", help="Path to the folder containing training jsons")
+        # CHANGED default to VLM
+        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-VL-4B", help="Pre-trained VLM name or path")
+
+        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/balanced_llm", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/topcon/balanced_labels.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
-        parser.add_argument("--img_desc_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/img_des/image_descriptions_all.json', help="Path to the image descriptions JSON file for vision-language support")
-        parser.add_argument("--metadata_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_meta.json', help="Path to metadata JSON (list of dicts with fields: id, rating_avg)")
-        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_14b/orig/all", help="Directory to save/load the fine-tuned model")
-        
+
+        # REMOVED meaning: img_desc_file no longer used (kept arg to avoid breaking scripts)
+        parser.add_argument("--img_desc_file", type=str, default=None, help="(Deprecated) image descriptions JSON; VLM uses real images now")
+
+        # NEW: where to find {paper_id}/figures/*
+        parser.add_argument("--images_root", type=str, default=None, help="Optional root for images; expects {images_root}/{paper_id}/figures/*")
+        parser.add_argument("--max_images_per_paper", type=int, default=6, help="Max number of figure images per sample")
+
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_vl_4b/ft/", help="Directory to save/load the fine-tuned model")
         parser.add_argument("--max_length", type=int, default=12000, help="Maximum sequence length for training")
-        parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
+        parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use")
+        parser.add_argument("--metadata_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_meta.json', help="Path to metadata JSON")
         parser.add_argument("--noisy_low", type=float, default=5.2, help="Lower bound (inclusive) of noisy rating_avg range")
         parser.add_argument("--noisy_high", type=float, default=6.2, help="Upper bound (inclusive) of noisy rating_avg range")
         parser.add_argument("--noisy_weight", type=float, default=0.5, help="Sample weight for noisy range")
@@ -550,9 +663,8 @@ def main():
         DATA_FOLDER = args.data_folder
         LABELS_FILE = args.labels_file
         STATISTICS_FILE = args.statistics_file
-        IMG_DESC_FILE = args.img_desc_file  # Added
         METADATA_FILE = args.metadata_file
-        
+
         # Add timestamp to output directory for training runs to separate them
         if not args.eval:
             OUTPUT_DIR = os.path.join(args.output_dir, timestamp)
@@ -564,7 +676,7 @@ def main():
         MAX_LENGTH = args.max_length
         
         # Model directories
-        BASE_MODEL_CACHE = "/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_14b/orig"  # Where to cache the downloaded model
+        BASE_MODEL_CACHE = "/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_4b/orig"  # Where to cache the downloaded model
 
         # If in evaluation mode, use the fine-tuned model directory
         if args.eval:
@@ -607,30 +719,30 @@ def main():
             else:
                 print(f"Using cached model from {BASE_MODEL_CACHE}")
         
-        # Load tokenizer from appropriate model path
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+        # Load processor (tokenizer+image processor)
+        processor = AutoProcessor.from_pretrained(MODEL_PATH)
+        tokenizer = processor.tokenizer
+
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
-        # Ensure pad_token_id is set
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
-        
-        # Get token IDs for "yes" and "no"
+
         global YES_ID, NO_ID
         YES_ID = tokenizer(" yes", add_special_tokens=False)["input_ids"][0]
         NO_ID  = tokenizer(" no",  add_special_tokens=False)["input_ids"][0]
 
-        # Load and prepare dataset
         print("Loading dataset....")
-        
-        # Define processed dataset cache path - include stats/img_desc in cache name if provided
-        cache_suffix = "all_mineru"
+
+        cache_suffix = "vlm_real_images"
         if STATISTICS_FILE:
             cache_suffix += "_with_stats"
-        if IMG_DESC_FILE:
-            cache_suffix += "_with_img_desc"
         if METADATA_FILE:
             cache_suffix += "_with_rating_weights_5262"
+        if args.images_root:
+            cache_suffix += "_images_root"
+        cache_suffix += f"_maximg{args.max_images_per_paper}"
+
         PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/dataset_cache/balanced/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
 
@@ -638,12 +750,14 @@ def main():
             DATA_FOLDER,
             LABELS_FILE,
             statistics_file=STATISTICS_FILE,
-            img_desc_file=IMG_DESC_FILE,
+            img_desc_file=None,                    # CHANGED: no descriptions
             max_length=MAX_LENGTH,
             metadata_file=METADATA_FILE,
             noisy_low=args.noisy_low,
             noisy_high=args.noisy_high,
             noisy_weight=args.noisy_weight,
+            images_root=args.images_root,          # NEW
+            max_images_per_paper=args.max_images_per_paper,  # NEW
         )
 
         dataset_info_path = os.path.join(PROCESSED_DATASET_CACHE, "dataset_info.json")
@@ -706,81 +820,56 @@ def main():
         print(f"First text sample length: {len(train_dataset[0]['text'])}")
         print(f"Text preview: {train_dataset[0]['text'][:100]}...")
         
-        # Tokenize datasets using the new approach
+        # Tokenize datasets using the VLM approach
         print("Tokenizing datasets...")
         
-        # Get column names to remove (all original columns)
         cols_to_remove = train_dataset.column_names
         print(f"Columns to remove after tokenization: {cols_to_remove}")
 
         train_dataset = train_dataset.map(
-            lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
+            lambda x: preprocess_function_vlm(x, processor, MAX_LENGTH, args.max_images_per_paper),
             batched=True,
-            batch_size=100,
+            batch_size=10,
             remove_columns=cols_to_remove
         )
         eval_dataset = eval_dataset.map(
-            lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
+            lambda x: preprocess_function_vlm(x, processor, MAX_LENGTH, args.max_images_per_paper),
             batched=True,
-            batch_size=100,
+            batch_size=10,
             remove_columns=cols_to_remove
         )
         small_eval_dataset = small_eval_dataset.map(
-            lambda x: preprocess_function(x, tokenizer, MAX_LENGTH),
+            lambda x: preprocess_function_vlm(x, processor, MAX_LENGTH, args.max_images_per_paper),
             batched=True,
-            batch_size=100,
+            batch_size=10,
             remove_columns=cols_to_remove
         )
 
-        print("Tokenization complete")
-        print(f"Train dataset columns: {train_dataset.column_names}")
-        print(f"Train dataset sample (initial part): {str(train_dataset[0])[:50]}...")
-
-        # Debug tensor shapes
-        sample = train_dataset[0]
-        print(f"Sample input_ids type: {type(sample['input_ids'])}")
-        print(f"Sample input_ids length: {len(sample['input_ids'])}")
-        print(f"Sample labels type: {type(sample['labels'])}")
-        print(f"Sample labels value: {sample['labels']}")
-        
-        # Load model with automatic device mapping for multi-GPU
-        print("Loading model with automatic device mapping across GPUs...")
+        # Load VLM model with automatic device mapping for multi-GPU
+        print("Loading VLM model with automatic device mapping across GPUs...")
         if args.eval:
-            # Load the fine-tuned model for evaluation
-            model = AutoModelForCausalLM.from_pretrained(
-                OUTPUT_DIR,  # Load from fine-tuned model directory
+            model = AutoModelForVision2Seq.from_pretrained(
+                OUTPUT_DIR,
                 torch_dtype=torch.bfloat16,
-                device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
-                offload_folder="./offload",  # Offload to disk if needed
-                attn_implementation="sdpa"  # Use SDPA attention implementation
+                device_map="auto",
+                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
+                offload_folder="./offload",
+                attn_implementation="sdpa",
             )
-            print("Loaded fine-tuned model for evaluation")
+            print("Loaded fine-tuned VLM for evaluation")
         else:
-            # Load base model for training
-            model = AutoModelForCausalLM.from_pretrained(
+            model = AutoModelForVision2Seq.from_pretrained(
                 BASE_MODEL_CACHE,
                 torch_dtype=torch.bfloat16,
-                device_map="auto",  # Automatically distribute across available GPUs
-                max_memory={i: "78GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
-                offload_folder="./offload",  # Offload to disk if needed
-                attn_implementation="sdpa"  # Use SDPA attention implementation
+                device_map="auto",
+                max_memory={i: "78GiB" for i in range(len(args.gpu_ids))},
+                offload_folder="./offload",
+                attn_implementation="sdpa",
             )
 
-        print(model)
-        
-        # Print device mapping
-        if hasattr(model, 'hf_device_map'):
-            print("Model device mapping:")
-            for layer, device in model.hf_device_map.items():
-                print(f"  {layer}: {device}")
-        
-        # Data collator for language modeling
-        data_collator = CustomDataCollator(
-            tokenizer=tokenizer,
-            max_length=MAX_LENGTH
-        )
-        
+        # Data collator for multimodal
+        data_collator = VLMDataCollator(processor=processor, max_length=MAX_LENGTH)
+
         # Only run training if not in evaluation mode
         if not args.eval:
             # Set eval_steps based on debug mode
@@ -792,7 +881,7 @@ def main():
             # Training arguments - adjusted for multi-GPU
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
-                num_train_epochs=4,
+                num_train_epochs=5,
                 per_device_train_batch_size=1,  # Keep small for large model
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
@@ -894,8 +983,8 @@ def main():
             time.sleep(2)
             
             # Reload the model fresh with device mapping
-            model = AutoModelForCausalLM.from_pretrained(
-                OUTPUT_DIR,  # Load the fine-tuned model
+            model = AutoModelForVision2Seq.from_pretrained(
+                OUTPUT_DIR,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
                 max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
@@ -907,7 +996,6 @@ def main():
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-        # Create trainer for final evaluation (needed for both train and eval modes)
         print("Setting up trainer for final evaluation...")
         training_args_eval = TrainingArguments(
             output_dir=OUTPUT_DIR,

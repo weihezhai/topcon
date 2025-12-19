@@ -6,8 +6,8 @@
 #SBATCH --cpus-per-task=12
 #SBATCH --mail-user=weihezhai@gmail.com
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --job-name=orillm4b
-#SBATCH --output=./logs/orillm4b.%j.out
+#SBATCH --job-name=wl_4b_vl_orig_llm
+#SBATCH --output=./logs/wl_4b_vl_orig_llm.%j.out
 #SBATCH --time=0-10:00:00
 
 module load cuDNN/8.7.0.84-CUDA-11.8.0

@@ -2,10 +2,10 @@
 #SBATCH --job-name=14B_llm_lora
 #SBATCH --partition=gpu
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:3
+#SBATCH --gres=gpu:4
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
-#SBATCH --mem=180G
+#SBATCH --mem=160G
 #SBATCH --time=48:00:00
 #SBATCH --output=slurm-%j.out
 #SBATCH --error=slurm-%j.err

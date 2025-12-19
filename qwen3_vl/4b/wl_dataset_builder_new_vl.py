@@ -505,6 +505,10 @@ class TextDatasetBuilder:
         missing_labels = []
         processed_files = 0
 
+        # NEW: image-match counters (matched = caption->file matches actually interleaved)
+        papers_with_no_matched_images = 0
+        total_matched_images = 0
+
         for paper_id in sorted(os.listdir(self.data_folder)):
             subdir_path = os.path.join(self.data_folder, paper_id)
             if not os.path.isdir(subdir_path):
@@ -536,10 +540,20 @@ class TextDatasetBuilder:
                         sample_weights.append(self.get_sample_weight(paper_id))
                         image_paths_all.append(ordered_paths) # NEW
                         processed_files += 1
+
+                        # NEW: counters
+                        if not ordered_paths:
+                            papers_with_no_matched_images += 1
+                        total_matched_images += len(ordered_paths)
                 except Exception:
                     continue
             else:
                 missing_labels.append(paper_id)
+
+        # NEW: report
+        if processed_files > 0:
+            avg = total_matched_images / processed_files
+            print(f"[ImageMatch] {papers_with_no_matched_images}/{processed_files} processed papers have 0 matched images; avg matched images/paper = {avg:.2f}")
 
         if missing_labels:
             print(f"Warning: {len(missing_labels)} files had no corresponding labels")
@@ -567,6 +581,11 @@ class TextDatasetBuilder:
 
         labels_dict = self.load_labels()
         stats_dict = self.load_statistics()
+
+        # NEW: image-match counters
+        processed_files = 0
+        papers_with_no_matched_images = 0
+        total_matched_images = 0
 
         for paper_id in sorted(os.listdir(self.data_folder)):
             subdir_path = os.path.join(self.data_folder, paper_id)
@@ -599,8 +618,19 @@ class TextDatasetBuilder:
                         paper_ids.append(paper_id)
                         sample_weights.append(self.get_sample_weight(paper_id))
                         image_paths_all.append(ordered_paths)  # NEW
+
+                        # NEW: counters
+                        processed_files += 1
+                        if not ordered_paths:
+                            papers_with_no_matched_images += 1
+                        total_matched_images += len(ordered_paths)
                 except Exception:
                     continue
+
+        # NEW: report
+        if processed_files > 0:
+            avg = total_matched_images / processed_files
+            print(f"[ImageMatch] {papers_with_no_matched_images}/{processed_files} processed papers have 0 matched images; avg matched images/paper = {avg:.2f}")
 
         return Dataset.from_dict({
             'text': texts,
@@ -613,7 +643,7 @@ class TextDatasetBuilder:
     def get_dataset_stats(self, dataset):
         """Get dataset statistics"""
         import pandas as pd
-        
+
         # Handle empty dataset
         if len(dataset) == 0:
             return {
@@ -644,5 +674,14 @@ class TextDatasetBuilder:
                 'max_length_words': max(text_lengths) if text_lengths else 0
             }
         }
-        
+
+        # NEW: image stats if present
+        if "image_paths" in dataset.column_names:
+            img_counts = [len(xs) for xs in dataset["image_paths"]]
+            stats["image_stats"] = {
+                "papers_with_0_matched_images": int(sum(c == 0 for c in img_counts)),
+                "avg_matched_images_per_paper": (sum(img_counts) / len(img_counts)) if img_counts else 0.0,
+                "max_matched_images_per_paper": max(img_counts) if img_counts else 0,
+            }
+
         return stats

@@ -250,45 +250,44 @@ def preprocess_function(examples, tokenizer, max_length=1024):
 def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per_sample=6):
     """
     Interleave images at exact positions using TextDatasetBuilder.FIGURE_MARKER.
-    Uses Qwen3-VL chat template so image/text ordering is preserved. :contentReference[oaicite:1]{index=1}
-    """
-    tok = processor.tokenizer
 
-    prompts = []
-    targets = []
-    images_batch = []
+    IMPORTANT: Qwen3-VL fast image processor crashes if `images` is a nested list and
+    any sample contains an empty list (e.g. `[[]]`). We therefore encode PER-SAMPLE:
+    - if a sample has no images -> pass images=None
+    - else -> pass a flat list[PIL.Image] for that sample
+    """
+    tok = processor.tokenizer if hasattr(processor, "tokenizer") else processor
 
     FIGURE_MARKER = "<|FIGURE|>"  # must match builder
 
+    per_sample_enc = []
+    targets = []
+
+    # Build prompts/messages and encode per sample to avoid nested empty-image batches
     for text, label, img_paths in zip(
         examples["text"],
         examples["labels"],
         examples.get("image_paths", [[]] * len(examples["text"]))
     ):
         img_paths = (img_paths or [])[:max_images_per_sample]
-
-        # Split text into chunks around figure markers; marker count should align with img_paths order.
         chunks = (text or "").split(FIGURE_MARKER)
 
-        content = []
-        # first chunk
-        content.append({"type": "text", "text": "Paper content:\n" + chunks[0]})
-
+        content = [{"type": "text", "text": "Paper content:\n" + (chunks[0] if chunks else "")}]
         imgs = []
-        # for each subsequent chunk, insert image then chunk text
+
         for i in range(1, len(chunks)):
             if (i - 1) < len(img_paths):
                 p = img_paths[i - 1]
                 try:
-                    im = Image.open(p).convert("RGB")
+                    # Ensure file handle is closed; convert() returns a standalone image.
+                    with Image.open(p) as im0:
+                        im = im0.convert("RGB")
                     content.append({"type": "image", "image": im})
                     imgs.append(im)
                 except Exception:
-                    # if image missing/unreadable, just skip inserting an image
                     pass
             content.append({"type": "text", "text": chunks[i]})
 
-        # Add your decision question at the end (after all interleaving)
         content.append({
             "type": "text",
             "text": (
@@ -298,42 +297,35 @@ def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per
         })
 
         messages = [{"role": "user", "content": content}]
+        prompt_text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
-        # Build the model-ready prompt string with correct multimodal placeholders/order
-        prompt_text = processor.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True
+        # Key fix: images=None if no images, otherwise a FLAT list of PIL images for this sample.
+        enc_i = processor(
+            text=prompt_text,
+            images=(imgs if len(imgs) > 0 else None),
+            truncation=True,
+            padding=False,
+            max_length=max_length,
+            return_tensors=None,
         )
-        prompts.append(prompt_text)
-
-        # images must be provided in the SAME order as the image items in messages
-        images_batch.append(imgs)
-
+        per_sample_enc.append(enc_i)
         targets.append(" yes" if int(label) == 1 else " no")
-
-    # Encode prompts + images (no targets yet)
-    enc = processor(
-        text=prompts,
-        images=images_batch,
-        truncation=True,
-        padding=False,
-        max_length=max_length,
-        return_tensors=None,
-    )
 
     # Encode targets and build labels (loss only on target tokens)
     target_enc = tok(targets, add_special_tokens=False, return_attention_mask=False)
-    max_tlen = max(len(x) for x in target_enc["input_ids"]) if target_enc["input_ids"] else 1
-
     input_ids_out, attn_out, labels_out = [], [], []
 
-    for i in range(len(enc["input_ids"])):
-        prompt_ids = enc["input_ids"][i]
-        prompt_mask = enc["attention_mask"][i]
+    # Union all non-text keys so dataset schema stays consistent; fill missing with None.
+    extra_keys = set()
+    for enc_i in per_sample_enc:
+        extra_keys.update([k for k in enc_i.keys() if k not in ("input_ids", "attention_mask")])
+    extra_out = {k: [] for k in sorted(extra_keys)}
+
+    for i, enc_i in enumerate(per_sample_enc):
+        prompt_ids = enc_i["input_ids"]
+        prompt_mask = enc_i["attention_mask"]
         t_ids = target_enc["input_ids"][i]
 
-        # truncate prompt to leave room for target
         if len(prompt_ids) + len(t_ids) > max_length:
             keep = max(1, max_length - len(t_ids))
             prompt_ids = prompt_ids[:keep]
@@ -347,17 +339,15 @@ def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per
         attn_out.append(full_mask)
         labels_out.append(full_labels)
 
+        for k in extra_out.keys():
+            extra_out[k].append(enc_i.get(k, None))
+
     out = {
         "input_ids": input_ids_out,
         "attention_mask": attn_out,
         "labels": labels_out,
+        **extra_out,
     }
-
-    # passthrough vision features produced by processor (pixel_values, image_grid_thw, etc.)
-    for k in enc.keys():
-        if k in ("input_ids", "attention_mask"):
-            continue
-        out[k] = enc[k]
 
     if "sample_weight" in examples:
         out["sample_weight"] = examples["sample_weight"]
@@ -376,10 +366,19 @@ class VLMDataCollator:
         if has_weight:
             sample_weight = torch.tensor([float(f.get("sample_weight", 1.0)) for f in features], dtype=torch.float)
 
-        # processor.pad handles input_ids/attention_mask (and possibly pixel_values / image_grid_thw etc)
-        pad_keys = {k: [f[k] for f in features] for k in features[0].keys() if k != "sample_weight"}
+        # Build pad inputs, dropping optional keys with None values.
+        # (Your effective batch size is 1, so mixed None/non-None in a batch shouldn't occur.)
+        pad_inputs = {}
+        for k in features[0].keys():
+            if k == "sample_weight":
+                continue
+            vals = [f.get(k, None) for f in features]
+            if any(v is None for v in vals):
+                continue
+            pad_inputs[k] = vals
+
         batch = self.processor.pad(
-            pad_keys,
+            pad_inputs,
             padding=True,
             max_length=self.max_length,
             return_tensors="pt",
@@ -836,13 +835,22 @@ def main():
         print(f"  Statistics file: {STATISTICS_FILE if STATISTICS_FILE else 'Not provided'}")
         print(f"  Max length: {MAX_LENGTH}")
         
+        # NEW: image matching stats (works even when loaded from cache)
+        if "image_paths" in dataset.column_names:
+            no_matched_imgs = sum(1 for xs in dataset["image_paths"] if not xs)
+            total = len(dataset)
+            avg_imgs = (sum(len(xs) for xs in dataset["image_paths"]) / total) if total else 0.0
+            print(f"Image matching: {no_matched_imgs}/{total} papers have 0 matched images; avg matched images/paper = {avg_imgs:.2f}")
+
         # Print dataset statistics
         stats = dataset_builder.get_dataset_stats(dataset)
         print(f"Dataset Statistics:")
         print(f"Total samples: {stats['total_samples']}")
         print(f"Label distribution: {stats['label_distribution']}")
         print(f"Average text length: {stats['text_stats']['avg_length_words']:.2f} words")
-        
+        if "image_stats" in stats:
+            print(f"Image Stats: {stats['image_stats']}")
+
         # Split dataset using sklearn for proper stratification
         print("Splitting dataset...")
         train_test_split_result = split_dataset_stratified(dataset, test_size=0.1, seed=42)

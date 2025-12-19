@@ -835,7 +835,6 @@ def main():
         print(f"  Data folder: {DATA_FOLDER}")
         print(f"  Labels file: {LABELS_FILE}")
         print(f"  Statistics file: {STATISTICS_FILE if STATISTICS_FILE else 'Not provided'}")
-        print(f"  Image descriptions file: {IMG_DESC_FILE if IMG_DESC_FILE else 'Not provided'}")  # Added
         print(f"  Max length: {MAX_LENGTH}")
         
         # Print dataset statistics

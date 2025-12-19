@@ -653,7 +653,7 @@ def main():
         parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
 
         # CHANGED default to VLM
-        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-VL-4B", help="Pre-trained VLM name or path")
+        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-VL-4B-Instruct", help="Pre-trained VLM name or path")
 
         parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/balanced_llm", help="Path to the folder containing training jsons")
         parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/topcon/balanced_labels.json", help="Path to the file containing labels")

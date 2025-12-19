@@ -786,7 +786,6 @@ def main():
             cache_suffix += "_with_rating_weights_5262"
         if args.images_root:
             cache_suffix += "_images_root"
-        cache_suffix += f"_maximg{args.max_images_per_paper}"
 
         PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/dataset_cache/balanced/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)

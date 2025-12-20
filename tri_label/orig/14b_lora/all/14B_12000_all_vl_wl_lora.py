@@ -648,8 +648,8 @@ def main():
         parser.add_argument("--noisy_weight", type=float, default=0.5, help="Sample weight for noisy range")
 
         # +++ LoRA config +++
-        parser.add_argument("--lora_r", type=int, default=32, help="LoRA rank")
-        parser.add_argument("--lora_alpha", type=int, default=64, help="LoRA alpha")
+        parser.add_argument("--lora_r", type=int, default=16, help="LoRA rank")
+        parser.add_argument("--lora_alpha", type=int, default=32, help="LoRA alpha")
         parser.add_argument("--lora_dropout", type=float, default=0.05, help="LoRA dropout")
         parser.add_argument(
             "--lora_target_modules",
@@ -974,12 +974,12 @@ def main():
             # Training arguments
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
-                num_train_epochs=3,
+                num_train_epochs=4,
                 per_device_train_batch_size=1,
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,
                 learning_rate=1e-4,
-                warmup_ratio=0.05,
+                warmup_ratio=0.1,
                 weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,

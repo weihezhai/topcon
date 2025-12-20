@@ -255,15 +255,40 @@ def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per
     any sample contains an empty list (e.g. `[[]]`). We therefore encode PER-SAMPLE:
     - if a sample has no images -> pass images=None
     - else -> pass a flat list[PIL.Image] for that sample
+
+    Also: HuggingFace Datasets (pyarrow) requires each returned column to have a consistent
+    type across rows. We therefore normalize vision extras to ALWAYS be Python lists (never None/ndarray).
     """
     tok = processor.tokenizer if hasattr(processor, "tokenizer") else processor
+    FIGURE_MARKER = "<|FIGURE|>"
 
-    FIGURE_MARKER = "<|FIGURE|>"  # must match builder
+    # Keep only known multimodal fields to avoid schema surprises
+    ALLOWED_EXTRA_KEYS = {"pixel_values", "image_grid_thw", "pixel_values_videos", "video_grid_thw"}
+
+    def _as_list(x):
+        """Convert tensors/ndarrays/scalars into Python lists (never None)."""
+        if x is None:
+            return []
+        if isinstance(x, torch.Tensor):
+            return x.detach().cpu().tolist()
+        if isinstance(x, np.ndarray):
+            return x.tolist()
+        if isinstance(x, (list, tuple)):
+            out = []
+            for y in x:
+                if isinstance(y, torch.Tensor):
+                    out.append(y.detach().cpu().tolist())
+                elif isinstance(y, np.ndarray):
+                    out.append(y.tolist())
+                else:
+                    out.append(y)
+            return list(out)
+        # scalar / other -> wrap so the column stays "list" typed
+        return [x]
 
     per_sample_enc = []
     targets = []
 
-    # Build prompts/messages and encode per sample to avoid nested empty-image batches
     for text, label, img_paths in zip(
         examples["text"],
         examples["labels"],
@@ -279,7 +304,6 @@ def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per
             if (i - 1) < len(img_paths):
                 p = img_paths[i - 1]
                 try:
-                    # Ensure file handle is closed; convert() returns a standalone image.
                     with Image.open(p) as im0:
                         im = im0.convert("RGB")
                     content.append({"type": "image", "image": im})
@@ -299,7 +323,6 @@ def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per
         messages = [{"role": "user", "content": content}]
         prompt_text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
-        # Key fix: images=None if no images, otherwise a FLAT list of PIL images for this sample.
         enc_i = processor(
             text=prompt_text,
             images=(imgs if len(imgs) > 0 else None),
@@ -308,18 +331,24 @@ def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per
             max_length=max_length,
             return_tensors=None,
         )
-        per_sample_enc.append(enc_i)
+
+        # Normalize/retain only allowed extra keys (avoid Arrow mixed types)
+        enc_norm = {
+            "input_ids": enc_i["input_ids"],
+            "attention_mask": enc_i["attention_mask"],
+        }
+        for k in ALLOWED_EXTRA_KEYS:
+            if k in enc_i:
+                enc_norm[k] = _as_list(enc_i[k])
+        per_sample_enc.append(enc_norm)
+
         targets.append(" yes" if int(label) == 1 else " no")
 
-    # Encode targets and build labels (loss only on target tokens)
     target_enc = tok(targets, add_special_tokens=False, return_attention_mask=False)
     input_ids_out, attn_out, labels_out = [], [], []
 
-    # Union all non-text keys so dataset schema stays consistent; fill missing with None.
-    extra_keys = set()
-    for enc_i in per_sample_enc:
-        extra_keys.update([k for k in enc_i.keys() if k not in ("input_ids", "attention_mask")])
-    extra_out = {k: [] for k in sorted(extra_keys)}
+    # Stable schema: include all allowed keys; fill missing with [] (still a list type)
+    extra_out = {k: [] for k in sorted(ALLOWED_EXTRA_KEYS)}
 
     for i, enc_i in enumerate(per_sample_enc):
         prompt_ids = enc_i["input_ids"]
@@ -331,16 +360,12 @@ def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per
             prompt_ids = prompt_ids[:keep]
             prompt_mask = prompt_mask[:keep]
 
-        full_ids = prompt_ids + t_ids
-        full_mask = prompt_mask + [1] * len(t_ids)
-        full_labels = [-100] * len(prompt_ids) + t_ids
-
-        input_ids_out.append(full_ids)
-        attn_out.append(full_mask)
-        labels_out.append(full_labels)
+        input_ids_out.append(prompt_ids + t_ids)
+        attn_out.append(prompt_mask + [1] * len(t_ids))
+        labels_out.append([-100] * len(prompt_ids) + t_ids)
 
         for k in extra_out.keys():
-            extra_out[k].append(enc_i.get(k, None))
+            extra_out[k].append(enc_i.get(k, []))  # MUST be list-typed for Arrow
 
     out = {
         "input_ids": input_ids_out,
@@ -348,10 +373,8 @@ def preprocess_function_vlm(examples, processor, max_length=1024, max_images_per
         "labels": labels_out,
         **extra_out,
     }
-
     if "sample_weight" in examples:
         out["sample_weight"] = examples["sample_weight"]
-
     return out
 
 class VLMDataCollator:
@@ -366,15 +389,20 @@ class VLMDataCollator:
         if has_weight:
             sample_weight = torch.tensor([float(f.get("sample_weight", 1.0)) for f in features], dtype=torch.float)
 
-        # Build pad inputs, dropping optional keys with None values.
-        # (Your effective batch size is 1, so mixed None/non-None in a batch shouldn't occur.)
         pad_inputs = {}
         for k in features[0].keys():
             if k == "sample_weight":
                 continue
             vals = [f.get(k, None) for f in features]
+
+            # Drop optional multimodal keys for text-only samples (they are [])
+            if all(v == [] for v in vals):
+                continue
+
+            # Still guard against None mixing
             if any(v is None for v in vals):
                 continue
+
             pad_inputs[k] = vals
 
         batch = self.processor.pad(

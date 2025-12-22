@@ -25,6 +25,7 @@ from wl_dataset_builder_new_vl import TextDatasetBuilder
 from datasets import load_from_disk
 
 from contextlib import contextmanager
+from transformers.trainer_utils import get_last_checkpoint
 
 class TeeOutput:
     """Class to duplicate stdout to both console and log file"""
@@ -525,6 +526,12 @@ def main():
         parser.add_argument("--noisy_low", type=float, default=5.2, help="Lower bound (inclusive) of noisy rating_avg range")
         parser.add_argument("--noisy_high", type=float, default=6.2, help="Upper bound (inclusive) of noisy rating_avg range")
         parser.add_argument("--noisy_weight", type=float, default=0.5, help="Sample weight for noisy range")
+        parser.add_argument(
+            "--resume_from_checkpoint",
+            type=str,
+            default=None,
+            help="Path to a checkpoint dir (e.g., .../checkpoint-1200). If omitted, auto-pick last checkpoint in output_dir."
+        )
         args = parser.parse_args()
 
         # Default to all visible GPUs if none provided
@@ -555,7 +562,7 @@ def main():
         
         # Add timestamp to output directory for training runs to separate them
         if not args.eval:
-            OUTPUT_DIR = os.path.join(args.output_dir, timestamp)
+            OUTPUT_DIR = args.output_dir if args.resume_from_checkpoint is not None else os.path.join(args.output_dir, timestamp)
         else:
             OUTPUT_DIR = args.output_dir
             
@@ -856,7 +863,16 @@ def main():
                 return result
             trainer.evaluate = memory_safe_evaluate
             
-            trainer.train()
+            resume_ckpt = None
+            if not args.eval:
+                if args.resume_from_checkpoint == "" or args.resume_from_checkpoint is None:
+                    # auto-detect last checkpoint inside OUTPUT_DIR
+                    resume_ckpt = get_last_checkpoint(OUTPUT_DIR)
+                else:
+                    # explicit checkpoint path provided
+                    resume_ckpt = args.resume_from_checkpoint
+
+            trainer.train(resume_from_checkpoint=resume_ckpt)
             
             # Save the fine-tuned model
             print(f"Saving fine-tuned model to {OUTPUT_DIR}")

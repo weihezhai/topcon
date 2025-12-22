@@ -535,7 +535,7 @@ def main():
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         parser.add_argument("--noisy_low", type=float, default=5.2, help="Lower bound (inclusive) of noisy rating_avg range")
         parser.add_argument("--noisy_high", type=float, default=6.2, help="Upper bound (inclusive) of noisy rating_avg range")
-        parser.add_argument("--noisy_weight", type=float, default=0.5, help="Sample weight for noisy range")
+        parser.add_argument("--noisy_weight", type=float, default=1.2, help="Sample weight for noisy range")
         args = parser.parse_args()
 
         # Default to all visible GPUs if none provided

@@ -7,7 +7,7 @@ from datetime import datetime
 import pandas as pd
 from datasets import Dataset
 from transformers import (
-    AutoTokenizer, 
+    AutoTokenizer,
     AutoModelForCausalLM,
     TrainingArguments, 
     Trainer,
@@ -249,6 +249,17 @@ def preprocess_function(examples, tokenizer, max_length=1024):
         out['sample_weight'] = examples['sample_weight']
     return out
 
+def format_noisy_tag(noisy_low: float, noisy_high: float, noisy_weight: float) -> str:
+    def x10(v: float) -> int:
+        return int(round(v * 10))
+    return f"{x10(noisy_low):02d}{x10(noisy_high):02d}{x10(noisy_weight):02d}"
+
+def load_tokenizer(model_id_or_path: str, **kwargs):
+    try:
+        return AutoTokenizer.from_pretrained(model_id_or_path, fix_mistral_regex=True, **kwargs)
+    except TypeError:
+        return AutoTokenizer.from_pretrained(model_id_or_path, **kwargs)
+
 def download_and_save_model(model_name, cache_dir):
     """Download and save the base model locally"""
     print(f"Downloading model {model_name} to {cache_dir}...")
@@ -257,7 +268,7 @@ def download_and_save_model(model_name, cache_dir):
     os.makedirs(cache_dir, exist_ok=True)
     
     # Download tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
+    tokenizer = load_tokenizer(model_name, cache_dir=cache_dir)
     tokenizer.save_pretrained(cache_dir)
     
     # Download model for causal language modeling
@@ -559,13 +570,22 @@ def main():
         STATISTICS_FILE = args.statistics_file
         IMG_DESC_FILE = args.img_desc_file  # Added
         METADATA_FILE = args.metadata_file
-        
-        # Add timestamp to output directory for training runs to separate them
+
+        noisy_tag = format_noisy_tag(args.noisy_low, args.noisy_high, args.noisy_weight)
+
+        # Train: <root>/<noisy_tag>/<timestamp> (unless resuming => <root>/<noisy_tag>)
+        # Eval:  either a direct run dir (contains config.json) OR <root>/<noisy_tag>
         if not args.eval:
-            OUTPUT_DIR = args.output_dir if args.resume_from_checkpoint is not None else os.path.join(args.output_dir, timestamp)
+            if args.resume_from_checkpoint is not None:
+                OUTPUT_DIR = args.output_dir
+            else:
+                OUTPUT_DIR = os.path.join(args.output_dir, noisy_tag, timestamp)
         else:
-            OUTPUT_DIR = args.output_dir
-            
+            if os.path.isfile(os.path.join(args.output_dir, "config.json")):
+                OUTPUT_DIR = args.output_dir
+            else:
+                OUTPUT_DIR = os.path.join(args.output_dir, noisy_tag)
+
         print(f"Output directory set to: {OUTPUT_DIR}")
 
         MAX_LENGTH = args.max_length
@@ -615,13 +635,12 @@ def main():
                 print(f"Using cached model from {BASE_MODEL_CACHE}")
         
         # Load tokenizer from appropriate model path
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+        tokenizer = load_tokenizer(MODEL_PATH)
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
-        # Ensure pad_token_id is set
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
-        
+
         # Get token IDs for "yes" and "no"
         global YES_ID, NO_ID
         YES_ID = tokenizer(" yes", add_special_tokens=False)["input_ids"][0]
@@ -637,7 +656,7 @@ def main():
         if IMG_DESC_FILE:
             cache_suffix += "_with_img_desc"
         if METADATA_FILE:
-            cache_suffix += "_with_rating_weights_5262"
+            cache_suffix += f"_with_rating_weights_{noisy_tag}"
         PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/dataset_cache/balanced/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
 

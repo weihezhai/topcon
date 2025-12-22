@@ -651,7 +651,7 @@ def main():
         print("Loading dataset....")
         
         # Define processed dataset cache path - include stats/img_desc in cache name if provided
-        cache_suffix = "llm_mineru_all"
+        cache_suffix = "llm_mineru"
         if STATISTICS_FILE:
             cache_suffix += "_with_stats"
         if IMG_DESC_FILE:

@@ -487,6 +487,18 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     
     return results
 
+def format_noisy_tag(noisy_low: float, noisy_high: float, noisy_weight: float) -> str:
+    """
+    Format noise settings into a compact tag like '526212':
+      noisy_low=5.2  -> '52'
+      noisy_high=6.2 -> '62'
+      noisy_weight=1.2 -> '12'
+    Assumes 1 decimal place; uses round() to avoid float artifacts.
+    """
+    def x10(v: float) -> int:
+        return int(round(v * 10))
+    return f"{x10(noisy_low):02d}{x10(noisy_high):02d}{x10(noisy_weight):02d}"
+
 def main():
     # Set up logging
     log_dir = "./log"
@@ -550,13 +562,20 @@ def main():
         STATISTICS_FILE = args.statistics_file
         IMG_DESC_FILE = args.img_desc_file  # Added
         METADATA_FILE = args.metadata_file
-        
-        # Add timestamp to output directory for training runs to separate them
+
+        noisy_tag = format_noisy_tag(args.noisy_low, args.noisy_high, args.noisy_weight)
+
+        # Train: <root>/<noisy_tag>/<timestamp>
+        # Eval:  either a direct run dir (contains config.json) OR <root>/<noisy_tag>
         if not args.eval:
-            OUTPUT_DIR = os.path.join(args.output_dir, timestamp)
+            OUTPUT_ROOT = os.path.join(args.output_dir, noisy_tag)
+            OUTPUT_DIR = os.path.join(OUTPUT_ROOT, timestamp)
         else:
-            OUTPUT_DIR = args.output_dir
-            
+            if os.path.isfile(os.path.join(args.output_dir, "config.json")):
+                OUTPUT_DIR = args.output_dir
+            else:
+                OUTPUT_DIR = os.path.join(args.output_dir, noisy_tag)
+
         print(f"Output directory set to: {OUTPUT_DIR}")
 
         MAX_LENGTH = args.max_length
@@ -568,7 +587,7 @@ def main():
         if args.eval:
             if not os.path.exists(OUTPUT_DIR):
                 print(f"Error: Fine-tuned model not found at {OUTPUT_DIR}")
-                print("Please run training first without --eval flag")
+                print("Tip: pass --output_dir either the exact run directory (with config.json) or the root dir; root will be resolved to <root>/<noisy_tag>.")
                 return
             MODEL_PATH = OUTPUT_DIR
             print(f"Running evaluation mode using model from {MODEL_PATH}")
@@ -628,7 +647,7 @@ def main():
         if IMG_DESC_FILE:
             cache_suffix += "_with_img_desc"
         if METADATA_FILE:
-            cache_suffix += "_with_rating_weights_5262"
+            cache_suffix += f"_with_rating_weights_{noisy_tag}"
         PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/dataset_cache/balanced/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
 

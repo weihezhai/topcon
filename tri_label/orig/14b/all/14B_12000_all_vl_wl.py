@@ -818,7 +818,7 @@ def main():
             # Training arguments - adjusted for multi-GPU
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
-                num_train_epochs=4,
+                num_train_epochs=5,
                 per_device_train_batch_size=1,  # Keep small for large model
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size

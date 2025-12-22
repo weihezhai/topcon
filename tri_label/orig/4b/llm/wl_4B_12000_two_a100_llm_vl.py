@@ -499,6 +499,16 @@ def format_noisy_tag(noisy_low: float, noisy_high: float, noisy_weight: float) -
         return int(round(v * 10))
     return f"{x10(noisy_low):02d}{x10(noisy_high):02d}{x10(noisy_weight):02d}"
 
+def load_tokenizer(model_path: str):
+    """
+    Tries to enable the Mistral regex fix when supported by the installed tokenizer/transformers.
+    Falls back safely for tokenizers that don't accept this kwarg (e.g., many non-Mistral tokenizers).
+    """
+    try:
+        return AutoTokenizer.from_pretrained(model_path, fix_mistral_regex=True)
+    except TypeError:
+        return AutoTokenizer.from_pretrained(model_path)
+
 def main():
     # Set up logging
     log_dir = "./log"
@@ -625,7 +635,7 @@ def main():
                 print(f"Using cached model from {BASE_MODEL_CACHE}")
         
         # Load tokenizer from appropriate model path
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+        tokenizer = load_tokenizer(MODEL_PATH)
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
         # Ensure pad_token_id is set

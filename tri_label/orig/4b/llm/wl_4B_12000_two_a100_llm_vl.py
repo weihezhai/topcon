@@ -544,7 +544,7 @@ def main():
         parser.add_argument("--metadata_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_meta.json', help="Path to metadata JSON (list of dicts with fields: id, rating_avg)")
         parser.add_argument("--noisy_low", type=float, default=5.2, help="Lower bound (inclusive) of noisy rating_avg range")
         parser.add_argument("--noisy_high", type=float, default=6.2, help="Upper bound (inclusive) of noisy rating_avg range")
-        parser.add_argument("--noisy_weight", type=float, default=0.5, help="Sample weight for noisy range")
+        parser.add_argument("--noisy_weight", type=float, default=1.2, help="Sample weight for noisy range")
         args = parser.parse_args()
 
         # Default to all visible GPUs if none provided

@@ -521,13 +521,13 @@ def main():
         parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
         parser.add_argument("--img_desc_file", type=str, default='/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/img_description/image_descriptions_all.json', help="Path to the image descriptions JSON file for vision-language support")
         parser.add_argument("--metadata_file", type=str, default='/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/combined_iclr2024_2025.json', help="Path to metadata JSON (list of dicts with fields: id, rating_avg)")
-        parser.add_argument("--output_dir", type=str, default="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/models/qwen3_14b", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--output_dir", type=str, default="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/models/qwen3_14b/llm", help="Directory to save/load the fine-tuned model")
         
         parser.add_argument("--max_length", type=int, default=12000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         parser.add_argument("--noisy_low", type=float, default=5.2, help="Lower bound (inclusive) of noisy rating_avg range")
         parser.add_argument("--noisy_high", type=float, default=6.2, help="Upper bound (inclusive) of noisy rating_avg range")
-        parser.add_argument("--noisy_weight", type=float, default=0.5, help="Sample weight for noisy range")
+        parser.add_argument("--noisy_weight", type=float, default=1.2, help="Sample weight for noisy range")
 
         # +++ LoRA config +++
         parser.add_argument("--lora_r", type=int, default=16, help="LoRA rank")
@@ -657,7 +657,7 @@ def main():
         if IMG_DESC_FILE:
             cache_suffix += "_with_img_desc"
         if METADATA_FILE:
-            cache_suffix += "_with_rating_weights_5262"
+            cache_suffix += "_with_rating_weights_526212"
         PROCESSED_DATASET_CACHE = f"/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/data_src/cache/processed_dataset/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
 
@@ -841,7 +841,7 @@ def main():
                 per_device_train_batch_size=1,  # Keep small for large model
                 per_device_eval_batch_size=1,
                 gradient_accumulation_steps=8,  # Maintain effective batch size
-                learning_rate=1e-4,
+                learning_rate=2e-4,
                 warmup_ratio=0.1,
                 weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",

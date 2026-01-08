@@ -58,6 +58,26 @@ python cot.py \
     --log_path logs/cot_eval.log
 ```
 
+### 4. `prune_reasoning_ppl.py`
+Computes a per-token perplexity proxy (via teacher-forced negative log probability) for tokens inside the model-emitted `<think>...</think>` block, drops a fraction of the highest-perplexity reasoning tokens, and re-runs a second-pass answer generation conditioned on the shortened reasoning chain.
+
+**Key Features:**
+- **Per-token NLL/PPL:** Uses teacher forcing over the exact generated token IDs.
+- **Pruning:** Drops top `--drop_fracs` fraction (e.g., 0.1/0.2/0.5) of reasoning tokens by NLL (equivalently perplexity).
+- **Two-pass evaluation:** Pass 1 generates reasoning; Pass 2 answers with `enable_thinking=False` using the pruned reasoning as context.
+
+**Usage Example:**
+```bash
+python prune_reasoning_ppl.py \
+    --model Qwen/Qwen3-4B \
+    --split test \
+    --max_samples 100 \
+    --drop_fracs 0.1,0.2,0.5 \
+    --deterministic \
+    --log_path logs/prune_reasoning_ppl.log \
+    --jsonl_path logs/prune_reasoning_ppl.jsonl
+```
+
 ## Requirements
 
 Ensure you have the following libraries installed:

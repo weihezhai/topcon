@@ -20,21 +20,11 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import torch.nn as nn
 
-# +++ PEFT / LoRA +++
-from peft import LoraConfig, get_peft_model, PeftModel
-
 # Import the dataset builder
 from wl_dataset_builder_new_vl import TextDatasetBuilder
 from datasets import load_from_disk
 
 from contextlib import contextmanager
-
-# +++ add for crash-safe saving +++
-import json
-import time
-import signal
-import atexit
-import traceback
 
 class TeeOutput:
     """Class to duplicate stdout to both console and log file"""
@@ -261,12 +251,14 @@ def preprocess_function(examples, tokenizer, max_length=1024):
 def download_and_save_model(model_name, cache_dir):
     """Download and save the base model locally"""
     print(f"Downloading model {model_name} to {cache_dir}...")
+    
+    # Create cache directory if it doesn't exist
     os.makedirs(cache_dir, exist_ok=True)
-
-    # Download tokenizer (safe mistral regex fix if supported)
-    tokenizer = load_tokenizer(model_name, cache_dir=cache_dir)
+    
+    # Download tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
     tokenizer.save_pretrained(cache_dir)
-
+    
     # Download model for causal language modeling
     from transformers import AutoModelForCausalLM
     model = AutoModelForCausalLM.from_pretrained(
@@ -495,131 +487,17 @@ def batched_accuracy_evaluation(trainer, eval_dataset, batch_size=10, detailed_e
     
     return results
 
-def _safe_mkdir(path: str):
-    try:
-        os.makedirs(path, exist_ok=True)
-    except Exception:
-        pass
-
-def _now_tag():
-    return datetime.now().strftime("%Y%m%d_%H%M%S")
-
-def save_emergency_checkpoint(*, trainer=None, model=None, tokenizer=None, output_dir=None, reason=None, exc=None):
-    """
-    Best-effort emergency checkpoint.
-    Saves:
-      - trainer state (trainer_state.json)
-      - optimizer/scheduler/rng if trainer checkpointing is healthy (trainer.save_state)
-      - LoRA adapters via model.save_pretrained(...)
-      - tokenizer
-      - a small crash_report.json with reason/exception/traceback
-    """
-    if output_dir is None:
-        return
-
-    crash_root = os.path.join(output_dir, "crash_checkpoints")
-    crash_dir = os.path.join(crash_root, f"crash_{_now_tag()}")
-    _safe_mkdir(crash_dir)
-
-    report = {
-        "time": datetime.now().isoformat(),
-        "reason": reason,
-        "output_dir": output_dir,
-    }
-    if exc is not None:
-        report["exception_type"] = type(exc).__name__
-        report["exception_str"] = str(exc)
-        report["traceback"] = traceback.format_exc()
-
-    # Try to capture RNG states (helps exact reproducibility if you later resume manually)
-    try:
-        rng = {"torch_cpu": torch.get_rng_state().tolist()}
-        if torch.cuda.is_available():
-            try:
-                rng["torch_cuda"] = [s.tolist() for s in torch.cuda.get_rng_state_all()]
-            except Exception:
-                rng["torch_cuda"] = "unavailable"
-        with open(os.path.join(crash_dir, "rng_state.json"), "w") as f:
-            json.dump(rng, f)
-    except Exception:
-        pass
-
-    # Save trainer state + optim/sched if possible
-    try:
-        if trainer is not None:
-            # Only let rank0 write to avoid contention
-            is_rank0 = True
-            try:
-                is_rank0 = trainer.is_world_process_zero()
-            except Exception:
-                pass
-
-            if is_rank0:
-                # trainer.save_state writes trainer_state.json + optimizer/scheduler/rng (if configured)
-                trainer.save_state()
-                # Copy trainer_state.json into crash_dir for convenience
-                try:
-                    src = os.path.join(trainer.args.output_dir, "trainer_state.json")
-                    if os.path.exists(src):
-                        with open(src, "r") as fsrc, open(os.path.join(crash_dir, "trainer_state.json"), "w") as fdst:
-                            fdst.write(fsrc.read())
-                except Exception:
-                    pass
-                report["global_step"] = getattr(trainer.state, "global_step", None)
-                report["epoch"] = getattr(trainer.state, "epoch", None)
-    except Exception:
-        # if CUDA is broken, this may fail; keep going with minimal artifacts
-        pass
-
-    # Save adapters/tokenizer (best effort)
-    try:
-        if model is not None:
-            model.save_pretrained(crash_dir)
-    except Exception:
-        pass
-    try:
-        if tokenizer is not None:
-            tokenizer.save_pretrained(crash_dir)
-    except Exception:
-        pass
-
-    # Persist crash report
-    try:
-        with open(os.path.join(crash_dir, "crash_report.json"), "w") as f:
-            json.dump(report, f, indent=2)
-    except Exception:
-        pass
-
-    print(f"[EMERGENCY CHECKPOINT] Wrote crash checkpoint to: {crash_dir}")
-    return crash_dir
-
-def _should_treat_as_cuda_failure(exc: Exception) -> bool:
-    msg = str(exc).lower()
-    return isinstance(exc, RuntimeError) and (
-        "cuda" in msg
-        or "cublas" in msg
-        or "cudnn" in msg
-        or "nccl" in msg
-        or "device-side assert" in msg
-        or "illegal memory access" in msg
-        or "unspecified launch failure" in msg
-        or "out of memory" in msg
-    )
-
 def format_noisy_tag(noisy_low: float, noisy_high: float, noisy_weight: float) -> str:
-    """e.g., 5.2/6.2/1.2 -> '526212'"""
+    """
+    Format noise settings into a compact tag like '526212':
+      noisy_low=5.2  -> '52'
+      noisy_high=6.2 -> '62'
+      noisy_weight=1.2 -> '12'
+    Assumes 1 decimal place; uses round() to avoid float artifacts.
+    """
     def x10(v: float) -> int:
         return int(round(v * 10))
     return f"{x10(noisy_low):02d}{x10(noisy_high):02d}{x10(noisy_weight):02d}"
-
-def load_tokenizer(model_id_or_path: str, **kwargs):
-    """
-    Tries to enable the Mistral regex fix when supported; falls back if the kwarg is unsupported.
-    """
-    try:
-        return AutoTokenizer.from_pretrained(model_id_or_path, fix_mistral_regex=True, **kwargs)
-    except TypeError:
-        return AutoTokenizer.from_pretrained(model_id_or_path, **kwargs)
 
 def main():
     # Set up logging
@@ -628,7 +506,7 @@ def main():
     
     # Create log filename with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = os.path.join(log_dir, f"training_log_all_{timestamp}.log")
+    log_file = os.path.join(log_dir, f"training_log_llm_{timestamp}.log")
     
     # Redirect stdout and stderr to both console and log file
     tee_stdout = TeeOutput(log_file)
@@ -645,58 +523,20 @@ def main():
         parser.add_argument("--eval", action="store_true", help="Run evaluation mode on fine-tuned model")
         parser.add_argument("--detailed_eval", action="store_true", help="Output detailed evaluation metrics including precision, recall, F1, and confusion matrix")
         parser.add_argument("--debug", action="store_true", help="Debug mode: set eval_steps to 10 for frequent evaluation")
-        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-14B", help="Pre-trained model name or path")
+        parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B", help="Pre-trained model name or path")
 
-        parser.add_argument("--data_folder", type=str, default="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/data_src/balanced/balanced_all", help="Path to the folder containing training jsons")
-        parser.add_argument("--labels_file", type=str, default="/ceph/hpc/home/euweihez/topcon/balanced_labels.json", help="Path to the file containing labels")
+        parser.add_argument("--data_folder", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_llm", help="Path to the folder containing training jsons")
+        parser.add_argument("--labels_file", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/topcon/balanced_labels.json", help="Path to the file containing labels")
         parser.add_argument("--statistics_file", type=str, default=None, help="Path to the statistical.json file containing paper statistics")
-        parser.add_argument("--img_desc_file", type=str, default='/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/img_description/image_descriptions_all.json', help="Path to the image descriptions JSON file for vision-language support")
-        parser.add_argument("--metadata_file", type=str, default='/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/combined_iclr2024_2025.json', help="Path to metadata JSON (list of dicts with fields: id, rating_avg)")
-        parser.add_argument("--output_dir", type=str, default="/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/models/qwen3_14b/all", help="Directory to save/load the fine-tuned model")
+        parser.add_argument("--img_desc_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/img_des/image_descriptions_all.json', help="Path to the image descriptions JSON file for vision-language support")
+        parser.add_argument("--metadata_file", type=str, default='/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/balanced_dataset/balanced_datasets/Balanced/balanced_meta.json', help="Path to metadata JSON (list of dicts with fields: id, rating_avg)")
+        parser.add_argument("--output_dir", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_8b/orig/llm", help="Directory to save/load the fine-tuned model")
         
         parser.add_argument("--max_length", type=int, default=12000, help="Maximum sequence length for training")
         parser.add_argument("--gpu_ids", type=int, nargs='+', default=None, help="GPU IDs to use for training/evaluation (e.g., --gpu_ids 0 1)")
         parser.add_argument("--noisy_low", type=float, default=5.2, help="Lower bound (inclusive) of noisy rating_avg range")
         parser.add_argument("--noisy_high", type=float, default=6.2, help="Upper bound (inclusive) of noisy rating_avg range")
         parser.add_argument("--noisy_weight", type=float, default=1.2, help="Sample weight for noisy range")
-
-        # +++ LoRA config +++
-        parser.add_argument("--lora_r", type=int, default=16, help="LoRA rank")
-        parser.add_argument("--lora_alpha", type=int, default=32, help="LoRA alpha")
-        parser.add_argument("--lora_dropout", type=float, default=0.05, help="LoRA dropout")
-        parser.add_argument(
-            "--lora_target_modules",
-            type=str,
-            default="q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj",
-            help="Comma-separated module names to apply LoRA to",
-        )
-        parser.add_argument(
-            "--lora_bias",
-            type=str,
-            default="none",
-            choices=["none", "all", "lora_only"],
-            help="Whether to train bias parameters",
-        )
-        parser.add_argument(
-            "--merge_lora_for_eval",
-            action="store_true",
-            help="In --eval mode, merge adapters into base weights for faster inference",
-        )
-
-        # +++ crash-safe resume/checkpoint knobs +++
-        parser.add_argument(
-            "--resume_from_checkpoint",
-            type=str,
-            default=None,
-            help="Path to a Trainer checkpoint dir (e.g., .../checkpoint-1200) to manually resume training.",
-        )
-        parser.add_argument(
-            "--save_steps",
-            type=int,
-            default=100,
-            help="Checkpoint save frequency (steps). Lower this to reduce lost work on failures.",
-        )
-
         args = parser.parse_args()
 
         # Default to all visible GPUs if none provided
@@ -722,38 +562,36 @@ def main():
         DATA_FOLDER = args.data_folder
         LABELS_FILE = args.labels_file
         STATISTICS_FILE = args.statistics_file
-        IMG_DESC_FILE = args.img_desc_file
+        IMG_DESC_FILE = args.img_desc_file  # Added
         METADATA_FILE = args.metadata_file
 
         noisy_tag = format_noisy_tag(args.noisy_low, args.noisy_high, args.noisy_weight)
 
-        # Train: <root>/<noisy_tag>/<timestamp> (unless resuming => keep args.output_dir)
-        # Eval:  either a direct run dir (contains config.json) OR <root>/<noisy_tag>
+        # Add noisy-tag + timestamp to output directory for training runs
+        # Train:  <root>/<noisy_tag>/<timestamp>
+        # Eval:   either a direct run dir (contains config.json) OR <root>/<noisy_tag>
         if not args.eval:
-            if args.resume_from_checkpoint:
-                OUTPUT_DIR = args.output_dir
-            else:
-                OUTPUT_DIR = os.path.join(args.output_dir, noisy_tag, timestamp)
+            OUTPUT_ROOT = os.path.join(args.output_dir, noisy_tag)
+            OUTPUT_DIR = os.path.join(OUTPUT_ROOT, timestamp)
         else:
+            # If user already passed a specific model/run directory, keep it.
             if os.path.isfile(os.path.join(args.output_dir, "config.json")):
                 OUTPUT_DIR = args.output_dir
             else:
                 OUTPUT_DIR = os.path.join(args.output_dir, noisy_tag)
 
         print(f"Output directory set to: {OUTPUT_DIR}")
-        if args.resume_from_checkpoint:
-            print(f"Manual resume requested from checkpoint: {args.resume_from_checkpoint}")
 
         MAX_LENGTH = args.max_length
         
         # Model directories
-        BASE_MODEL_CACHE = "/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/models/qwen3_14b"  # Where to cache the downloaded model
+        BASE_MODEL_CACHE = "/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_8b/orig"  # Where to cache the downloaded model
 
         # If in evaluation mode, use the fine-tuned model directory
         if args.eval:
             if not os.path.exists(OUTPUT_DIR):
                 print(f"Error: Fine-tuned model not found at {OUTPUT_DIR}")
-                print("Please run training first without --eval flag")
+                print("Tip: pass --output_dir either the exact run directory (with config.json) or the root dir; root will be resolved to <root>/<noisy_tag>.")
                 return
             MODEL_PATH = OUTPUT_DIR
             print(f"Running evaluation mode using model from {MODEL_PATH}")
@@ -790,13 +628,14 @@ def main():
             else:
                 print(f"Using cached model from {BASE_MODEL_CACHE}")
         
-        # Load tokenizer from appropriate model path (safe mistral regex fix if supported)
-        tokenizer = load_tokenizer(MODEL_PATH)
+        # Load tokenizer from appropriate model path
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
+        # Ensure pad_token_id is set
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
-
+        
         # Get token IDs for "yes" and "no"
         global YES_ID, NO_ID
         YES_ID = tokenizer(" yes", add_special_tokens=False)["input_ids"][0]
@@ -806,14 +645,14 @@ def main():
         print("Loading dataset....")
         
         # Define processed dataset cache path - include stats/img_desc in cache name if provided
-        cache_suffix = "all_mineru"
+        cache_suffix = "llm_mineru_all"
         if STATISTICS_FILE:
             cache_suffix += "_with_stats"
         if IMG_DESC_FILE:
             cache_suffix += "_with_img_desc"
         if METADATA_FILE:
             cache_suffix += f"_with_rating_weights_{noisy_tag}"
-        PROCESSED_DATASET_CACHE = f"/ceph/hpc/home/euweihez/topcon/d2025d08-005-users/data_src/cache/processed_dataset/{cache_suffix}"
+        PROCESSED_DATASET_CACHE = f"/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/dataset_cache/balanced/{cache_suffix}"
         os.makedirs(PROCESSED_DATASET_CACHE, exist_ok=True)
 
         dataset_builder = TextDatasetBuilder(
@@ -925,47 +764,29 @@ def main():
         print(f"Sample labels type: {type(sample['labels'])}")
         print(f"Sample labels value: {sample['labels']}")
         
-        # Load model
+        # Load model with automatic device mapping for multi-GPU
         print("Loading model with automatic device mapping across GPUs...")
-
-        # NOTE: with PEFT we always load the BASE model weights first, then attach adapters.
-        base_model = AutoModelForCausalLM.from_pretrained(
-            BASE_MODEL_CACHE if not args.eval else BASE_MODEL_CACHE,
-            torch_dtype=torch.bfloat16,
-            device_map="auto",
-            max_memory={i: "39GiB" for i in range(len(args.gpu_ids))},
-            offload_folder="./offload",
-            attn_implementation="sdpa",
-        )
-
-        # Disable cache for training stability with gradient checkpointing
-        base_model.config.use_cache = False
-
-        # Build / attach adapters
-        target_modules = [m.strip() for m in args.lora_target_modules.split(",") if m.strip()]
-        lora_cfg = LoraConfig(
-            r=args.lora_r,
-            lora_alpha=args.lora_alpha,
-            lora_dropout=args.lora_dropout,
-            target_modules=target_modules,
-            bias=args.lora_bias,
-            task_type="CAUSAL_LM",
-        )
-
         if args.eval:
-            # Load LoRA adapters from OUTPUT_DIR onto the base model
-            model = PeftModel.from_pretrained(base_model, OUTPUT_DIR, is_trainable=False)
-            if args.merge_lora_for_eval:
-                model = model.merge_and_unload()
-            print("Loaded base model + LoRA adapters for evaluation")
+            # Load the fine-tuned model for evaluation
+            model = AutoModelForCausalLM.from_pretrained(
+                OUTPUT_DIR,  # Load from fine-tuned model directory
+                torch_dtype=torch.bfloat16,
+                device_map="auto",  # Automatically distribute across available GPUs
+                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
+                offload_folder="./offload",  # Offload to disk if needed
+                attn_implementation="sdpa"  # Use SDPA attention implementation
+            )
+            print("Loaded fine-tuned model for evaluation")
         else:
-            # Wrap base model with trainable LoRA adapters (base weights frozen)
-            model = get_peft_model(base_model, lora_cfg)
-            # Useful for some checkpointing paths
-            if hasattr(model, "enable_input_require_grads"):
-                model.enable_input_require_grads()
-            model.print_trainable_parameters()
-            print("Loaded base model + trainable LoRA adapters for training")
+            # Load base model for training
+            model = AutoModelForCausalLM.from_pretrained(
+                BASE_MODEL_CACHE,
+                torch_dtype=torch.bfloat16,
+                device_map="auto",  # Automatically distribute across available GPUs
+                max_memory={i: "78GiB" for i in range(len(args.gpu_ids))},  # Set max memory per GPU
+                offload_folder="./offload",  # Offload to disk if needed
+                attn_implementation="sdpa"  # Use SDPA attention implementation
+            )
 
         print(model)
         
@@ -980,34 +801,35 @@ def main():
             tokenizer=tokenizer,
             max_length=MAX_LENGTH
         )
-
+        
         # Only run training if not in evaluation mode
         if not args.eval:
             # Set eval_steps based on debug mode
             eval_steps = 10 if args.debug else 100
+            
             if args.debug:
                 print("DEBUG MODE: eval_steps set to 10")
-
-            # Training arguments
+            
+            # Training arguments - adjusted for multi-GPU
             training_args = TrainingArguments(
                 output_dir=OUTPUT_DIR,
                 num_train_epochs=5,
-                per_device_train_batch_size=1,
+                per_device_train_batch_size=1,  # Keep small for large model
                 per_device_eval_batch_size=1,
-                gradient_accumulation_steps=8,
-                learning_rate=1e-4,
+                gradient_accumulation_steps=8,  # Maintain effective batch size
+                learning_rate=2e-5,
                 warmup_ratio=0.1,
                 weight_decay=0.01,
                 logging_dir=f"{OUTPUT_DIR}/logs",
                 logging_steps=1,
                 eval_strategy="steps",
-                eval_steps=eval_steps,
-                save_steps=int(args.save_steps),
-                save_total_limit=3,
-                load_best_model_at_end=True,
-                metric_for_best_model="eval_accuracy",
-                greater_is_better=True,
-                bf16=True,
+                eval_steps=eval_steps,  # Use variable based on debug mode
+                save_steps=100,
+                save_total_limit=3,  # Increase to keep more checkpoints including best
+                load_best_model_at_end=True,  # Change to True to load best model at end
+                metric_for_best_model="eval_accuracy",  # Or use "eval_accuracy" if you prefer
+                greater_is_better=True,  # False for loss, True for accuracy
+                bf16=True,  # Enable bf16 for memory efficiency
                 dataloader_pin_memory=False,
                 remove_unused_columns=False,
                 label_names=["labels"],
@@ -1016,16 +838,16 @@ def main():
                 lr_scheduler_type="linear",
                 optim="adamw_torch",
                 eval_accumulation_steps=1,
-                dataloader_num_workers=0,
-                prediction_loss_only=False,
+                dataloader_num_workers=0,  # Disable multiprocessing for multi-GPU setup
+                prediction_loss_only=False,  # Change to False to compute metrics
                 skip_memory_metrics=True,
-                ddp_find_unused_parameters=False,
-                dataloader_persistent_workers=False,
-                gradient_checkpointing=True,
-                # optional: helps keep a usable checkpoint on preemption-style exits
-                save_on_each_node=False,
+                # Multi-GPU specific settings
+                ddp_find_unused_parameters=False,  # For efficiency in DDP
+                dataloader_persistent_workers=False,  # Disable persistent workers
+                gradient_checkpointing=True,  # Enable gradient checkpointing to save memory
             )
-
+            
+            # Initialize trainer
             trainer = WeightedTrainer(
                 model=model,
                 args=training_args,
@@ -1037,91 +859,32 @@ def main():
                 compute_metrics=lambda ep: compute_metrics(ep),
             )
 
-            # +++ crash-safe hooks (signals + atexit) +++
-            _shutdown_requested = {"flag": False}
-
-            def _handle_signal(signum, frame):
-                if _shutdown_requested["flag"]:
-                    return
-                _shutdown_requested["flag"] = True
-                try:
-                    print(f"\n[Signal {signum}] Received termination signal; attempting emergency checkpoint...")
-                except Exception:
-                    pass
-                save_emergency_checkpoint(
-                    trainer=trainer,
-                    model=model,
-                    tokenizer=tokenizer,
-                    output_dir=OUTPUT_DIR,
-                    reason=f"signal_{signum}",
-                )
-                # Exit promptly (common on preemptible nodes)
-                raise SystemExit(128 + int(signum))
-
-            try:
-                signal.signal(signal.SIGTERM, _handle_signal)
-                signal.signal(signal.SIGINT, _handle_signal)
-            except Exception:
-                pass
-
-            def _atexit_hook():
-                # Only run if we are exiting unexpectedly (best-effort)
-                if _shutdown_requested["flag"]:
-                    return
-                # If training completed normally, you will already have checkpoints/adapters saved.
-                # Still: if the process dies mid-run without exception, this might help.
-                try:
-                    save_emergency_checkpoint(
-                        trainer=trainer,
-                        model=model,
-                        tokenizer=tokenizer,
-                        output_dir=OUTPUT_DIR,
-                        reason="atexit",
-                    )
-                except Exception:
-                    pass
-
-            atexit.register(_atexit_hook)
-
+            # Train the model
             print("Starting training...")
-
-            # Override evaluation to use memory cleanup (unchanged)
+            
+            # Override evaluation to use memory cleanup
             original_evaluate = trainer.evaluate
             def memory_safe_evaluate(*args, **kwargs):
                 torch.cuda.empty_cache()
+                # Disable cache during evaluation to save memory
                 original_use_cache = model.config.use_cache
                 model.config.use_cache = False
                 with torch.no_grad():
                     result = original_evaluate(*args, **kwargs)
+                # Restore original cache setting
                 model.config.use_cache = original_use_cache
                 torch.cuda.empty_cache()
                 return result
             trainer.evaluate = memory_safe_evaluate
-
-            # +++ train with emergency save on failure +++
-            try:
-                trainer.train(resume_from_checkpoint=args.resume_from_checkpoint)
-            except SystemExit:
-                # signal handler already saved
-                raise
-            except Exception as e:
-                # Try to persist current state before re-raising
-                reason = "cuda_or_runtime_failure" if _should_treat_as_cuda_failure(e) else "training_exception"
-                print(f"[TRAINING ERROR] {reason}: {e}")
-                save_emergency_checkpoint(
-                    trainer=trainer,
-                    model=model,
-                    tokenizer=tokenizer,
-                    output_dir=OUTPUT_DIR,
-                    reason=reason,
-                    exc=e,
-                )
-                raise
-
-            # Save ONLY adapters (+ config) to OUTPUT_DIR
-            print(f"Saving LoRA adapters to {OUTPUT_DIR}")
-            model.save_pretrained(OUTPUT_DIR)
+            
+            trainer.train()
+            
+            # Save the fine-tuned model
+            print(f"Saving fine-tuned model to {OUTPUT_DIR}")
+            trainer.save_model()
             tokenizer.save_pretrained(OUTPUT_DIR)
+            
+            print(f"Fine-tuned model saved to: {OUTPUT_DIR}")
 
             # Explicitly delete trainer and optimizer to free memory
             del trainer
@@ -1151,18 +914,17 @@ def main():
             import time
             time.sleep(2)
             
-            # Reload base + adapters for final evaluation
-            base_model = AutoModelForCausalLM.from_pretrained(
-                BASE_MODEL_CACHE,
+            # Reload the model fresh with device mapping
+            model = AutoModelForCausalLM.from_pretrained(
+                OUTPUT_DIR,  # Load the fine-tuned model
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
-                max_memory={i: "39GiB" for i in range(len(args.gpu_ids))},
+                max_memory={i: "80GiB" for i in range(len(args.gpu_ids))},
                 offload_folder="./offload",
-                attn_implementation="sdpa",
+                attn_implementation="sdpa"  # Use Flash Attention 2 implementation
             )
-            base_model.config.use_cache = False
-            model = PeftModel.from_pretrained(base_model, OUTPUT_DIR, is_trainable=False)
-
+            
+            # Clear cache again after loading
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 

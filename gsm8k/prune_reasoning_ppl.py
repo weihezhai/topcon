@@ -293,8 +293,8 @@ def main():
         help="Comma-separated fractions of reasoning tokens to drop (highest perplexity first).",
     )
 
-    ap.add_argument("--log_path", type=str, default="logs/qwen3_gsm8k_prune_reasoning.log")
-    ap.add_argument("--jsonl_path", type=str, default="logs/prune_reasoning_ppl.jsonl", help="Optional JSONL to save per-example stats.")
+    ap.add_argument("--log_path", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/gsm8k/logs/qwen3_gsm8k_prune_reasoning.log")
+    ap.add_argument("--jsonl_path", type=str, default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/gsm8k/logs/prune_reasoning_ppl.jsonl", help="Optional JSONL to save per-example stats.")
 
     ap.add_argument(
         "--deterministic",

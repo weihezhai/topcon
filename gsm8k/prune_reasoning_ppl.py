@@ -13,8 +13,9 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import torch
 import torch.nn.functional as F
-from datasets import load_dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer
+# Delayed imports to allow setting env vars in main
+# from datasets import load_dataset
+# from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
 # -----------------------------
@@ -84,6 +85,7 @@ def setup_logger(log_path: str) -> logging.Logger:
 
 
 def load_gsm8k(split: str, cache_dir: Optional[str] = None):
+    from datasets import load_dataset
     try:
         return load_dataset("gsm8k", "main", split=split, cache_dir=cache_dir)
     except Exception:
@@ -324,17 +326,22 @@ def main():
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
 
-    logger = setup_logger(args.log_path)
-    logger.info(f"Loading model: {args.model}")
-    logger.info(f"Split: {args.split} | max_samples={args.max_samples} | seed={args.seed}")
-    logger.info(f"Drop fracs: {drop_fracs}")
-
+    # Set up environment variables BEFORE importing heavy libraries
     if args.dataset_cache_dir:
         os.makedirs(args.dataset_cache_dir, exist_ok=True)
         # Ensure hub + datasets caches live on /mnt/parscratch (not ~/.cache)
         os.environ["HF_HOME"] = args.dataset_cache_dir
         os.environ["HF_DATASETS_CACHE"] = os.path.join(args.dataset_cache_dir, "datasets")
         os.environ["HUGGINGFACE_HUB_CACHE"] = os.path.join(args.dataset_cache_dir, "hub")
+
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    logger = setup_logger(args.log_path)
+    logger.info(f"Loading model: {args.model}")
+    logger.info(f"Split: {args.split} | max_samples={args.max_samples} | seed={args.seed}")
+    logger.info(f"Drop fracs: {drop_fracs}")
+
+    if args.dataset_cache_dir:
         logger.info(f"HF dataset cache: {args.dataset_cache_dir}")
 
     tokenizer = AutoTokenizer.from_pretrained(args.model, cache_dir=args.cache_dir)

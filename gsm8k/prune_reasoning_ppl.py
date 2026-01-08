@@ -294,7 +294,7 @@ def main():
     )
 
     ap.add_argument("--log_path", type=str, default="logs/qwen3_gsm8k_prune_reasoning.log")
-    ap.add_argument("--jsonl_path", type=str, default="", help="Optional JSONL to save per-example stats.")
+    ap.add_argument("--jsonl_path", type=str, default="logs/prune_reasoning_ppl.jsonl", help="Optional JSONL to save per-example stats.")
 
     ap.add_argument(
         "--deterministic",

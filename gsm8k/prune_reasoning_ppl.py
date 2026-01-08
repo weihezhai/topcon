@@ -83,11 +83,11 @@ def setup_logger(log_path: str) -> logging.Logger:
     return logger
 
 
-def load_gsm8k(split: str):
+def load_gsm8k(split: str, cache_dir: Optional[str] = None):
     try:
-        return load_dataset("gsm8k", "main", split=split)
+        return load_dataset("gsm8k", "main", split=split, cache_dir=cache_dir)
     except Exception:
-        return load_dataset("openai/gsm8k", "main", split=split)
+        return load_dataset("openai/gsm8k", "main", split=split, cache_dir=cache_dir)
 
 
 # -----------------------------
@@ -279,6 +279,12 @@ def main():
         default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/models/qwen3_4b/orig",
         help="Path to model cache directory",
     )
+    ap.add_argument(
+        "--dataset_cache_dir",
+        type=str,
+        default="/mnt/parscratch/users/lip22fh/ACL2026_paper_predict/gsm8k/dataset",
+        help="Where to cache/download the GSM8K dataset (avoids ~/.cache quota).",
+    )
     ap.add_argument("--split", type=str, default="test", choices=["train", "test"])
     ap.add_argument("--max_samples", type=int, default=50, help="Limit eval size (0 = all).")
     ap.add_argument("--seed", type=int, default=1234)
@@ -323,6 +329,14 @@ def main():
     logger.info(f"Split: {args.split} | max_samples={args.max_samples} | seed={args.seed}")
     logger.info(f"Drop fracs: {drop_fracs}")
 
+    if args.dataset_cache_dir:
+        os.makedirs(args.dataset_cache_dir, exist_ok=True)
+        # Ensure hub + datasets caches live on /mnt/parscratch (not ~/.cache)
+        os.environ["HF_HOME"] = args.dataset_cache_dir
+        os.environ["HF_DATASETS_CACHE"] = os.path.join(args.dataset_cache_dir, "datasets")
+        os.environ["HUGGINGFACE_HUB_CACHE"] = os.path.join(args.dataset_cache_dir, "hub")
+        logger.info(f"HF dataset cache: {args.dataset_cache_dir}")
+
     tokenizer = AutoTokenizer.from_pretrained(args.model, cache_dir=args.cache_dir)
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
@@ -332,7 +346,7 @@ def main():
     )
     model.eval()
 
-    ds = load_gsm8k(args.split)
+    ds = load_gsm8k(args.split, cache_dir=args.dataset_cache_dir)
     n_total = len(ds) if args.max_samples == 0 else min(len(ds), args.max_samples)
 
     # Generation params (simple defaults; match cot.py semantics)

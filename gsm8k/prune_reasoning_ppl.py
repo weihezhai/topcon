@@ -307,7 +307,7 @@ def main():
     ap.add_argument(
         "--drop_fracs",
         type=str,
-        default="0.1,0.2,0.5",
+        default="0.05,0.1,0.2,0.5",
         help="Comma-separated fractions of reasoning tokens to drop (highest perplexity first).",
     )
 

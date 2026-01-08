@@ -107,6 +107,16 @@ def build_thinking_prompt(question: str) -> List[Dict[str, str]]:
     return [{"role": "user", "content": user}]
 
 
+def build_standard_prompt(question: str) -> List[Dict[str, str]]:
+    q = question.strip()
+    user = (
+        f"{q}\n\n"
+        "Output the final answer as a single line in exactly this format:\n"
+        "#### <integer>\n"
+    )
+    return [{"role": "user", "content": user}]
+
+
 def build_answer_from_reasoning_messages(question: str, pruned_reasoning_text: str) -> List[Dict[str, str]]:
     """Second-pass: condition on an existing (possibly pruned) reasoning chain."""
     q = question.strip()
@@ -369,6 +379,7 @@ def main():
     # Metrics
     base_correct = 0
     base_count = 0
+    std_correct = 0  # Standard baseline
 
     pruned_correct: Dict[float, int] = {f: 0 for f in drop_fracs}
     pruned_count: Dict[float, int] = {f: 0 for f in drop_fracs}
@@ -389,7 +400,21 @@ def main():
             logger.warning(f"[{i+1}/{n_total}] Could not parse gold answer; skipping.")
             continue
 
-        # --- Pass 1: generate with thinking ---
+        # --- Pass 0: Standard Baseline (Base) ---
+        msg_std = build_standard_prompt(q)
+        _, gen_std_ids = generate_continuation_ids(
+            model,
+            tokenizer,
+            msg_std,
+            enable_thinking=False,
+            gen=ans_gen,
+        )
+        decoded_std = tokenizer.decode(gen_std_ids.tolist(), skip_special_tokens=False)
+        std_pred = parse_model_answer(strip_think_block(decoded_std))
+        std_ok = (std_pred == gold)
+        std_correct += int(std_ok)
+
+        # --- Pass 1: generate with thinking (Think) ---
         msg_think = build_thinking_prompt(q)
         prompt_ids, gen_ids = generate_continuation_ids(
             model,
@@ -411,6 +436,8 @@ def main():
         record: Dict[str, Any] = {
             "i": i,
             "gold": gold,
+            "std_pred": std_pred,
+            "std_ok": std_ok,
             "base_pred": base_pred,
             "base_ok": base_ok,
             "drop_results": {},
@@ -420,7 +447,7 @@ def main():
         if think_span is None:
             missing_think_span += 1
             logger.info(
-                f"[{i+1:04d}/{n_total}] GOLD={gold} | BASE={base_pred} ({'OK' if base_ok else 'NO'}) | NOTE=no <think> span found; skipping pruning"
+                f"[{i+1:04d}/{n_total}] GOLD={gold} | STD={std_pred} ({'OK' if std_ok else 'NO'}) | THINK={base_pred} ({'OK' if base_ok else 'NO'}) | NOTE=no <think> span found; skipping pruning"
             )
             if args.print_full_outputs:
                 logger.info("Q: " + q.replace("\n", "\\n"))
@@ -458,42 +485,51 @@ def main():
         }
 
         # --- Pass 2: prune + answer ---
-        for frac in drop_fracs:
-            kept_ids, dropped_idx = prune_top_fraction_by_nll(reason_ids, nll_reason, drop_frac=frac)
-            pruned_reason_text = tokenizer.decode(kept_ids, skip_special_tokens=False)
+        if base_ok:
+            for frac in drop_fracs:
+                kept_ids, dropped_idx = prune_top_fraction_by_nll(reason_ids, nll_reason, drop_frac=frac)
+                pruned_reason_text = tokenizer.decode(kept_ids, skip_special_tokens=False)
 
-            msg_answer = build_answer_from_reasoning_messages(q, pruned_reason_text)
-            _, gen2_ids = generate_continuation_ids(
-                model,
-                tokenizer,
-                msg_answer,
-                enable_thinking=False,
-                gen=ans_gen,
-            )
+                msg_answer = build_answer_from_reasoning_messages(q, pruned_reasoning_text)
+                _, gen2_ids = generate_continuation_ids(
+                    model,
+                    tokenizer,
+                    msg_answer,
+                    enable_thinking=False,
+                    gen=ans_gen,
+                )
 
-            decoded2 = tokenizer.decode(gen2_ids.tolist(), skip_special_tokens=False)
-            decoded2_no_think = strip_think_block(decoded2)
-            pred2 = parse_model_answer(decoded2_no_think)
-            ok2 = (pred2 == gold)
+                decoded2 = tokenizer.decode(gen2_ids.tolist(), skip_special_tokens=False)
+                decoded2_no_think = strip_think_block(decoded2)
+                pred2 = parse_model_answer(decoded2_no_think)
+                ok2 = (pred2 == gold)
 
-            pruned_correct[frac] += int(ok2)
-            pruned_count[frac] += 1
+                pruned_correct[frac] += int(ok2)
+                pruned_count[frac] += 1
 
-            record["drop_results"][str(frac)] = {
-                "pred": pred2,
-                "ok": ok2,
-                "dropped": len(dropped_idx),
-                "kept": len(kept_ids),
-            }
+                record["drop_results"][str(frac)] = {
+                    "pred": pred2,
+                    "ok": ok2,
+                    "dropped": len(dropped_idx),
+                    "kept": len(kept_ids),
+                }
 
-            if args.print_full_outputs:
-                record["drop_results"][str(frac)]["answer_raw"] = decoded2
+                if args.print_full_outputs:
+                    record["drop_results"][str(frac)]["answer_raw"] = decoded2
+        else:
+            # If thinking is incorrect, skip pruning to save compute, record as incorrect/skipped
+            for frac in drop_fracs:
+                pruned_count[frac] += 1
+                record["drop_results"][str(frac)] = {"skipped": True, "ok": False}
 
         # --- Logging ---
-        header = f"[{i+1:04d}/{n_total}] GOLD={gold} | BASE={base_pred} ({'OK' if base_ok else 'NO'})"
+        header = f"[{i+1:04d}/{n_total}] GOLD={gold} | STD={std_pred} ({'OK' if std_ok else 'NO'}) | THINK={base_pred} ({'OK' if base_ok else 'NO'})"
         for frac in drop_fracs:
-            r = record["drop_results"][str(frac)]
-            header += f" | DROP{frac:g}: {r['pred']} ({'OK' if r['ok'] else 'NO'})"
+            if base_ok:
+                r = record["drop_results"][str(frac)]
+                header += f" | DROP{frac:g}: {r['pred']} ({'OK' if r['ok'] else 'NO'})"
+            else:
+                header += f" | DROP{frac:g}: SKIP"
         logger.info(header)
 
         if args.print_full_outputs:
@@ -515,10 +551,10 @@ def main():
 
         seen = base_count
         if seen > 0:
-            msg = f"RUNNING | base_acc={base_correct/seen:.3f}"
+            msg = f"RUNNING | think_acc={base_correct/seen:.3f} | base_acc={std_correct/seen:.3f}"
             for frac in drop_fracs:
                 denom = pruned_count[frac] or 1
-                msg += f" | drop{frac:g}_acc={pruned_correct[frac]/denom:.3f}"
+                msg += f" | think(prune{frac:g})_acc={pruned_correct[frac]/denom:.3f}"
             logger.info(msg)
 
     elapsed = time.time() - start
@@ -530,14 +566,12 @@ def main():
     logger.info(f"Missing <think> span: {missing_think_span}")
 
     if base_count > 0:
-        logger.info(f"Baseline (thinking) exact-match accuracy: {base_correct/base_count:.4f}")
-
-    for frac in drop_fracs:
-        denom = pruned_count[frac]
-        if denom == 0:
-            logger.info(f"Drop {frac:g}: no evaluated examples")
-            continue
-        logger.info(f"Drop {frac:g} (highest-ppl reasoning tokens) accuracy: {pruned_correct[frac]/denom:.4f}")
+        logger.info(f"Method: think (Full Reasoning) accuracy: {base_correct/base_count:.4f}")
+        for frac in drop_fracs:
+            denom = pruned_count[frac]
+            if denom > 0:
+                logger.info(f"Method: think(prune{frac:g}) accuracy: {pruned_correct[frac]/denom:.4f}")
+        logger.info(f"Method: base (Standard IO) accuracy: {std_correct/base_count:.4f}")
 
     logger.info(f"Log saved to: {os.path.abspath(args.log_path)}")
     if args.jsonl_path:
